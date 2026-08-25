@@ -6,7 +6,7 @@
   const LABELS = { none:'Sin asignar', light:'Luz', ventilation:'Ventilación', heater:'Calefacción', pump:'Bomba' };
   const MODES = { manual:'Manual', auto:'Automático' };
   const $ = id => document.getElementById(id);
-  const State = { address:normalizeAddress(localStorage.getItem(CONFIG.addressKey)||CONFIG.defaultAddress), name:localStorage.getItem(CONFIG.nameKey)||CONFIG.defaultName, status:null, functions:null, config:null, hardware:null, online:null, lastSuccess:null, lostAt:null, polling:false, view:'dashboard', energyReady:false, suspended:false };
+  const State = { address:normalizeAddress(localStorage.getItem(CONFIG.addressKey)||CONFIG.defaultAddress), name:localStorage.getItem(CONFIG.nameKey)||CONFIG.defaultName, status:null, functions:null, config:null, hardware:null, online:null, lastSuccess:null, lostAt:null, polling:false, view:'dashboard', energyReady:false, cultivoReady:false, suspended:false };
 
   // Utilidades
   function normalizeAddress(value){return String(value||'').trim().replace(/^https?:\/\//i,'').replace(/\/+$/,'')}
@@ -75,6 +75,6 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden){State.suspended=true;if(State.energyReady)Energy.markOffline()}else{State.suspended=false;loadStatus()}})
   function updateLocalIdentity(){$('brandName').textContent=State.name;$('mobileBrandName').textContent=State.name;$('deviceName').value=State.name;$('deviceAddress').value=State.address}
 
-  async function boot(){updateLocalIdentity();renderDashboardRelays([]);renderOfflineTime();renderEnergyConfig();try{await Energy.initEnergyDB();State.energyReady=true}catch(error){showMessage('energyMessage','No se pudo abrir el histórico local. El control del Wemos seguirá funcionando.','error')}await loadStatus();setInterval(loadStatus,CONFIG.pollMs);setInterval(renderOfflineTime,1000);setInterval(()=>{if(State.energyReady)renderEnergy().catch(()=>{})},30000)}
+  async function boot(){updateLocalIdentity();renderDashboardRelays([]);renderOfflineTime();renderEnergyConfig();try{await CultivoDB.init();State.cultivoReady=true}catch(error){console.warn('No se pudo inicializar flora-cultivo-db:',error)}try{await Energy.initEnergyDB();State.energyReady=true}catch(error){showMessage('energyMessage','No se pudo abrir el histórico local. El control del Wemos seguirá funcionando.','error')}await loadStatus();setInterval(loadStatus,CONFIG.pollMs);setInterval(renderOfflineTime,1000);setInterval(()=>{if(State.energyReady)renderEnergy().catch(()=>{})},30000)}
   boot();
 })();

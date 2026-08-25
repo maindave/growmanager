@@ -5,6 +5,7 @@
   "description": "Cultivo Flora V2.5: control local y gestión de cultivo",
   "scripts": {
     "web:sync": "node scripts/sync-web.mjs",
+    "test:domain": "node tests/cultivo-models.test.mjs",
     "android:sync": "node scripts/sync-web.mjs && cap sync android",
     "android:open": "cap open android"
   },

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Prueba IndexedDB Cultivo V2.5</title>
+</head>
+<body>
+  <h1>Prueba IndexedDB Cultivo V2.5</h1>
+  <pre id="result">Ejecutando…</pre>
+  <script src="../cultivo-models.js"></script>
+  <script src="../cultivo-db.js"></script>
+  <script>
+    if (!new URLSearchParams(location.search).has('reload')) (async () => {
+      const output = document.getElementById('result');
+      const checks = [];
+      const expect = (condition, message) => {
+        if (!condition) throw new Error(message);
+        checks.push(`✓ ${message}`);
+      };
+
+      try {
+        await CultivoDB.init();
+        const info = CultivoDB.schema();
+        expect(info.database === 'flora-cultivo-db', 'nombre de base correcto');
+        expect(info.version === 1, 'migración inicial aplicada');
+        expect(info.stores.length === 8, 'ocho stores declaradas');
+
+        const marker = `PRUEBA-CODEX-${Date.now()}`;
+        const created = await CultivoDB.create('products', {
+          name: marker,
+          brand: 'Dato aislado de prueba',
+          type: 'fertilizer',
+          baseUnit: 'g',
+          active: true
+        });
+        expect(created.name === marker, 'alta de registro');
+
+        const updated = await CultivoDB.update('products', created.id, { brand: 'Actualizado' });
+        expect(updated.brand === 'Actualizado', 'actualización de registro');
+        const activeProducts = await CultivoDB.query('products', 'activeKey', 1);
+        expect(activeProducts.some(product => product.id === created.id), 'consulta por índice');
+
+        CultivoDB.close();
+        await CultivoDB.reopen();
+        const reopened = await CultivoDB.get('products', created.id);
+        expect(reopened?.brand === 'Actualizado', 'cierre y reapertura conservan datos');
+
+        sessionStorage.setItem('cultivoDbTestId', created.id);
+        sessionStorage.setItem('cultivoDbTestChecks', JSON.stringify(checks));
+        location.replace(`${location.pathname}?reload=1`);
+      } catch (error) {
+        output.textContent = `FALLO\n${error.stack || error}`;
+        document.title = 'FALLO — IndexedDB Cultivo V2.5';
+      }
+    })();
+
+    if (new URLSearchParams(location.search).has('reload')) {
+      (async () => {
+        const output = document.getElementById('result');
+        try {
+          await CultivoDB.init();
+          const id = sessionStorage.getItem('cultivoDbTestId');
+          const checks = JSON.parse(sessionStorage.getItem('cultivoDbTestChecks') || '[]');
+          const persisted = await CultivoDB.get('products', id);
+          if (!persisted) throw new Error('El registro no sobrevivió a la recarga.');
+          checks.push('✓ persistencia tras recarga completa');
+          output.textContent = `OK\n${checks.join('\n')}`;
+          document.title = 'OK — IndexedDB Cultivo V2.5';
+        } catch (error) {
+          output.textContent = `FALLO\n${error.stack || error}`;
+          document.title = 'FALLO — IndexedDB Cultivo V2.5';
+        }
+      })();
+    }
+  </script>
+</body>
+</html>
