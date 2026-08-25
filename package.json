@@ -1,8 +1,8 @@
 {
-  "name": "cultivo-flora",
-  "version": "1.0.0",
+  "name": "cultivo-flora-v25",
+  "version": "2.5.0",
   "private": true,
-  "description": "Aplicación local-first para el armario de cultivo Flora",
+  "description": "Cultivo Flora V2.5: control local y gestión de cultivo",
   "scripts": {
     "web:sync": "node scripts/sync-web.mjs",
     "android:sync": "node scripts/sync-web.mjs && cap sync android",

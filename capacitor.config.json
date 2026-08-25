@@ -1,6 +1,6 @@
 {
-  "appId": "com.cultivo.flora",
-  "appName": "Cultivo Flora",
+  "appId": "com.cultivo.flora.v25",
+  "appName": "Cultivo Flora V2.5",
   "webDir": "www",
   "server": {
     "androidScheme": "http"

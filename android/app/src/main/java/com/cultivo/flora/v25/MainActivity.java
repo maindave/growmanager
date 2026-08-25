@@ -1,4 +1,4 @@
-package com.cultivo.flora;
+package com.cultivo.flora.v25;
 
 import com.getcapacitor.BridgeActivity;
 
