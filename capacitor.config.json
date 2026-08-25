@@ -1,0 +1,8 @@
+{
+  "appId": "com.cultivo.flora",
+  "appName": "Cultivo Flora",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http"
+  }
+}

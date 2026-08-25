@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cultivo Flora</string>
+    <string name="title_activity_main">Cultivo Flora</string>
+    <string name="package_name">com.cultivo.flora</string>
+    <string name="custom_url_scheme">com.cultivo.flora</string>
+</resources>

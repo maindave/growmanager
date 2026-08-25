@@ -1,0 +1,22 @@
+node_modules/
+.pnpm-store/
+.DS_Store
+*.log
+*.dmg
+*.apk
+
+# Capacitor / Android regenerable
+android/.gradle/
+android/**/build/
+android/local.properties
+android/captures/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Temporales
+tmp/
+temp/
+*.tmp
