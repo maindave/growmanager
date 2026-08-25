@@ -4,6 +4,7 @@
   "private": true,
   "description": "Cultivo Flora V2.5: control local y gestión de cultivo",
   "scripts": {
+    "dev": "python3 -m http.server 8081 --bind 127.0.0.1",
     "web:sync": "node scripts/sync-web.mjs",
     "test:domain": "node tests/cultivo-models.test.mjs",
     "android:sync": "node scripts/sync-web.mjs && cap sync android",
