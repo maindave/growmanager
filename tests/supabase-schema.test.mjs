@@ -4,6 +4,7 @@ import {readFile} from 'node:fs/promises';
 const schema=await readFile(new URL('../supabase/migrations/202608260001_initial_schema.sql',import.meta.url),'utf8');
 const rls=await readFile(new URL('../supabase/migrations/202608260002_rls.sql',import.meta.url),'utf8');
 const functions=await readFile(new URL('../supabase/migrations/202608260003_recipe_functions.sql',import.meta.url),'utf8');
+const collaboration=await readFile(new URL('../supabase/migrations/202608260005_collaboration.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -13,4 +14,10 @@ assert.match(rls,/to authenticated/);
 assert.match(functions,/security invoker/);
 assert.match(functions,/create_recipe_with_version/);
 assert.match(functions,/create_recipe_version/);
+for(const table of ['workspaces','workspace_members','workspace_invitations'])assert.match(collaboration,new RegExp(`create table public\\.${table}`));
+for(const fn of ['is_workspace_member','can_edit_workspace','create_workspace','invite_workspace_member','accept_workspace_invitation','list_workspace_members'])assert.match(collaboration,new RegExp(`function public\\.${fn}`));
+assert.match(collaboration,/workspace_id uuid/);
+assert.match(collaboration,/force row level security/i);
+assert.doesNotMatch(collaboration,/using\s*\(\s*true\s*\)/i);
+assert.doesNotMatch(collaboration,/service_role/i);
 console.log('supabase-schema: estructura y RLS correctos');

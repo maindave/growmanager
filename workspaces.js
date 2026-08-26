@@ -1,0 +1,19 @@
+(() => {
+  'use strict';
+  const $=id=>document.getElementById(id);
+  const escape=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+  const roleLabel=role=>({owner:'Administrador',editor:'Editor',viewer:'Lector'}[role]||role);
+  function message(text,type='success'){const node=$('teamMessage');node.textContent=text;node.className=`message show ${type}`}
+  function clear(){const node=$('teamMessage');node.textContent='';node.className='message'}
+  function renderSelector(){const select=$('workspaceSelect');const items=CultivoRepository.getWorkspaces();const current=CultivoRepository.getCurrentWorkspace();select.innerHTML=items.map(item=>`<option value="${item.id}" ${item.id===current?.id?'selected':''}>${escape(item.name)}</option>`).join('');$('workspaceRole').textContent=current?roleLabel(current.role):'Sin proyecto'}
+  async function load(){renderSelector();const current=CultivoRepository.getCurrentWorkspace();if(!current)return;const[members,invitations]=await Promise.all([CultivoRepository.getMembers(),CultivoRepository.getInvitations()]);$('teamCurrentName').textContent=current.name;$('teamCurrentRole').textContent=roleLabel(current.role);$('membersList').innerHTML=members.map(item=>`<article class="member-row"><div><strong>${escape(item.displayName||'Usuario')}</strong><small>${escape(item.userId)}</small></div><span class="tag">${roleLabel(item.role)}</span></article>`).join('')||'<p class="field-help">No hay integrantes.</p>';const ownInvites=invitations.filter(item=>item.email===GrowAuth.getUser()?.email);$('invitationList').innerHTML=ownInvites.map(item=>`<article class="member-row"><div><strong>${escape(item.workspaceName)}</strong><small>Invitación como ${roleLabel(item.role)}</small></div><button class="primary-button" data-accept-invite="${item.id}" type="button">Aceptar</button></article>`).join('')||'<p class="field-help">No tenés invitaciones pendientes.</p>';const canInvite=current.role==='owner';$('inviteMemberForm').hidden=!canInvite;$('ownerOnlyNote').hidden=canInvite}
+  async function init(){
+    $('workspaceSelect').addEventListener('change',async event=>{await CultivoRepository.setCurrentWorkspace(event.target.value);renderSelector();await load()});
+    $('createWorkspaceForm').addEventListener('submit',async event=>{event.preventDefault();clear();const button=event.submitter;const name=event.currentTarget.elements.name.value.trim();if(!name)return message('Ingresá un nombre para el proyecto.','error');button.disabled=true;try{await CultivoRepository.createWorkspace(name);event.currentTarget.reset();await load();message('Proyecto creado correctamente.')}catch(error){message(error.message,'error')}finally{button.disabled=false}});
+    $('inviteMemberForm').addEventListener('submit',async event=>{event.preventDefault();clear();const button=event.submitter;const data=Object.fromEntries(new FormData(event.currentTarget));button.disabled=true;try{await CultivoRepository.inviteMember(data.email.trim(),data.role);event.currentTarget.reset();message('Invitación creada. La persona la verá al iniciar sesión con ese email.')}catch(error){message(error.message,'error')}finally{button.disabled=false}});
+    $('invitationList').addEventListener('click',async event=>{const button=event.target.closest('[data-accept-invite]');if(!button)return;button.disabled=true;try{await CultivoRepository.acceptInvitation(button.dataset.acceptInvite);await load();message('Invitación aceptada. Ya estás trabajando en el proyecto compartido.')}catch(error){message(error.message,'error')}finally{button.disabled=false}});
+    addEventListener('grow-workspace-changed',()=>renderSelector());
+    await load();
+  }
+  globalThis.Workspaces=Object.freeze({init,load,renderSelector});
+})();
