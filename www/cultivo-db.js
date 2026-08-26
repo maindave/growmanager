@@ -2,8 +2,8 @@
   'use strict';
 
   const DB_NAME='flora-cultivo-db';
-  const DB_VERSION=1;
-  const STORE_NAMES=Object.freeze(['cultivations','spaces','lots','plants','products','recipes','recipeVersions','activities']);
+  const DB_VERSION=2;
+  const STORE_NAMES=Object.freeze(['cultivations','spaces','lots','plants','products','recipes','recipeVersions','activities','remoteCache','syncMeta']);
   const IMMUTABLE_STORES=new Set(['recipeVersions']);
   const ACTIVE_STORES=new Set(['spaces','lots','products','recipes']);
   let database=null;
@@ -21,6 +21,10 @@
       createStore(db,'recipes',{keyPath:'id'},[['name','name'],['type','type'],['activeKey','activeKey'],['currentVersionId','currentVersionId']]);
       createStore(db,'recipeVersions',{keyPath:'id'},[['recipeId','recipeId'],['recipeVersion',['recipeId','version'],{unique:true}]]);
       createStore(db,'activities',{keyPath:'id'},[['occurredAt','occurredAt'],['type','type'],['lotId','lotId'],['cultivationId','cultivationId']]);
+    }
+    if(oldVersion<2){
+      createStore(db,'remoteCache',{keyPath:'key'},[['storeOwner',['storeName','ownerId']],['cachedAt','cachedAt']]);
+      createStore(db,'syncMeta',{keyPath:'key'},[['updatedAt','updatedAt']]);
     }
     // Las migraciones futuras se agregan como bloques `if (oldVersion < N)` sin destruir stores existentes.
     void transaction;
@@ -46,7 +50,11 @@
   async function getActiveCultivation(){const active=await query('cultivations','status','active',{limit:1});return active[0]||null}
   async function activateCultivation(id){const db=await init();const transaction=db.transaction('cultivations','readwrite');const done=transactionDone(transaction);const store=transaction.objectStore('cultivations');const all=await requestResult(store.getAll());const now=Date.now();let selected=null;for(const item of all){if(item.id===id){selected={...item,status:'active',endDate:null,updatedAt:now};await requestResult(store.put(selected))}else if(item.status==='active'){await requestResult(store.put({...item,status:'finished',updatedAt:now}))}}if(!selected)throw new Error(`No existe cultivations/${id}.`);await done;return publicRecord(selected)}
   async function createActivity(input){const validated=CultivoModels.assertValid(CultivoModels.validateActivity(input));return create('activities',{...validated,details:structuredClone(validated.details||{}),observations:CultivoModels.normalizeText(validated.observations)})}
+  async function cacheSetAll(storeName,ownerId,records){const db=await init();const transaction=db.transaction('remoteCache','readwrite');const done=transactionDone(transaction);const store=transaction.objectStore('remoteCache');const index=store.index('storeOwner');const existing=await requestResult(index.getAllKeys(IDBKeyRange.only([storeName,ownerId])));for(const key of existing)await requestResult(store.delete(key));const cachedAt=Date.now();for(const record of records)await requestResult(store.put({key:`${ownerId}:${storeName}:${record.id}`,storeName,ownerId,record:structuredClone(record),cachedAt}));await done;return records}
+  async function cacheGetAll(storeName,ownerId){const rows=await withStore('remoteCache','readonly',store=>requestResult(store.index('storeOwner').getAll(IDBKeyRange.only([storeName,ownerId]))));return rows.map(row=>row.record)}
+  async function getMeta(key){return withStore('syncMeta','readonly',store=>requestResult(store.get(key)))}
+  async function setMeta(key,value){const record={key,...value,updatedAt:Date.now()};await withStore('syncMeta','readwrite',store=>requestResult(store.put(record)));return record}
   function schema(){return{database:DB_NAME,version:DB_VERSION,stores:[...STORE_NAMES]}}
 
-  globalThis.CultivoDB=Object.freeze({DB_NAME,DB_VERSION,STORE_NAMES,init,close,reopen,schema,create,get,getAll,update,setActive,query,createRecipeWithVersion,createRecipeVersion,getCurrentRecipeVersion,getRecipeVersions,getActiveCultivation,activateCultivation,createActivity});
+  globalThis.CultivoDB=Object.freeze({DB_NAME,DB_VERSION,STORE_NAMES,init,close,reopen,schema,create,get,getAll,update,setActive,query,createRecipeWithVersion,createRecipeVersion,getCurrentRecipeVersion,getRecipeVersions,getActiveCultivation,activateCultivation,createActivity,cacheSetAll,cacheGetAll,getMeta,setMeta});
 })();

@@ -39,7 +39,7 @@
   }
 
   async function load(){
-    [cultivations,spaces,lots]=await Promise.all([CultivoDB.getAll('cultivations'),CultivoDB.getAll('spaces'),CultivoDB.getAll('lots')]);
+    [cultivations,spaces,lots]=await Promise.all([CultivoRepository.getAll('cultivations'),CultivoRepository.getAll('spaces'),CultivoRepository.getAll('lots')]);
     active=cultivations.find(item=>item.status==='active')||null;
     spaces=spaces.filter(item=>item.cultivationId===active?.id).sort((a,b)=>a.name.localeCompare(b.name,'es'));
     lots=lots.filter(item=>item.cultivationId===active?.id).sort((a,b)=>a.name.localeCompare(b.name,'es'));
@@ -52,14 +52,14 @@
     try{
       if(form.dataset.form==='cultivation'){
         const value=M().assertValid(M().validateCultivation({...data,notes:M().normalizeText(data.notes),endDate:data.endDate||null}));
-        const saved=id?await CultivoDB.update('cultivations',id,value):await CultivoDB.create('cultivations',value);
-        if(value.status==='active')await CultivoDB.activateCultivation(saved.id);
+        const saved=id?await CultivoRepository.update('cultivations',id,value):await CultivoRepository.create('cultivations',value);
+        if(value.status==='active')await CultivoRepository.activateCultivation(saved.id);
       }else if(form.dataset.form==='space'){
         const value=M().assertValid(M().validateSpace({...data,cultivationId:active.id,description:M().normalizeText(data.description),active:data.active==='on'}));
-        if(id)await CultivoDB.update('spaces',id,value);else await CultivoDB.create('spaces',value);
+        if(id)await CultivoRepository.update('spaces',id,value);else await CultivoRepository.create('spaces',value);
       }else{
         const value=M().assertValid(M().validateLot({...data,cultivationId:active.id,spaceId:form.dataset.space,description:M().normalizeText(data.description),active:data.active==='on'}));
-        if(id)await CultivoDB.update('lots',id,value);else await CultivoDB.create('lots',value);
+        if(id)await CultivoRepository.update('lots',id,value);else await CultivoRepository.create('lots',value);
       }
       form.closest('dialog').close();await load();message('Cambios guardados correctamente.');
     }catch(error){message(error.message,'error')}
@@ -74,9 +74,9 @@
       if(action==='edit-space')openDialog('space',button.dataset.id);
       if(action==='new-lot')openDialog('lot',null,button.dataset.space);
       if(action==='edit-lot')openDialog('lot',button.dataset.id);
-      if(action==='toggle-space'){const item=spaces.find(v=>v.id===button.dataset.id);await CultivoDB.setActive('spaces',item.id,!item.active);await load();message(`Espacio ${item.active?'desactivado':'activado'}.`)}
-      if(action==='toggle-lot'){const item=lots.find(v=>v.id===button.dataset.id);await CultivoDB.setActive('lots',item.id,!item.active);await load();message(`Lote ${item.active?'desactivado':'activado'}.`)}
-      if(action==='activate-cultivation'){await CultivoDB.activateCultivation(button.dataset.id);await load();message('Cultivo activado. El cultivo anterior quedó finalizado.')}
+      if(action==='toggle-space'){const item=spaces.find(v=>v.id===button.dataset.id);await CultivoRepository.setActive('spaces',item.id,!item.active);await load();message(`Espacio ${item.active?'desactivado':'activado'}.`)}
+      if(action==='toggle-lot'){const item=lots.find(v=>v.id===button.dataset.id);await CultivoRepository.setActive('lots',item.id,!item.active);await load();message(`Lote ${item.active?'desactivado':'activado'}.`)}
+      if(action==='activate-cultivation'){await CultivoRepository.activateCultivation(button.dataset.id);await load();message('Cultivo activado. El cultivo anterior quedó finalizado.')}
     }catch(error){message(error.message,'error')}
   }
 
