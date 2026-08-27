@@ -5,6 +5,7 @@ const schema=await readFile(new URL('../supabase/migrations/202608260001_initial
 const rls=await readFile(new URL('../supabase/migrations/202608260002_rls.sql',import.meta.url),'utf8');
 const functions=await readFile(new URL('../supabase/migrations/202608260003_recipe_functions.sql',import.meta.url),'utf8');
 const collaboration=await readFile(new URL('../supabase/migrations/202608260005_collaboration.sql',import.meta.url),'utf8');
+const agenda=await readFile(new URL('../supabase/migrations/202608260006_project_agenda.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -20,4 +21,11 @@ assert.match(collaboration,/workspace_id uuid/);
 assert.match(collaboration,/force row level security/i);
 assert.doesNotMatch(collaboration,/using\s*\(\s*true\s*\)/i);
 assert.doesNotMatch(collaboration,/service_role/i);
+assert.match(agenda,/create table public\.irrigation_events/);
+assert.match(agenda,/create policy irrigation_events_select_workspace/);
+assert.match(agenda,/public\.can_edit_workspace\(workspace_id\)/);
+assert.match(agenda,/add column grow_type/);
+assert.match(agenda,/function public\.delete_workspace/);
+assert.match(agenda,/workspace_not_empty/);
+assert.doesNotMatch(agenda,/using\s*\(\s*true\s*\)/i);
 console.log('supabase-schema: estructura y RLS correctos');

@@ -1,12 +1,559 @@
-<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#100d18"><title>Growmanager · Armario de cultivo</title><script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script><link rel="stylesheet" href="style.css"></head><body><section id="authGate" class="auth-gate"><div class="auth-card"><div class="brand auth-brand"><div class="brand-mark">G</div><div><p class="eyebrow">GROWMANAGER</p><h1>Growmanager V2.5</h1></div></div><div><h2>Tu cultivo, en todos tus dispositivos.</h2><p class="subtle">Ingresá para centralizar cultivos, productos y recetas de forma segura.</p></div><div id="authMessage" class="message"></div><form id="authForm" class="auth-form"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Contraseña<input name="password" type="password" minlength="6" autocomplete="current-password" required></label><button class="primary-button" type="submit" data-auth-action="login">Iniciar sesión</button><button class="secondary-button" type="submit" data-auth-action="register">Crear cuenta</button></form><p class="auth-note">Los datos del Wemos permanecen locales. La gestión del cultivo se guarda en Supabase.</p></div></section><div id="appLayout" class="app-layout" hidden>
-<aside class="sidebar"><div class="brand"><div class="brand-mark">G</div><div><p class="eyebrow">CONTROL LOCAL</p><h1 id="brandName">Armario Cultivo</h1></div></div><nav class="main-nav" aria-label="Secciones"><button class="nav-item active" data-view="dashboard">⌂ Inicio</button><button class="nav-item" data-view="cultivation">✦ Cultivo</button><button class="nav-item" data-view="recipes">◇ Recetas</button><button class="nav-item" data-view="team">◎ Equipo</button><button class="nav-item" data-view="control">◉ Control</button><span class="nav-separator">SISTEMA</span><button class="nav-item secondary-nav" data-view="energy">ϟ Energía</button><button class="nav-item secondary-nav" data-view="automation">◷ Automatización</button><button class="nav-item secondary-nav" data-view="hardware">◇ Hardware</button><button class="nav-item secondary-nav" data-view="connection">⌁ Conexión</button></nav><div id="cloudAccount" class="cloud-account" hidden><label class="workspace-picker">Proyecto<select id="workspaceSelect" aria-label="Proyecto activo"></select><small id="workspaceRole"></small></label><span id="cloudSyncStatus" class="cloud-sync">Nube conectada</span><small id="cloudEmail"></small><div><button id="themeToggle" class="text-button" type="button" aria-label="Cambiar tema">Tema claro</button><button id="cloudRefresh" class="text-button" type="button">Actualizar</button><button id="signOutButton" class="text-button" type="button">Salir</button></div></div><div id="connectionBadge" class="status-badge"><span class="status-dot"></span><span id="connectionText">Conectando…</span></div></aside>
-<div class="content-shell"><header class="mobile-header"><div class="brand"><div class="brand-mark">G</div><div><strong id="mobileBrandName">Armario Cultivo</strong><small id="mobileCloudStatus" class="mobile-cloud">Nube conectada</small></div></div><button id="themeToggleMobile" class="icon-button theme-mobile" type="button" aria-label="Cambiar tema">☀</button><div id="mobileStatus" class="mini-status"><span class="status-dot"></span><span>Conectando</span></div></header><main>
-<section class="view active" data-view-panel="dashboard"><div class="page-heading"><div><p class="eyebrow">ARDUINO CULTIVO <span id="firmwareVersion">—</span></p><h2>El clima, bajo control.</h2><p id="deviceSummary" class="subtle">Esperando datos del dispositivo local.</p></div><div class="last-update"><span>Última actualización</span><strong id="lastUpdate">Nunca</strong><small id="offlineSince"></small></div></div><div class="metrics-grid"><article class="metric-card temperature"><div class="metric-icon">°</div><div><span>Temperatura</span><strong id="temperature">—</strong><small>°C</small></div></article><article class="metric-card humidity"><div class="metric-icon">%</div><div><span>Humedad</span><strong id="humidity">—</strong><small>%</small></div></article><article class="metric-card"><div class="metric-icon">◷</div><div><span>Hora del Wemos</span><strong id="deviceTime">—:—</strong><small id="timeSync">Sin datos</small></div></article></div><section class="panel"><div class="section-heading"><div><p class="eyebrow">TELEMETRÍA</p><h3>Dispositivo</h3></div></div><div class="device-grid"><div class="detail"><span>Dirección IP</span><strong id="deviceIp">—</strong></div><div class="detail"><span>Señal Wi-Fi</span><strong id="rssi">—</strong><small id="signalQuality"></small></div><div class="detail"><span>Tiempo activo</span><strong id="uptime">—</strong></div><div class="detail"><span>Sensor de suelo</span><strong id="soilStatus">Deshabilitado</strong></div></div></section><section class="panel energy-compact"><div class="section-heading"><div><p class="eyebrow">ENERGÍA</p><h3>Consumo estimado</h3></div><button class="text-button" data-view="energy">Ver detalle</button></div><div class="energy-compact-grid"><div><span>Actual</span><strong id="dashPower">0 W</strong></div><div><span>Hoy</span><strong id="dashToday">0,00 kWh</strong></div><div><span>Costo hoy</span><strong id="dashCost">$ 0</strong></div></div></section><section class="panel"><div class="section-heading"><div><p class="eyebrow">SALIDAS</p><h3>Relays</h3></div><span class="section-note">Estado actual</span></div><div id="dashboardRelays" class="relays-grid"></div></section></section>
-<section class="view" data-view-panel="cultivation"><div class="page-heading"><div><p class="eyebrow">GESTIÓN LOCAL-FIRST</p><h2>Cultivo</h2><p class="subtle">Organizá el cultivo activo, sus espacios y lotes.</p></div></div><div id="cultivationRoot"></div></section>
-<section class="view" data-view-panel="recipes"><div class="page-heading"><div><p class="eyebrow">INSUMOS Y DOSIS</p><h2>Recetas</h2><p class="subtle">Productos, composiciones versionadas y cálculo por litro.</p></div></div><div class="module-tabs" role="tablist"><button class="module-tab active" data-recipe-tab="products">Productos</button><button class="module-tab" data-recipe-tab="recipes">Recetas</button></div><section id="productsRoot" class="module-panel active" data-recipe-panel="products"></section><section id="recipeListRoot" class="module-panel" data-recipe-panel="recipes"></section></section>
-<section class="view" data-view-panel="team"><div class="page-heading"><div><p class="eyebrow">COLABORACIÓN SEGURA</p><h2>Equipo</h2><p class="subtle">Compartí un proyecto sin compartir tu contraseña.</p></div></div><div id="teamMessage" class="message"></div><section class="panel team-summary"><div><span>Proyecto activo</span><h3 id="teamCurrentName">—</h3></div><span id="teamCurrentRole" class="tag">—</span></section><div class="team-grid"><form id="createWorkspaceForm" class="panel form-panel"><div class="section-heading"><div><p class="eyebrow">NUEVO ESPACIO</p><h3>Crear proyecto</h3></div></div><label>Nombre<input name="name" maxlength="60" required></label><div class="form-actions"><button class="primary-button" type="submit">Crear proyecto</button></div></form><form id="inviteMemberForm" class="panel form-panel"><div class="section-heading"><div><p class="eyebrow">INVITACIÓN</p><h3>Sumar una persona</h3></div></div><label>Email<input name="email" type="email" required></label><label>Rol<select name="role"><option value="editor">Editor</option><option value="viewer">Lector</option></select></label><div class="form-actions"><button class="primary-button" type="submit">Crear invitación</button></div></form></div><p id="ownerOnlyNote" class="field-help" hidden>Solo el administrador puede invitar integrantes.</p><section class="panel"><div class="section-heading"><div><p class="eyebrow">ACCESO</p><h3>Integrantes</h3></div></div><div id="membersList" class="member-list"></div></section><section class="panel"><div class="section-heading"><div><p class="eyebrow">PENDIENTES</p><h3>Mis invitaciones</h3></div></div><div id="invitationList" class="member-list"></div></section></section><section class="view" data-view-panel="control"><div class="page-heading"><div><p class="eyebrow">4 CANALES</p><h2>Control</h2><p class="subtle">Operación manual y configuración del sistema Arduino.</p></div></div><nav class="control-shortcuts" aria-label="Configuración Arduino"><button class="secondary-button" data-view="energy">Energía</button><button class="secondary-button" data-view="automation">Automatización</button><button class="secondary-button" data-view="hardware">Hardware</button><button class="secondary-button" data-view="connection">Conexión</button></nav><div id="controlMessage" class="message"></div><div id="controlRelays" class="control-grid"></div></section>
-<section class="view" data-view-panel="energy"><div class="page-heading"><div><p class="eyebrow">ESTIMACIÓN LOCAL</p><h2>Energía</h2><p class="subtle">Potencia nominal y tiempo de encendido de los relays.</p></div></div><div id="energyMessage" class="message"></div><div class="energy-summary"><article class="metric-card"><div><span>Potencia instantánea</span><strong id="energyPowerW">0 W</strong><small id="energyPowerKw">0,000 kW</small></div></article><article class="metric-card"><div><span>Consumo estimado hoy</span><strong id="energyToday">0,00</strong><small>kWh</small></div></article><article class="metric-card"><div><span>Consumo estimado este mes</span><strong id="energyMonth">0,00</strong><small>kWh</small></div></article><article class="metric-card"><div><span>Costo estimado hoy</span><strong id="energyCostToday">$ 0</strong></div></article><article class="metric-card"><div><span>Costo estimado este mes</span><strong id="energyCostMonth">$ 0</strong></div></article></div><section class="panel"><div class="section-heading"><div><p class="eyebrow">SALIDAS</p><h3>Detalle eléctrico</h3></div></div><div id="energyRelays" class="energy-relays"></div></section><form id="energyForm" class="panel form-panel"><div class="section-heading"><div><p class="eyebrow">CONFIGURACIÓN LOCAL</p><h3>Dispositivos y tarifa</h3></div></div><label class="tariff-field">Costo estimado por kWh (ARS)<input id="energyTariff" name="tariff" type="number" min="0" step="0.01" inputmode="decimal" required></label><p class="field-help">Estimación configurable basada en el costo efectivo de tu factura.</p><div id="energyConfigFields" class="energy-config-grid"></div><div class="form-actions"><button class="primary-button" type="submit">Guardar configuración</button></div></form><section class="panel energy-note"><p>El cálculo se basa en la potencia nominal configurada para cada dispositivo y en el tiempo que cada relay permanece encendido. No reemplaza un medidor eléctrico.</p></section><section class="panel danger-zone"><div><h3>Borrar histórico de consumo</h3><p>Elimina los eventos guardados, pero conserva dispositivos y tarifa.</p></div><button id="requestEnergyReset" class="danger-button" type="button">Borrar histórico</button><div id="resetConfirm" class="reset-confirm" hidden><p>¿Confirmás que querés borrar todo el histórico local?</p><div><button id="cancelEnergyReset" class="secondary-button" type="button">Cancelar</button><button id="confirmEnergyReset" class="danger-button" type="button">Sí, borrar</button></div></div></section></section>
-<section class="view" data-view-panel="automation"><div class="page-heading"><div><p class="eyebrow">REGLAS DEL WEMOS</p><h2>Automatización</h2><p class="subtle">Los valores se guardan en el dispositivo.</p></div></div><div id="automationMessage" class="message"></div><form id="automationForm" class="form-stack" novalidate><section class="panel form-panel"><div class="section-heading"><div><p class="eyebrow">ILUMINACIÓN</p><h3>Horario de luz</h3></div></div><div class="form-grid three"><label>Hora de inicio<input name="hora" type="number" min="0" max="23" required></label><label>Minuto de inicio<input name="min" type="number" min="0" max="59" required></label><label>Duración (horas)<input name="dur" type="number" min="1" max="24" required></label></div></section><section class="panel form-panel"><div class="section-heading"><div><p class="eyebrow">TEMPERATURA</p><h3>Rango automático</h3></div></div><div class="form-grid two"><label>Mínima (°C)<input name="tmin" type="number" step="0.1" required></label><label>Máxima (°C)<input name="tmax" type="number" step="0.1" required></label></div></section><section class="panel info-panel"><div><span>Intervalo de ventilación</span><strong id="ventInterval">—</strong></div><div><span>Duración de ventilación</span><strong id="ventDuration">—</strong></div><p>Valores informativos en este firmware.</p></section><div class="form-actions"><button class="primary-button" type="submit">Guardar automatización</button></div></form></section>
-<section class="view" data-view-panel="hardware"><div class="page-heading"><div><p class="eyebrow">ASIGNACIÓN DE PINES</p><h2>Hardware</h2><p class="subtle">Una salida física por dispositivo.</p></div></div><div id="hardwareMessage" class="message"></div><form id="hardwareForm" class="panel form-panel" novalidate><div id="hardwareFields" class="hardware-grid"></div><div class="soil-row"><div><span>Sensor de suelo</span><strong>A0</strong></div><span class="tag muted">Deshabilitado · No configurable</span></div><div class="form-actions"><button class="primary-button" type="submit">Guardar asignación</button></div></form></section>
-<section class="view" data-view-panel="connection"><div class="page-heading"><div><p class="eyebrow">RED LOCAL</p><h2>Conexión</h2><p class="subtle">Datos guardados solamente en este navegador.</p></div></div><div id="connectionMessage" class="message"></div><form id="connectionForm" class="panel form-panel narrow" novalidate><label>Nombre amigable<input id="deviceName" name="deviceName" type="text" maxlength="40" required></label><label>IP o hostname<input id="deviceAddress" name="deviceAddress" type="text" autocomplete="off" spellcheck="false" required></label><p class="field-help">Podés usar una dirección IPv4 o un nombre mDNS disponible en tu red.</p><div class="form-actions split"><button id="restoreConnection" class="secondary-button" type="button">Restaurar predeterminado</button><button id="testConnection" class="primary-button" type="submit">Guardar y probar</button></div></form></section>
-</main><footer><span>Growmanager · V2.5</span><span>Supabase + control Wemos local</span></footer></div><nav class="bottom-nav"><button class="nav-item active" data-view="dashboard">⌂<small>Inicio</small></button><button class="nav-item" data-view="cultivation">✦<small>Cultivo</small></button><button class="nav-item" data-view="recipes">◇<small>Recetas</small></button><button class="nav-item" data-view="control">◉<small>Control</small></button></nav></div><dialog id="migrationDialog" class="app-dialog migration-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">MIGRACIÓN SEGURA</p><h3>Datos locales encontrados</h3></div></div><p>Encontramos <strong data-local-count>0</strong> registros en IndexedDB. Podés importarlos a tu cuenta de Supabase. El respaldo local no se borrará.</p><div data-remote-warning class="migration-warning" hidden>Esta cuenta ya contiene datos remotos. Importar puede generar registros conceptualmente duplicados.</div><label data-confirm-import class="check-field" hidden><input type="checkbox" data-migration-action="confirm"> Entiendo y quiero importar igualmente</label><p data-migration-status class="field-help"></p><div class="form-actions split"><button class="secondary-button" data-migration-action="skip" type="button">Conservar solo remoto</button><button class="primary-button" data-import data-migration-action="import" type="button">Importar datos locales</button></div></div></dialog><script src="vendor/supabase.js" defer></script><script src="supabase-config.js" defer></script><script src="supabase-client.js" defer></script><script src="cultivo-models.js" defer></script><script src="cultivo-db.js" defer></script><script src="cultivo-repository.js" defer></script><script src="cultivo-migration.js" defer></script><script src="workspaces.js" defer></script><script src="cultivation.js" defer></script><script src="products.js" defer></script><script src="recipes.js" defer></script><script src="energy.js" defer></script><script src="auth.js" defer></script><script src="app.js" defer></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#100d18">
+<title>Growmanager · Armario de cultivo</title>
+<script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<section id="authGate" class="auth-gate">
+<div class="auth-card">
+<div class="brand auth-brand">
+<div class="brand-mark">G</div>
+<div>
+<p class="eyebrow">GROWMANAGER</p>
+<h1>Growmanager V2.5</h1>
+</div>
+</div>
+<div>
+<h2>Tu cultivo, en todos tus dispositivos.</h2>
+<p class="subtle">Ingresá para centralizar cultivos, productos y recetas de forma segura.</p>
+</div>
+<div id="authMessage" class="message">
+</div>
+<form id="authForm" class="auth-form">
+<label>Email<input name="email" type="email" autocomplete="email" required>
+</label>
+<label>Contraseña<input name="password" type="password" minlength="6" autocomplete="current-password" required>
+</label>
+<button class="primary-button" type="submit" data-auth-action="login">Iniciar sesión</button>
+<button class="secondary-button" type="submit" data-auth-action="register">Crear cuenta</button>
+</form>
+<p class="auth-note">Los datos del Wemos permanecen locales. La gestión del cultivo se guarda en Supabase.</p>
+</div>
+</section>
+<div id="appLayout" class="app-layout" hidden>
+<aside class="sidebar">
+<div class="brand">
+<div class="brand-mark">G</div>
+<div>
+<p class="eyebrow">GROWMANAGER</p>
+<h1 id="brandName">Proyecto</h1>
+</div>
+</div>
+<nav class="main-nav" aria-label="Secciones">
+<button class="nav-item active" data-view="dashboard">⌂ Inicio</button>
+<button class="nav-item" data-view="cultivation">✦ Cultivo</button>
+<button class="nav-item" data-view="agenda">▣ Agenda</button>
+<button class="nav-item" data-view="recipes">◇ Recetas</button>
+<button class="nav-item" data-view="team">◎ Equipo</button>
+<button class="nav-item" data-view="control">◉ Control</button>
+</nav>
+<div id="cloudAccount" class="cloud-account" hidden>
+<label class="workspace-picker">Proyecto<select id="workspaceSelect" aria-label="Proyecto activo">
+</select>
+<small id="workspaceRole">
+</small>
+</label>
+<span id="cloudSyncStatus" class="cloud-sync">Nube conectada</span>
+<small id="cloudEmail">
+</small>
+<div>
+<button id="themeToggle" class="icon-button theme-toggle" type="button" aria-label="Activar tema claro" title="Cambiar tema">☀</button>
+<button id="cloudRefresh" class="text-button" type="button">Actualizar</button>
+<button id="signOutButton" class="text-button" type="button">Salir</button>
+</div>
+</div>
+<div id="connectionBadge" class="status-badge">
+<span class="status-dot">
+</span>
+<span id="connectionText">Conectando…</span>
+</div>
+</aside>
+<div class="content-shell">
+<header class="mobile-header">
+<div class="brand">
+<div class="brand-mark">G</div>
+<div>
+<strong id="mobileBrandName">Growmanager</strong>
+<small id="mobileCloudStatus" class="mobile-cloud">Nube conectada</small>
+</div>
+</div>
+<button id="themeToggleMobile" class="icon-button theme-mobile" type="button" aria-label="Cambiar tema">☀</button>
+<div id="mobileStatus" class="mini-status">
+<span class="status-dot">
+</span>
+<span>Conectando</span>
+</div>
+</header>
+<main>
+<section class="view active" data-view-panel="dashboard">
+<div class="page-heading">
+<div>
+<p class="eyebrow">GROWMANAGER <span id="firmwareVersion">—</span>
+</p>
+<h2>Growmanager</h2>
+<h3 id="dashboardProjectName" class="project-subtitle">Proyecto</h3>
+<p id="deviceSummary" class="subtle">Esperando datos del dispositivo local.</p>
+</div>
+<div class="last-update">
+<span>Última actualización</span>
+<strong id="lastUpdate">Nunca</strong>
+<small id="offlineSince">
+</small>
+</div>
+</div>
+<div class="metrics-grid">
+<article class="metric-card temperature">
+<div class="metric-icon">°</div>
+<div>
+<span>Temperatura</span>
+<strong id="temperature">—</strong>
+<small>°C</small>
+</div>
+</article>
+<article class="metric-card humidity">
+<div class="metric-icon">%</div>
+<div>
+<span>Humedad</span>
+<strong id="humidity">—</strong>
+<small>%</small>
+</div>
+</article>
+</div>
+<section class="panel dashboard-relays-panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">SALIDAS</p>
+<h3>Estado de relays</h3>
+</div>
+<span class="section-note">Estado actual</span>
+</div>
+<div id="dashboardRelays" class="relays-grid">
+</div>
+</section>
+<section class="panel dashboard-agenda-panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">AGENDA</p>
+<h3>Próximos eventos</h3>
+</div>
+<button class="text-button" data-view="agenda">Ver agenda</button>
+</div>
+<div id="dashboardAgenda" class="dashboard-agenda">
+</div>
+</section>
+<details class="panel dashboard-collapse">
+<summary><span><span class="eyebrow">TELEMETRÍA</span><strong>Dispositivo</strong></span><span class="collapse-hint">Mostrar</span></summary>
+<div class="device-grid collapse-body">
+<div class="detail"><span>Hora del Wemos</span><strong id="deviceTime">—:—</strong><small id="timeSync">Sin datos</small></div>
+<div class="detail"><span>Dirección IP</span><strong id="deviceIp">—</strong></div>
+<div class="detail"><span>Señal Wi-Fi</span><strong id="rssi">—</strong><small id="signalQuality"></small></div>
+<div class="detail"><span>Tiempo activo</span><strong id="uptime">—</strong></div>
+<div class="detail"><span>Sensor de suelo</span><strong id="soilStatus">Deshabilitado</strong></div>
+</div>
+</details>
+<details class="panel dashboard-collapse">
+<summary><span><span class="eyebrow">ENERGÍA</span><strong>Consumo estimado</strong></span><span class="collapse-hint">Mostrar</span></summary>
+<div class="energy-compact-grid collapse-body">
+<div><span>Actual</span><strong id="dashPower">0 W</strong></div>
+<div><span>Hoy</span><strong id="dashToday">0,00 kWh</strong></div>
+<div><span>Costo hoy</span><strong id="dashCost">$ 0</strong></div>
+</div>
+<button class="text-button collapse-link" data-view="energy">Ver detalle de energía</button>
+</details>
+</section>
+<section class="view" data-view-panel="cultivation">
+<div class="page-heading">
+<div>
+<p class="eyebrow">GESTIÓN LOCAL-FIRST</p>
+<h2>Cultivo</h2>
+<p class="subtle">Organizá el cultivo activo, sus espacios y lotes.</p>
+</div>
+</div>
+<div id="cultivationRoot">
+</div>
+</section>
+<section class="view" data-view-panel="agenda">
+<div class="page-heading"><div><p class="eyebrow">PLANIFICACIÓN Y REGISTRO</p><h2>Agenda de riegos</h2><p class="subtle">Planificá qué aplicar y registrá lo que realmente hiciste.</p></div><button id="openIrrigationForm" class="primary-button" type="button">Nuevo riego</button></div>
+<div id="agendaMessage" class="message"></div>
+<div class="module-tabs agenda-tabs" role="tablist"><button class="module-tab active" data-agenda-filter="upcoming">Próximos</button><button class="module-tab" data-agenda-filter="overdue">Atrasados</button><button class="module-tab" data-agenda-filter="completed">Realizados</button></div>
+<section class="panel agenda-panel"><div id="agendaList" class="agenda-list"></div></section>
+</section>
+<section class="view" data-view-panel="recipes">
+<div class="page-heading">
+<div>
+<p class="eyebrow">INSUMOS Y DOSIS</p>
+<h2>Recetas</h2>
+<p class="subtle">Productos, composiciones versionadas y cálculo por litro.</p>
+</div>
+</div>
+<div class="module-tabs" role="tablist">
+<button class="module-tab active" data-recipe-tab="products">Productos</button>
+<button class="module-tab" data-recipe-tab="recipes">Recetas</button>
+</div>
+<section id="productsRoot" class="module-panel active" data-recipe-panel="products">
+</section>
+<section id="recipeListRoot" class="module-panel" data-recipe-panel="recipes">
+</section>
+</section>
+<section class="view" data-view-panel="team">
+<div class="page-heading">
+<div>
+<p class="eyebrow">COLABORACIÓN SEGURA</p>
+<h2>Equipo</h2>
+<p class="subtle">Elegí un cultivo existente y administrá quién puede acceder.</p>
+</div>
+</div>
+<div id="teamMessage" class="message">
+</div>
+<section class="panel team-summary">
+<div>
+<span>Cultivo seleccionado</span>
+<h3 id="teamCurrentName">—</h3>
+</div>
+<div class="team-summary-actions"><span id="teamCurrentRole" class="tag">—</span></div>
+</section>
+<form id="manageWorkspaceForm" class="panel form-panel workspace-manager">
+<div class="section-heading"><div><p class="eyebrow">ADMINISTRACIÓN</p><h3>Editar o eliminar cultivo</h3></div></div>
+<label>Cultivo<select name="workspaceId" id="manageWorkspaceSelect" required></select></label>
+<label>Nombre<input name="name" maxlength="60" required></label>
+<p class="field-help">Solo aparecen los cultivos en los que sos Administrador.</p>
+<div class="form-actions split"><button id="deleteWorkspaceButton" class="danger-button" type="button">Eliminar cultivo</button><button class="primary-button" type="submit">Guardar nombre</button></div>
+</form>
+<div class="team-grid">
+<form id="inviteMemberForm" class="panel form-panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">INVITACIÓN</p>
+<h3>Sumar una persona</h3>
+</div>
+</div>
+<label>Cultivo<select name="workspaceId" id="inviteWorkspaceSelect" required></select></label>
+<label>Email<input name="email" type="email" required>
+</label>
+<label>Rol<select name="role">
+<option value="editor">Editor</option>
+<option value="viewer">Lector</option>
+</select>
+</label>
+<div class="form-actions">
+<button class="primary-button" type="submit">Crear invitación</button>
+</div>
+</form>
+</div>
+<p id="ownerOnlyNote" class="field-help" hidden>Solo el administrador puede invitar integrantes.</p>
+<section class="panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">ACCESO</p>
+<h3>Integrantes</h3>
+</div>
+</div>
+<div id="membersList" class="member-list">
+</div>
+</section>
+<section class="panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">PENDIENTES</p>
+<h3>Mis invitaciones</h3>
+</div>
+</div>
+<div id="invitationList" class="member-list">
+</div>
+</section>
+</section>
+<section class="view" data-view-panel="control">
+<div class="page-heading">
+<div>
+<p class="eyebrow">4 CANALES</p>
+<h2>Control</h2>
+<p class="subtle">Operación manual y configuración del sistema Arduino.</p>
+</div>
+</div>
+<nav class="control-shortcuts" aria-label="Configuración Arduino">
+<button class="secondary-button" data-view="energy">Energía</button>
+<button class="secondary-button" data-view="automation">Automatización</button>
+<button class="secondary-button" data-view="hardware">Hardware</button>
+<button class="secondary-button" data-view="connection">Conexión</button>
+</nav>
+<div id="controlMessage" class="message">
+</div>
+<div id="controlRelays" class="control-grid">
+</div>
+</section>
+<section class="view" data-view-panel="energy">
+<div class="page-heading">
+<div>
+<p class="eyebrow">ESTIMACIÓN LOCAL</p>
+<h2>Energía</h2>
+<p class="subtle">Potencia nominal y tiempo de encendido de los relays.</p>
+</div>
+</div>
+<div id="energyMessage" class="message">
+</div>
+<div class="energy-summary">
+<article class="metric-card">
+<div>
+<span>Potencia instantánea</span>
+<strong id="energyPowerW">0 W</strong>
+<small id="energyPowerKw">0,000 kW</small>
+</div>
+</article>
+<article class="metric-card">
+<div>
+<span>Consumo estimado hoy</span>
+<strong id="energyToday">0,00</strong>
+<small>kWh</small>
+</div>
+</article>
+<article class="metric-card">
+<div>
+<span>Consumo estimado este mes</span>
+<strong id="energyMonth">0,00</strong>
+<small>kWh</small>
+</div>
+</article>
+<article class="metric-card">
+<div>
+<span>Costo estimado hoy</span>
+<strong id="energyCostToday">$ 0</strong>
+</div>
+</article>
+<article class="metric-card">
+<div>
+<span>Costo estimado este mes</span>
+<strong id="energyCostMonth">$ 0</strong>
+</div>
+</article>
+</div>
+<section class="panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">SALIDAS</p>
+<h3>Detalle eléctrico</h3>
+</div>
+</div>
+<div id="energyRelays" class="energy-relays">
+</div>
+</section>
+<form id="energyForm" class="panel form-panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">CONFIGURACIÓN LOCAL</p>
+<h3>Dispositivos y tarifa</h3>
+</div>
+</div>
+<label class="tariff-field">Costo estimado por kWh (ARS)<input id="energyTariff" name="tariff" type="number" min="0" step="0.01" inputmode="decimal" required>
+</label>
+<p class="field-help">Estimación configurable basada en el costo efectivo de tu factura.</p>
+<div id="energyConfigFields" class="energy-config-grid">
+</div>
+<div class="form-actions">
+<button class="primary-button" type="submit">Guardar configuración</button>
+</div>
+</form>
+<section class="panel energy-note">
+<p>El cálculo se basa en la potencia nominal configurada para cada dispositivo y en el tiempo que cada relay permanece encendido. No reemplaza un medidor eléctrico.</p>
+</section>
+<section class="panel danger-zone">
+<div>
+<h3>Borrar histórico de consumo</h3>
+<p>Elimina los eventos guardados, pero conserva dispositivos y tarifa.</p>
+</div>
+<button id="requestEnergyReset" class="danger-button" type="button">Borrar histórico</button>
+<div id="resetConfirm" class="reset-confirm" hidden>
+<p>¿Confirmás que querés borrar todo el histórico local?</p>
+<div>
+<button id="cancelEnergyReset" class="secondary-button" type="button">Cancelar</button>
+<button id="confirmEnergyReset" class="danger-button" type="button">Sí, borrar</button>
+</div>
+</div>
+</section>
+</section>
+<section class="view" data-view-panel="automation">
+<div class="page-heading">
+<div>
+<p class="eyebrow">REGLAS DEL WEMOS</p>
+<h2>Automatización</h2>
+<p class="subtle">Los valores se guardan en el dispositivo.</p>
+</div>
+</div>
+<div id="automationMessage" class="message">
+</div>
+<form id="automationForm" class="form-stack" novalidate>
+<section class="panel form-panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">ILUMINACIÓN</p>
+<h3>Horario de luz</h3>
+</div>
+</div>
+<div class="form-grid three">
+<label>Hora de inicio<input name="hora" type="number" min="0" max="23" required>
+</label>
+<label>Minuto de inicio<input name="min" type="number" min="0" max="59" required>
+</label>
+<label>Duración (horas)<input name="dur" type="number" min="1" max="24" required>
+</label>
+</div>
+</section>
+<section class="panel form-panel">
+<div class="section-heading">
+<div>
+<p class="eyebrow">TEMPERATURA</p>
+<h3>Rango automático</h3>
+</div>
+</div>
+<div class="form-grid two">
+<label>Mínima (°C)<input name="tmin" type="number" step="0.1" required>
+</label>
+<label>Máxima (°C)<input name="tmax" type="number" step="0.1" required>
+</label>
+</div>
+</section>
+<section class="panel info-panel">
+<div>
+<span>Intervalo de ventilación</span>
+<strong id="ventInterval">—</strong>
+</div>
+<div>
+<span>Duración de ventilación</span>
+<strong id="ventDuration">—</strong>
+</div>
+<p>Valores informativos en este firmware.</p>
+</section>
+<div class="form-actions">
+<button class="primary-button" type="submit">Guardar automatización</button>
+</div>
+</form>
+</section>
+<section class="view" data-view-panel="hardware">
+<div class="page-heading">
+<div>
+<p class="eyebrow">ASIGNACIÓN DE PINES</p>
+<h2>Hardware</h2>
+<p class="subtle">Una salida física por dispositivo.</p>
+</div>
+</div>
+<div id="hardwareMessage" class="message">
+</div>
+<form id="hardwareForm" class="panel form-panel" novalidate>
+<div id="hardwareFields" class="hardware-grid">
+</div>
+<div class="soil-row">
+<div>
+<span>Sensor de suelo</span>
+<strong>A0</strong>
+</div>
+<span class="tag muted">Deshabilitado · No configurable</span>
+</div>
+<div class="form-actions">
+<button class="primary-button" type="submit">Guardar asignación</button>
+</div>
+</form>
+</section>
+<section class="view" data-view-panel="connection">
+<div class="page-heading">
+<div>
+<p class="eyebrow">RED LOCAL</p>
+<h2>Conexión</h2>
+<p class="subtle">Datos guardados solamente en este navegador.</p>
+</div>
+</div>
+<div id="connectionMessage" class="message">
+</div>
+<form id="connectionForm" class="panel form-panel narrow" novalidate>
+<label>Nombre amigable<input id="deviceName" name="deviceName" type="text" maxlength="40" required>
+</label>
+<label>IP o hostname<input id="deviceAddress" name="deviceAddress" type="text" autocomplete="off" spellcheck="false" required>
+</label>
+<p class="field-help">Podés usar una dirección IPv4 o un nombre mDNS disponible en tu red.</p>
+<div class="form-actions split">
+<button id="restoreConnection" class="secondary-button" type="button">Restaurar predeterminado</button>
+<button id="testConnection" class="primary-button" type="submit">Guardar y probar</button>
+</div>
+</form>
+</section>
+</main>
+<footer>
+<span>Growmanager · V2.5</span>
+<span>Supabase + control Wemos local</span>
+</footer>
+</div>
+<nav class="bottom-nav">
+<button class="nav-item active" data-view="dashboard">⌂<small>Inicio</small>
+</button>
+<button class="nav-item" data-view="cultivation">✦<small>Cultivo</small>
+</button>
+<button class="nav-item" data-view="agenda">▣<small>Agenda</small></button>
+<button class="nav-item" data-view="recipes">◇<small>Recetas</small>
+</button>
+<button class="nav-item" data-view="control">◉<small>Control</small>
+</button>
+</nav>
+</div>
+<dialog id="irrigationDialog" class="app-dialog wide-dialog">
+<form id="irrigationForm" class="dialog-form">
+<div class="dialog-heading"><div><p class="eyebrow">AGENDA</p><h3>Programar riego</h3></div><button id="closeIrrigationDialog" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
+<div class="form-grid two"><label>Fecha y hora<input name="scheduledAt" type="datetime-local" required></label><label>Agua total (litros)<input name="waterLiters" type="number" min="0.001" step="0.1" inputmode="decimal"></label><label>Cultivo<select name="cultivationId"></select></label><label>Lote<select name="lotId"></select></label><label>pH<input name="ph" type="number" min="0" max="14" step="0.1" inputmode="decimal"></label><label>EC<input name="ec" type="number" min="0" step="0.01" inputmode="decimal"></label></div>
+<div class="editor-heading"><div><strong>Productos y dosis</strong><small>Podés agregar varios insumos.</small></div><button id="addSupply" class="secondary-button compact" type="button">Agregar producto</button></div>
+<div id="supplyRows" class="supply-rows"></div><label>Indicaciones y notas<textarea name="notes" rows="3"></textarea></label>
+<div class="form-actions"><button class="primary-button" type="submit">Guardar riego</button></div>
+</form>
+</dialog>
+<dialog id="migrationDialog" class="app-dialog migration-dialog">
+<div class="dialog-form">
+<div class="dialog-heading">
+<div>
+<p class="eyebrow">MIGRACIÓN SEGURA</p>
+<h3>Datos locales encontrados</h3>
+</div>
+</div>
+<p>Encontramos <strong data-local-count>0</strong> registros en IndexedDB. Podés importarlos a tu cuenta de Supabase. El respaldo local no se borrará.</p>
+<div data-remote-warning class="migration-warning" hidden>Esta cuenta ya contiene datos remotos. Importar puede generar registros conceptualmente duplicados.</div>
+<label data-confirm-import class="check-field" hidden>
+<input type="checkbox" data-migration-action="confirm"> Entiendo y quiero importar igualmente</label>
+<p data-migration-status class="field-help">
+</p>
+<div class="form-actions split">
+<button class="secondary-button" data-migration-action="skip" type="button">Conservar solo remoto</button>
+<button class="primary-button" data-import data-migration-action="import" type="button">Importar datos locales</button>
+</div>
+</div>
+</dialog>
+<script src="vendor/supabase.js" defer>
+</script>
+<script src="supabase-config.js" defer>
+</script>
+<script src="supabase-client.js" defer>
+</script>
+<script src="cultivo-models.js" defer>
+</script>
+<script src="cultivo-db.js" defer>
+</script>
+<script src="cultivo-repository.js" defer>
+</script>
+<script src="cultivo-migration.js" defer>
+</script>
+<script src="workspaces.js" defer>
+</script>
+<script src="agenda.js" defer></script>
+<script src="cultivation.js" defer>
+</script>
+<script src="products.js" defer>
+</script>
+<script src="recipes.js" defer>
+</script>
+<script src="energy.js" defer>
+</script>
+<script src="auth.js" defer>
+</script>
+<script src="app.js" defer>
+</script>
+</body>
+</html>
