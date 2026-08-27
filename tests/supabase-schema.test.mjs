@@ -6,6 +6,7 @@ const rls=await readFile(new URL('../supabase/migrations/202608260002_rls.sql',i
 const functions=await readFile(new URL('../supabase/migrations/202608260003_recipe_functions.sql',import.meta.url),'utf8');
 const collaboration=await readFile(new URL('../supabase/migrations/202608260005_collaboration.sql',import.meta.url),'utf8');
 const agenda=await readFile(new URL('../supabase/migrations/202608260006_project_agenda.sql',import.meta.url),'utf8');
+const cascadeDelete=await readFile(new URL('../supabase/migrations/202608270007_workspace_cascade_delete.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -28,4 +29,6 @@ assert.match(agenda,/add column grow_type/);
 assert.match(agenda,/function public\.delete_workspace/);
 assert.match(agenda,/workspace_not_empty/);
 assert.doesNotMatch(agenda,/using\s*\(\s*true\s*\)/i);
+for(const table of ['irrigation_events','activities','plants','lots','spaces','recipe_items','recipe_versions','recipes','products','cultivations','workspaces'])assert.match(cascadeDelete,new RegExp(`delete from public\\.${table}`));
+assert.match(cascadeDelete,/is_workspace_owner/);
 console.log('supabase-schema: estructura y RLS correctos');
