@@ -50,6 +50,7 @@
 <button class="nav-item" data-view="cultivation">✦ Cultivo</button>
 <button class="nav-item" data-view="agenda">▣ Agenda</button>
 <button class="nav-item" data-view="recipes">◇ Recetas</button>
+<button class="nav-item" data-view="assistant">✦ Asistente IA</button>
 <button class="nav-item" data-view="team">◎ Equipo</button>
 <button class="nav-item" data-view="control">◉ Control</button>
 </nav>
@@ -200,6 +201,15 @@
 <section id="productsRoot" class="module-panel active" data-recipe-panel="products">
 </section>
 <section id="recipeListRoot" class="module-panel" data-recipe-panel="recipes">
+</section>
+</section>
+<section class="view" data-view-panel="assistant">
+<div class="page-heading"><div><p class="eyebrow">GEMINI · ASISTENCIA SEGURA</p><h2>Asistente del cultivo</h2><p class="subtle">Consultá el proyecto activo y prepará registros sin perder el control.</p></div></div>
+<div id="assistantMessage" class="message"></div>
+<section class="panel assistant-panel">
+<div id="assistantConversation" class="assistant-conversation" aria-live="polite"><article class="assistant-bubble assistant"><strong>Growmanager IA</strong><p>Puedo consultar cultivos, productos, recetas y agenda. Las modificaciones siempre necesitan tu confirmación.</p></article></div>
+<div id="assistantProposal" class="assistant-proposal" hidden></div>
+<form id="assistantForm" class="assistant-form"><label for="assistantInput">Mensaje</label><textarea id="assistantInput" name="message" rows="3" maxlength="2000" placeholder="Ej. ¿Qué riegos tengo pendientes esta semana?" required></textarea><div class="assistant-form-actions"><span>Gemini necesita Internet. No controla el Wemos.</span><button class="primary-button" type="submit">Enviar</button></div></form>
 </section>
 </section>
 <section class="view" data-view-panel="team">
@@ -495,6 +505,7 @@
 <button class="nav-item" data-view="agenda">▣<small>Agenda</small></button>
 <button class="nav-item" data-view="recipes">◇<small>Recetas</small>
 </button>
+<button class="nav-item" data-view="assistant">✦<small>IA</small></button>
 <button class="nav-item" data-view="team">◎<small>Miembros</small></button>
 <button class="nav-item" data-view="control">◉<small>Control</small>
 </button>
@@ -552,6 +563,7 @@
 </script>
 <script src="recipes.js" defer>
 </script>
+<script src="assistant.js" defer></script>
 <script src="energy.js" defer>
 </script>
 <script src="auth.js" defer>
