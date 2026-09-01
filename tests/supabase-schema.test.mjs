@@ -10,6 +10,7 @@ const cascadeDelete=await readFile(new URL('../supabase/migrations/202608270007_
 const memberManagement=await readFile(new URL('../supabase/migrations/202608310008_member_management_assignments.sql',import.meta.url),'utf8');
 const fullAgenda=await readFile(new URL('../supabase/migrations/202608310009_full_agenda.sql',import.meta.url),'utf8');
 const reliableMemberships=await readFile(new URL('../supabase/migrations/202609010010_reliable_memberships.sql',import.meta.url),'utf8');
+const globalMemberAccess=await readFile(new URL('../supabase/migrations/202609010011_global_member_access.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -49,4 +50,7 @@ for(const fn of ['invite_workspace_member_v2','claim_pending_workspace_invitatio
 assert.match(reliableMemberships,/select id into existing_user from auth\.users where lower\(email\)=normalized/);
 assert.match(reliableMemberships,/on conflict\(workspace_id,user_id\) do update/);
 assert.doesNotMatch(reliableMemberships,/service_role|using\s*\(\s*true\s*\)/i);
+assert.match(globalMemberAccess,/function public\.list_admin_workspace_access/);
+assert.match(globalMemberAccess,/owner_membership\.role='owner'/);
+assert.doesNotMatch(globalMemberAccess,/service_role|using\s*\(\s*true\s*\)/i);
 console.log('supabase-schema: estructura y RLS correctos');
