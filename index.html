@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260901-access1">
+<link rel="stylesheet" href="style.css?v=20260901-ops1">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -49,6 +49,7 @@
 <button class="nav-item active" data-view="dashboard">⌂ Inicio</button>
 <button class="nav-item" data-view="cultivation">✦ Cultivo</button>
 <button class="nav-item" data-view="agenda">▣ Agenda</button>
+<button class="nav-item" data-view="operations">⚠ Registro <small id="operationAlertCount">0</small></button>
 <button class="nav-item" data-view="recipes">◇ Recetas</button>
 <button class="nav-item" data-view="assistant">✦ Asistente IA</button>
 <button class="nav-item" data-view="team">◎ Equipo</button>
@@ -281,6 +282,7 @@
 </div>
 </section>
 </section>
+<section id="operationsView" class="view" data-view-panel="operations"><div class="page-heading"><div><p class="eyebrow">ACTIVIDADES Y ALERTAS</p><h2>Registro</h2><p class="subtle">Historial compartido de tareas, incidentes y posibles cortes de luz.</p></div><button id="newOperationButton" class="primary-button" type="button">+ Registrar</button></div><div id="operationsMessage" class="message"></div><section class="panel"><div class="toolbar"><label>Mostrar<select id="operationFilter"><option value="all">Todo</option><option value="alerts">Alertas activas</option><option value="activity">Actividades</option><option value="incident">Incidentes</option><option value="system">Sistema</option></select></label></div><div id="operationList" class="operation-list"></div></section></section>
 <section class="view" data-view-panel="control">
 <div class="page-heading">
 <div>
@@ -505,6 +507,7 @@
 <button class="nav-item" data-view="cultivation">✦<small>Cultivo</small>
 </button>
 <button class="nav-item" data-view="agenda">▣<small>Agenda</small></button>
+<button class="nav-item" data-view="operations">⚠<small>Registro</small></button>
 <button class="nav-item" data-view="recipes">◇<small>Recetas</small>
 </button>
 <button class="nav-item" data-view="assistant">✦<small>IA</small></button>
@@ -513,6 +516,7 @@
 </button>
 </nav>
 </div>
+<dialog id="operationDialog" class="app-dialog"><form id="operationForm" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">NUEVO REGISTRO</p><h3>Actividad o incidente</h3></div><button id="closeOperationDialog" class="icon-button" type="button">×</button></div><div class="form-grid two"><label>Tipo<select name="kind"><option value="activity">Actividad</option><option value="incident">Incidente</option></select></label><label>Categoría<select name="category"><option value="general">General</option><option value="irrigation">Riego</option><option value="transplant">Trasplante</option><option value="pruning">Poda</option><option value="pests">Plagas</option><option value="fungus">Hongos</option><option value="lighting">Iluminación</option><option value="maintenance">Mantenimiento</option><option value="power">Electricidad</option></select></label><label>Fecha y hora<input id="operationOccurredAt" name="occurredAt" type="datetime-local" required></label><label>Importancia<select name="severity"><option value="info">Informativa</option><option value="warning">Advertencia</option><option value="critical">Crítica</option></select></label></div><label>Título<input name="title" maxlength="120" required></label><label>Detalle<textarea name="description" maxlength="1200" rows="4"></textarea></label><div class="form-actions split"><button class="secondary-button" type="button" onclick="document.getElementById('operationDialog').close()">Cancelar</button><button class="primary-button" type="submit">Guardar</button></div></form></dialog>
 <dialog id="agendaEventDialog" class="app-dialog wide-dialog">
 <form id="agendaEventForm" class="dialog-form">
 <div class="dialog-heading"><div><p class="eyebrow">AGENDA</p><h3 id="agendaDialogTitle">Nuevo evento</h3></div><button id="closeAgendaEvent" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
@@ -552,13 +556,14 @@
 </script>
 <script src="cultivo-db.js" defer>
 </script>
-<script src="cultivo-repository.js?v=20260901-access1" defer>
+<script src="cultivo-repository.js?v=20260901-ops1" defer>
 </script>
 <script src="cultivo-migration.js" defer>
 </script>
 <script src="workspaces.js?v=20260901-access1" defer>
 </script>
 <script src="agenda.js?v=20260831-agenda2" defer></script>
+<script src="operations.js?v=20260901-ops1" defer></script>
 <script src="cultivation.js" defer>
 </script>
 <script src="products.js" defer>
@@ -570,7 +575,7 @@
 </script>
 <script src="auth.js" defer>
 </script>
-<script src="app.js" defer>
+<script src="app.js?v=20260901-ops1" defer>
 </script>
 </body>
 </html>

@@ -11,6 +11,7 @@ const memberManagement=await readFile(new URL('../supabase/migrations/2026083100
 const fullAgenda=await readFile(new URL('../supabase/migrations/202608310009_full_agenda.sql',import.meta.url),'utf8');
 const reliableMemberships=await readFile(new URL('../supabase/migrations/202609010010_reliable_memberships.sql',import.meta.url),'utf8');
 const globalMemberAccess=await readFile(new URL('../supabase/migrations/202609010011_global_member_access.sql',import.meta.url),'utf8');
+const activityAlerts=await readFile(new URL('../supabase/migrations/202609010012_activity_log_alerts.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -53,4 +54,8 @@ assert.doesNotMatch(reliableMemberships,/service_role|using\s*\(\s*true\s*\)/i);
 assert.match(globalMemberAccess,/function public\.list_admin_workspace_access/);
 assert.match(globalMemberAccess,/owner_membership\.role='owner'/);
 assert.doesNotMatch(globalMemberAccess,/service_role|using\s*\(\s*true\s*\)/i);
+for(const table of ['operation_logs','operation_alert_reads'])assert.match(activityAlerts,new RegExp(`create table public\\.${table}`));
+assert.match(activityAlerts,/function public\.record_device_connection_event/);
+assert.match(activityAlerts,/public\.can_edit_workspace\(p_workspace_id\)/);
+assert.doesNotMatch(activityAlerts,/service_role|using\s*\(\s*true\s*\)/i);
 console.log('supabase-schema: estructura y RLS correctos');
