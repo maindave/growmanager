@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260901-ops1">
+<link rel="stylesheet" href="style.css?v=20260901-nav1">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -46,14 +46,16 @@
 </div>
 </div>
 <nav class="main-nav" aria-label="Secciones">
+<p class="nav-separator">CULTIVO</p>
 <button class="nav-item active" data-view="dashboard">⌂ Inicio</button>
 <button class="nav-item" data-view="cultivation">✦ Cultivo</button>
 <button class="nav-item" data-view="agenda">▣ Agenda</button>
-<button class="nav-item" data-view="operations">⚠ Registro <small id="operationAlertCount">0</small></button>
 <button class="nav-item" data-view="recipes">◇ Recetas</button>
 <button class="nav-item" data-view="assistant">✦ Asistente IA</button>
-<button class="nav-item" data-view="team">◎ Equipo</button>
+<p class="nav-separator">WEMOS Y HARDWARE</p>
 <button class="nav-item" data-view="control">◉ Control</button>
+<p class="nav-separator">GESTIÓN</p>
+<button class="nav-item" data-view="team">◎ Proyectos y miembros</button>
 </nav>
 <div id="cloudAccount" class="cloud-account" hidden>
 <label class="workspace-picker">Proyecto<select id="workspaceSelect" aria-label="Proyecto activo">
@@ -177,6 +179,7 @@
 <h2>Cultivo</h2>
 <p class="subtle">Organizá el cultivo activo, sus espacios y lotes.</p>
 </div>
+<nav class="area-shortcuts" aria-label="Herramientas de cultivo"><button class="secondary-button" data-view="recipes">Recetas</button><button class="secondary-button" data-view="assistant">Asistente IA</button></nav>
 </div>
 <div id="cultivationRoot">
 </div>
@@ -292,6 +295,7 @@
 </div>
 </div>
 <nav class="control-shortcuts" aria-label="Configuración Arduino">
+<button class="secondary-button alert-shortcut" data-view="operations">Registro y alertas <span id="operationAlertCount">0</span></button>
 <button class="secondary-button" data-view="energy">Energía</button>
 <button class="secondary-button" data-view="automation">Automatización</button>
 <button class="secondary-button" data-view="hardware">Hardware</button>
@@ -507,13 +511,11 @@
 <button class="nav-item" data-view="cultivation">✦<small>Cultivo</small>
 </button>
 <button class="nav-item" data-view="agenda">▣<small>Agenda</small></button>
-<button class="nav-item" data-view="operations">⚠<small>Registro</small></button>
 <button class="nav-item" data-view="recipes">◇<small>Recetas</small>
 </button>
-<button class="nav-item" data-view="assistant">✦<small>IA</small></button>
-<button class="nav-item" data-view="team">◎<small>Miembros</small></button>
 <button class="nav-item" data-view="control">◉<small>Control</small>
 </button>
+<button class="nav-item" data-view="team">◎<small>Gestión</small></button>
 </nav>
 </div>
 <dialog id="operationDialog" class="app-dialog"><form id="operationForm" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">NUEVO REGISTRO</p><h3>Actividad o incidente</h3></div><button id="closeOperationDialog" class="icon-button" type="button">×</button></div><div class="form-grid two"><label>Tipo<select name="kind"><option value="activity">Actividad</option><option value="incident">Incidente</option></select></label><label>Categoría<select name="category"><option value="general">General</option><option value="irrigation">Riego</option><option value="transplant">Trasplante</option><option value="pruning">Poda</option><option value="pests">Plagas</option><option value="fungus">Hongos</option><option value="lighting">Iluminación</option><option value="maintenance">Mantenimiento</option><option value="power">Electricidad</option></select></label><label>Fecha y hora<input id="operationOccurredAt" name="occurredAt" type="datetime-local" required></label><label>Importancia<select name="severity"><option value="info">Informativa</option><option value="warning">Advertencia</option><option value="critical">Crítica</option></select></label></div><label>Título<input name="title" maxlength="120" required></label><label>Detalle<textarea name="description" maxlength="1200" rows="4"></textarea></label><div class="form-actions split"><button class="secondary-button" type="button" onclick="document.getElementById('operationDialog').close()">Cancelar</button><button class="primary-button" type="submit">Guardar</button></div></form></dialog>
