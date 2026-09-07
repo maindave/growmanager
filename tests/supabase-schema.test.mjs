@@ -14,6 +14,7 @@ const globalMemberAccess=await readFile(new URL('../supabase/migrations/20260901
 const activityAlerts=await readFile(new URL('../supabase/migrations/202609010012_activity_log_alerts.sql',import.meta.url),'utf8');
 const cultivationTimelines=await readFile(new URL('../supabase/migrations/202609070013_cultivation_timelines.sql',import.meta.url),'utf8');
 const cultivationEndAlerts=await readFile(new URL('../supabase/migrations/202609070014_cultivation_end_alerts.sql',import.meta.url),'utf8');
+const spaceOperationalStage=await readFile(new URL('../supabase/migrations/202609070015_space_operational_stage.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -66,4 +67,5 @@ assert.match(cultivationTimelines,/function public\.track_cultivation_stage/);
 assert.match(cultivationEndAlerts,/function public\.sync_cultivation_end_alerts/);
 assert.match(cultivationEndAlerts,/cultivation\.planned_end_date between current_date and current_date\+14/);
 assert.doesNotMatch(cultivationEndAlerts,/service_role|using\s*\(\s*true\s*\)/i);
+assert.match(spaceOperationalStage,/add column operational_stage public\.lot_stage/);
 console.log('supabase-schema: estructura y RLS correctos');
