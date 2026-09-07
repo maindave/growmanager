@@ -1,6 +1,6 @@
 {
   "name": "cultivo-flora-v25",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "private": true,
   "description": "Cultivo Flora V2.5: control local y gestión de cultivo",
   "scripts": {
