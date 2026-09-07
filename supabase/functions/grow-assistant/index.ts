@@ -11,10 +11,13 @@ Reglas obligatorias:
 - Para madres 2026/2027, la referencia actual es Hakaphos Verde 0,7 g/L, Macro-Sorb Radicular 1 ml/L, pH 6,0 y EC orientativa 0,8-1,0. Los eventos pueden postergarse por humedad conservando la secuencia.
 - No incluyas rutinariamente Hakaphos Rojo, MKP ni sulfato de magnesio en la agenda de madres. Macro-Sorb Foliar es condicional y separado.
 - El control ambiental es local-first; Gemini necesita Internet y no sustituye al Wemos.
-Si el usuario pide guardar algo, devolvé una propuesta. Tipos soportados: schedule_irrigation, postpone_irrigation, record_activity. Si solo consulta, type=none.
+Si el usuario pide guardar algo, devolvé una propuesta. Tipos soportados: schedule_irrigation, postpone_irrigation, create_event, record_activity, record_incident. Si solo consulta, type=none.
 schedule_irrigation: cultivationId, lotId, scheduledAt ISO, waterLiters, ph, ec, notes, supplies[{name,amount,unit}].
 postpone_irrigation: eventId y scheduledAt ISO.
-record_activity: cultivationId, spaceId, lotId, plantId, type (irrigation|transplant|pruning|application|measurement|stage_change|observation), occurredAt ISO, observations y details.`
+create_event: title, eventType (irrigation|transplant|cuttings|pruning|fertilization|pests|fungus|lighting|cleaning|harvest|maintenance|other), startsAt ISO, endsAt ISO, cultivationId, lotId, description, priority (low|normal|high|urgent), status (pending|accepted|in_progress|completed|cancelled).
+record_activity: title, category (general|irrigation|transplant|pruning|pests|fungus|lighting|maintenance|power), occurredAt ISO, description, severity (info|warning|critical).
+record_incident: title, category (general|irrigation|pests|fungus|lighting|maintenance|power), occurredAt ISO, description, severity (warning|critical).
+Usá únicamente IDs exactos presentes en el contexto. Si el nombre es ambiguo o falta un dato obligatorio, no propongas guardar: pedí una aclaración.`
 
 Deno.serve(async req=>{
   const origin=req.headers.get('Origin')||''
@@ -45,7 +48,7 @@ Deno.serve(async req=>{
     if(!apiKey)return json({error:'gemini_not_configured'},503)
     const history=Array.isArray(body.history)?body.history.slice(-8):[]
     const contents=[...history.map((item:any)=>({role:item.role==='assistant'?'model':'user',parts:[{text:String(item.text||'').slice(0,3000)}]})),{role:'user',parts:[{text:`CONSULTA:\n${message}\n\nCONTEXTO VIVO DEL PROYECTO:\n${JSON.stringify(context).slice(0,60000)}`}]}]
-    const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},body:JSON.stringify({system_instruction:{parts:[{text:systemInstruction+' Devolvé el payload como JSON serializado en proposal.payloadJson.'}]},contents,generationConfig:{temperature:0.25,responseMimeType:'application/json',responseSchema:{type:'OBJECT',required:['reply','proposal'],properties:{reply:{type:'STRING'},proposal:{type:'OBJECT',required:['type','summary','payloadJson'],properties:{type:{type:'STRING',enum:['none','schedule_irrigation','postpone_irrigation','record_activity']},summary:{type:'STRING'},payloadJson:{type:'STRING'}}}}}}})})
+    const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},body:JSON.stringify({system_instruction:{parts:[{text:systemInstruction+' Devolvé el payload como JSON serializado en proposal.payloadJson.'}]},contents,generationConfig:{temperature:0.2,responseMimeType:'application/json',responseSchema:{type:'OBJECT',required:['reply','proposal'],properties:{reply:{type:'STRING'},proposal:{type:'OBJECT',required:['type','summary','payloadJson'],properties:{type:{type:'STRING',enum:['none','schedule_irrigation','postpone_irrigation','create_event','record_activity','record_incident']},summary:{type:'STRING'},payloadJson:{type:'STRING'}}}}}}})})
     const result=await response.json()
     if(!response.ok)throw new Error(result?.error?.message||'Gemini API error')
     const text=result?.candidates?.[0]?.content?.parts?.map((part:any)=>part.text||'').join('')

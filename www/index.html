@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260901-nav1">
+<link rel="stylesheet" href="style.css?v=20260906-voice1">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -518,6 +518,8 @@
 <button class="nav-item" data-view="team">◎<small>Gestión</small></button>
 </nav>
 </div>
+<button id="voiceAssistantButton" class="voice-fab" type="button" data-state="idle" aria-label="Registrar por voz"><span class="voice-icon">●</span><small id="voiceAssistantStatus"></small></button>
+<dialog id="voiceAssistantDialog" class="app-dialog voice-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">ASISTENTE RÁPIDO</p><h3>Registrar por voz</h3></div><button class="icon-button" type="button" onclick="document.getElementById('voiceAssistantDialog').close()">×</button></div><label>Pedido detectado<textarea id="voiceTranscript" rows="3" maxlength="1200" placeholder="Ej. Programá una poda mañana a las 10 en el lote Madres"></textarea></label><div id="voiceAssistantError" class="message error" hidden></div><section id="voiceProposal" class="assistant-proposal" hidden></section><div class="dialog-actions"><button id="cancelVoiceAction" class="secondary-button" type="button">Cancelar</button><span></span><button id="processVoiceText" class="secondary-button" type="button">Interpretar</button><button id="confirmVoiceAction" class="primary-button" type="button" disabled>Confirmar y guardar</button></div></div></dialog>
 <dialog id="operationDialog" class="app-dialog"><form id="operationForm" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">NUEVO REGISTRO</p><h3>Actividad o incidente</h3></div><button id="closeOperationDialog" class="icon-button" type="button">×</button></div><div class="form-grid two"><label>Tipo<select name="kind"><option value="activity">Actividad</option><option value="incident">Incidente</option></select></label><label>Categoría<select name="category"><option value="general">General</option><option value="irrigation">Riego</option><option value="transplant">Trasplante</option><option value="pruning">Poda</option><option value="pests">Plagas</option><option value="fungus">Hongos</option><option value="lighting">Iluminación</option><option value="maintenance">Mantenimiento</option><option value="power">Electricidad</option></select></label><label>Fecha y hora<input id="operationOccurredAt" name="occurredAt" type="datetime-local" required></label><label>Importancia<select name="severity"><option value="info">Informativa</option><option value="warning">Advertencia</option><option value="critical">Crítica</option></select></label></div><label>Título<input name="title" maxlength="120" required></label><label>Detalle<textarea name="description" maxlength="1200" rows="4"></textarea></label><div class="form-actions split"><button class="secondary-button" type="button" onclick="document.getElementById('operationDialog').close()">Cancelar</button><button class="primary-button" type="submit">Guardar</button></div></form></dialog>
 <dialog id="agendaEventDialog" class="app-dialog wide-dialog">
 <form id="agendaEventForm" class="dialog-form">
@@ -573,11 +575,12 @@
 <script src="recipes.js" defer>
 </script>
 <script src="assistant.js" defer></script>
+<script src="voice-assistant.js?v=20260906-voice1" defer></script>
 <script src="energy.js" defer>
 </script>
 <script src="auth.js" defer>
 </script>
-<script src="app.js?v=20260901-ops1" defer>
+<script src="app.js?v=20260906-voice1" defer>
 </script>
 </body>
 </html>
