@@ -12,6 +12,8 @@ const fullAgenda=await readFile(new URL('../supabase/migrations/202608310009_ful
 const reliableMemberships=await readFile(new URL('../supabase/migrations/202609010010_reliable_memberships.sql',import.meta.url),'utf8');
 const globalMemberAccess=await readFile(new URL('../supabase/migrations/202609010011_global_member_access.sql',import.meta.url),'utf8');
 const activityAlerts=await readFile(new URL('../supabase/migrations/202609010012_activity_log_alerts.sql',import.meta.url),'utf8');
+const cultivationTimelines=await readFile(new URL('../supabase/migrations/202609070013_cultivation_timelines.sql',import.meta.url),'utf8');
+const cultivationEndAlerts=await readFile(new URL('../supabase/migrations/202609070014_cultivation_end_alerts.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -58,4 +60,10 @@ for(const table of ['operation_logs','operation_alert_reads'])assert.match(activ
 assert.match(activityAlerts,/function public\.record_device_connection_event/);
 assert.match(activityAlerts,/public\.can_edit_workspace\(p_workspace_id\)/);
 assert.doesNotMatch(activityAlerts,/service_role|using\s*\(\s*true\s*\)/i);
+assert.match(cultivationTimelines,/drop index if exists public\.cultivations_one_active_per_workspace_idx/);
+assert.match(cultivationTimelines,/create table public\.cultivation_stage_history/);
+assert.match(cultivationTimelines,/function public\.track_cultivation_stage/);
+assert.match(cultivationEndAlerts,/function public\.sync_cultivation_end_alerts/);
+assert.match(cultivationEndAlerts,/cultivation\.planned_end_date between current_date and current_date\+14/);
+assert.doesNotMatch(cultivationEndAlerts,/service_role|using\s*\(\s*true\s*\)/i);
 console.log('supabase-schema: estructura y RLS correctos');
