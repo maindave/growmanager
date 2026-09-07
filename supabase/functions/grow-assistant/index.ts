@@ -31,8 +31,8 @@ Deno.serve(async req=>{
     const authorization=req.headers.get('Authorization')||''
     if(!authorization.startsWith('Bearer '))return json({error:'authentication_required'},401)
     const url=Deno.env.get('SUPABASE_URL')!
-    const keys=JSON.parse(Deno.env.get('SUPABASE_PUBLISHABLE_KEYS')||'{}')
-    const publishable=keys.default||Deno.env.get('SUPABASE_ANON_KEY')
+    const publishable=Deno.env.get('SUPABASE_ANON_KEY')
+    if(!publishable)return json({error:'supabase_key_not_configured'},503)
     const supabase=createClient(url,publishable,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}})
     const{data:{user},error:userError}=await supabase.auth.getUser()
     if(userError||!user)return json({error:'authentication_required'},401)
@@ -58,5 +58,5 @@ Deno.serve(async req=>{
     const proposal=parsed.proposal||{type:'none',summary:'',payloadJson:'{}'}
     let payload={};try{payload=JSON.parse(proposal.payloadJson||'{}')}catch{payload={}}
     return json({reply:String(parsed.reply||''),proposal:{type:proposal.type||'none',summary:String(proposal.summary||''),payload}})
-  }catch(error){console.error(error);return json({error:'assistant_error',message:'No se pudo procesar la consulta.'},500)}
+  }catch(error){console.error(error);const detail=error instanceof Error?error.message:'Error interno desconocido';return json({error:'assistant_error',message:`No se pudo procesar la consulta: ${detail}`},500)}
 })
