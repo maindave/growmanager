@@ -113,22 +113,22 @@
 </div>
 </div>
 <div class="metrics-grid">
-<article class="metric-card temperature">
+<button class="metric-card metric-history-button temperature" type="button" data-environment-metric="temperature" aria-label="Ver histórico de temperatura de las últimas 24 horas">
 <div class="metric-icon">°</div>
 <div>
 <span>Temperatura</span>
 <strong id="temperature">—</strong>
 <small>°C</small>
 </div>
-</article>
-<article class="metric-card humidity">
+</button>
+<button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 24 horas">
 <div class="metric-icon">%</div>
 <div>
 <span>Humedad</span>
 <strong id="humidity">—</strong>
 <small>%</small>
 </div>
-</article>
+</button>
 </div>
 <section class="panel dashboard-relays-panel">
 <div class="section-heading">
@@ -533,6 +533,15 @@
 <div class="dialog-actions"><button id="archiveAgendaEvent" class="secondary-button" type="button" hidden>Archivar</button><button id="deleteAgendaEvent" class="danger-button" type="button" hidden>Eliminar definitivamente</button><button id="googleAgendaEvent" class="secondary-button" type="button" hidden>Google Calendar</button><span></span><button id="closeAgendaEventBottom" class="secondary-button" type="button">Cancelar</button><button class="primary-button" type="submit">Guardar evento</button></div>
 </form>
 </dialog>
+<dialog id="environmentHistoryDialog" class="app-dialog environment-dialog">
+<div class="dialog-form">
+<div class="dialog-heading"><div><p class="eyebrow">AMBIENTE · ÚLTIMAS 24 HORAS</p><h3 id="environmentHistoryTitle">Temperatura y humedad</h3></div><button class="icon-button" type="button" value="cancel" aria-label="Cerrar">×</button></div>
+<div id="environmentHistoryStats" class="environment-stats"></div>
+<div id="environmentHistoryChart" class="environment-chart" role="img" aria-label="Gráfico histórico"></div>
+<div class="environment-legend"><span class="temperature-line">Temperatura °C</span><span class="humidity-line">Humedad %</span></div>
+<p id="environmentHistoryNote" class="field-help"></p>
+</div>
+</dialog>
 <dialog id="migrationDialog" class="app-dialog migration-dialog">
 <div class="dialog-form">
 <div class="dialog-heading">
@@ -581,9 +590,10 @@
 <script src="voice-assistant.js?v=20260914-device1" defer></script>
 <script src="energy.js" defer>
 </script>
+<script src="environment-history.js?v=20260914-env1" defer></script>
 <script src="auth.js" defer>
 </script>
-<script src="app.js?v=20260914-vent1" defer>
+<script src="app.js?v=20260914-env1" defer>
 </script>
 </body>
 </html>
