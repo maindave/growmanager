@@ -440,16 +440,15 @@
 </label>
 </div>
 </section>
-<section class="panel info-panel">
-<div>
-<span>Intervalo de ventilación</span>
-<strong id="ventInterval">—</strong>
+<section class="panel form-panel">
+<div class="section-heading"><div><p class="eyebrow">VENTILACIÓN</p><h3>Control del cooler</h3></div></div>
+<div class="form-grid two">
+<label>Modo<select name="ventMode"><option value="interval">Solo intervalos</option><option value="temperature">Solo temperatura</option><option value="combined">Intervalos + emergencia</option></select></label>
+<label>Intervalo (minutos)<input name="ventInterval" type="number" min="1" max="1440" step="1" required></label>
+<label>Duración por intervalo (minutos)<input name="ventDuration" type="number" min="1" max="60" step="1" required></label>
+<label>Duración de emergencia (minutos)<input name="ventEmergencyDuration" type="number" min="1" max="10" step="1" required></label>
 </div>
-<div>
-<span>Duración de ventilación</span>
-<strong id="ventDuration">—</strong>
-</div>
-<p>Valores informativos en este firmware.</p>
+<p class="field-help ventilation-help">En modo combinado mantiene la renovación periódica y, si supera la máxima, activa un pulso de emergencia. El calefactor se apaga por su propia regla.</p>
 </section>
 <div class="form-actions">
 <button class="primary-button" type="submit">Guardar automatización</button>
@@ -578,13 +577,13 @@
 </script>
 <script src="recipes.js" defer>
 </script>
-<script src="assistant.js" defer></script>
-<script src="voice-assistant.js?v=20260907-plan3" defer></script>
+<script src="assistant.js?v=20260914-device1" defer></script>
+<script src="voice-assistant.js?v=20260914-device1" defer></script>
 <script src="energy.js" defer>
 </script>
 <script src="auth.js" defer>
 </script>
-<script src="app.js?v=20260906-voice1" defer>
+<script src="app.js?v=20260914-vent1" defer>
 </script>
 </body>
 </html>
