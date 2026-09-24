@@ -29,6 +29,8 @@ assert.equal(M.validateProduct({name:'',type:'other',baseUnit:'g'}).valid,false)
 assert.equal(M.validateProduct({name:'Hakaphos',type:'fertilizer',baseUnit:'g'}).valid,true);
 assert.equal(M.validateLot({cultivationId:'c1',spaceId:'s1',name:'Tanda 01',stage:'flowering'}).valid,true);
 assert.equal(M.validateLot({cultivationId:'c1',spaceId:'s1',name:'Tanda 01',stage:'invalid'}).valid,false);
+assert.equal(M.validateLot({cultivationId:'c1',spaceId:'s1',name:'SOG',stage:'vegetative',vegetativeWeeks:2,floweringWeeks:8}).valid,true);
+assert.equal(M.validateLot({cultivationId:'c1',spaceId:'s1',name:'SOG',stage:'vegetative',vegetativeWeeks:-1,floweringWeeks:8}).valid,false);
 assert.equal(M.validateCultivation({name:'Madres',startDate:'2026-01-01',cultivationMode:'continuous',currentStage:'mother'}).valid,true);
 assert.equal(M.validateCultivation({name:'Flora',startDate:'2026-09-01',plannedEndDate:'2026-08-01',cultivationMode:'cycle',currentStage:'flowering'}).valid,false);
 
