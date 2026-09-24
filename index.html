@@ -189,11 +189,17 @@
 </div>
 </section>
 <section class="view" data-view-panel="agenda">
-<div class="page-heading"><div><p class="eyebrow">PLANIFICACIÓN COLABORATIVA</p><h2>Agenda de eventos</h2><p class="subtle">Organizá tareas, responsables y actividades de todo el cultivo.</p></div><button id="openAgendaEvent" class="primary-button" type="button">Nuevo evento</button></div>
+<div class="page-heading"><div><p class="eyebrow">PLANIFICACIÓN COLABORATIVA</p><h2>Agenda</h2><p class="subtle">Eventos y evolución nutricional sobre las fechas reales del cultivo.</p></div><button id="openAgendaEvent" class="primary-button" type="button">Nuevo evento</button></div>
 <div id="agendaMessage" class="message"></div>
+<nav class="agenda-face-switch" aria-label="Vista de agenda"><button class="active" type="button" data-agenda-face="events">Eventos</button><button type="button" data-agenda-face="nutrition">Calendario nutricional</button></nav>
+<div class="agenda-book">
+<section class="agenda-face active" data-agenda-face-panel="events">
 <section id="agendaNotifications" class="panel agenda-notifications" hidden><div><strong id="agendaNotificationCount">0 asignaciones nuevas</strong><p id="agendaNotificationText"></p></div><button id="readAgendaNotifications" class="secondary-button compact" type="button">Marcar leídas</button></section>
 <section class="panel agenda-toolbar"><div class="agenda-month-nav"><button id="agendaPrevMonth" class="secondary-button compact" type="button" aria-label="Mes anterior">‹</button><strong id="agendaMonthTitle">—</strong><button id="agendaNextMonth" class="secondary-button compact" type="button" aria-label="Mes siguiente">›</button><button id="agendaToday" class="text-button" type="button">Hoy</button></div><div class="agenda-filters"><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></section>
 <div class="agenda-layout"><section class="panel agenda-calendar-panel"><div class="agenda-week"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="agendaCalendar" class="agenda-calendar"></div></section><section class="panel agenda-upcoming"><div class="section-heading"><div><p class="eyebrow">DETALLE</p><h3 id="agendaListTitle">Próximos eventos</h3></div></div><div id="agendaList" class="agenda-list"></div></section></div>
+</section>
+<section class="agenda-face" data-agenda-face-panel="nutrition"><div id="nutritionCalendarRoot"></div></section>
+</div>
 </section>
 <section class="view" data-view-panel="recipes">
 <div class="page-heading">
@@ -206,13 +212,11 @@
 <div class="module-tabs" role="tablist">
 <button class="module-tab active" data-recipe-tab="products">Productos</button>
 <button class="module-tab" data-recipe-tab="recipes">Recetas</button>
-<button class="module-tab" data-recipe-tab="nutrition">Calendario de nutrición</button>
 </div>
 <section id="productsRoot" class="module-panel active" data-recipe-panel="products">
 </section>
 <section id="recipeListRoot" class="module-panel" data-recipe-panel="recipes">
 </section>
-<section id="nutritionCalendarRoot" class="module-panel" data-recipe-panel="nutrition"></section>
 </section>
 <section class="view" data-view-panel="assistant">
 <div class="page-heading"><div><p class="eyebrow">GEMINI · ASISTENCIA SEGURA</p><h2>Asistente del cultivo</h2><p class="subtle">Consultá el proyecto activo y prepará registros sin perder el control.</p></div></div>
@@ -574,13 +578,13 @@
 </script>
 <script src="cultivo-db.js" defer>
 </script>
-<script src="cultivo-repository.js?v=20260923-stage1" defer>
+<script src="cultivo-repository.js?v=20260923-agenda2" defer>
 </script>
 <script src="cultivo-migration.js" defer>
 </script>
 <script src="workspaces.js?v=20260901-access1" defer>
 </script>
-<script src="agenda.js?v=20260907-timeline4" defer></script>
+<script src="agenda.js?v=20260923-agenda2" defer></script>
 <script src="operations.js?v=20260901-ops1" defer></script>
 <script src="cultivation.js?v=20260907-timeline2" defer>
 </script>
@@ -588,7 +592,7 @@
 </script>
 <script src="recipes.js" defer>
 </script>
-<script src="nutrition-calendar.js?v=20260923-stage1" defer></script>
+<script src="nutrition-calendar.js?v=20260923-agenda2" defer></script>
 <script src="assistant.js?v=20260914-device1" defer></script>
 <script src="voice-assistant.js?v=20260914-device1" defer></script>
 <script src="energy.js" defer>
@@ -596,7 +600,7 @@
 <script src="environment-history.js?v=20260914-env1" defer></script>
 <script src="auth.js?v=20260923-public1" defer>
 </script>
-<script src="app.js?v=20260923-stage1" defer>
+<script src="app.js?v=20260923-agenda2" defer>
 </script>
 </body>
 </html>
