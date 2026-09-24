@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260923-agenda2">
+<link rel="stylesheet" href="style.css?v=20260924-agenda3">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -130,17 +130,6 @@
 </div>
 </button>
 </div>
-<section class="panel dashboard-relays-panel">
-<div class="section-heading">
-<div>
-<p class="eyebrow">SALIDAS</p>
-<h3>Estado de relays</h3>
-</div>
-<span class="section-note">Estado actual</span>
-</div>
-<div id="dashboardRelays" class="relays-grid">
-</div>
-</section>
 <section class="panel dashboard-cultivations-panel">
 <div class="section-heading"><div><p class="eyebrow">CULTIVOS</p><h3>Tandas concurrentes</h3></div><button class="text-button" data-view="agenda">Ver calendario</button></div>
 <div id="dashboardCultivations" class="dashboard-cultivations"></div>
@@ -156,6 +145,10 @@
 <div id="dashboardAgenda" class="dashboard-agenda">
 </div>
 </section>
+<details class="panel dashboard-collapse dashboard-relays-panel">
+<summary><span><span class="eyebrow">HARDWARE</span><strong>Estado de relays</strong></span><span class="collapse-hint">Mostrar</span></summary>
+<div id="dashboardRelays" class="relays-grid collapse-body"></div>
+</details>
 <details class="panel dashboard-collapse">
 <summary><span><span class="eyebrow">TELEMETRÍA</span><strong>Dispositivo</strong></span><span class="collapse-hint">Mostrar</span></summary>
 <div class="device-grid collapse-body">
@@ -196,7 +189,8 @@
 <section class="agenda-face active" data-agenda-face-panel="events">
 <section id="agendaNotifications" class="panel agenda-notifications" hidden><div><strong id="agendaNotificationCount">0 asignaciones nuevas</strong><p id="agendaNotificationText"></p></div><button id="readAgendaNotifications" class="secondary-button compact" type="button">Marcar leídas</button></section>
 <section class="panel agenda-toolbar"><div class="agenda-month-nav"><button id="agendaPrevMonth" class="secondary-button compact" type="button" aria-label="Mes anterior">‹</button><strong id="agendaMonthTitle">—</strong><button id="agendaNextMonth" class="secondary-button compact" type="button" aria-label="Mes siguiente">›</button><button id="agendaToday" class="text-button" type="button">Hoy</button></div><div class="agenda-filters"><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></section>
-<div class="agenda-layout"><section class="panel agenda-calendar-panel"><div class="agenda-week"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="agendaCalendar" class="agenda-calendar"></div></section><section class="panel agenda-upcoming"><div class="section-heading"><div><p class="eyebrow">DETALLE</p><h3 id="agendaListTitle">Próximos eventos</h3></div></div><div id="agendaList" class="agenda-list"></div></section></div>
+<details class="panel agenda-upcoming"><summary><span><span class="eyebrow">EVENTOS</span><strong id="agendaListTitle">Próximos eventos</strong></span><span class="collapse-hint">Mostrar</span></summary><div id="agendaList" class="agenda-list collapse-body"></div></details>
+<div class="agenda-layout"><section class="panel agenda-calendar-panel"><div class="agenda-week"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="agendaCalendar" class="agenda-calendar"></div></section></div>
 </section>
 <section class="agenda-face" data-agenda-face-panel="nutrition"><div id="nutritionCalendarRoot"></div></section>
 </div>
@@ -578,21 +572,21 @@
 </script>
 <script src="cultivo-db.js" defer>
 </script>
-<script src="cultivo-repository.js?v=20260923-agenda2" defer>
+<script src="cultivo-repository.js?v=20260924-agenda3" defer>
 </script>
 <script src="cultivo-migration.js" defer>
 </script>
 <script src="workspaces.js?v=20260901-access1" defer>
 </script>
-<script src="agenda.js?v=20260923-agenda2" defer></script>
+<script src="agenda.js?v=20260924-agenda3" defer></script>
 <script src="operations.js?v=20260901-ops1" defer></script>
-<script src="cultivation.js?v=20260907-timeline2" defer>
+<script src="cultivation.js?v=20260924-agenda3" defer>
 </script>
 <script src="products.js" defer>
 </script>
 <script src="recipes.js" defer>
 </script>
-<script src="nutrition-calendar.js?v=20260923-agenda2" defer></script>
+<script src="nutrition-calendar.js?v=20260924-agenda3" defer></script>
 <script src="assistant.js?v=20260914-device1" defer></script>
 <script src="voice-assistant.js?v=20260914-device1" defer></script>
 <script src="energy.js" defer>
