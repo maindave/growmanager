@@ -13,7 +13,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.5-ventilation-modes";
+const char* firmwareVersion = "2.5-light-transition-restart";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -116,6 +116,9 @@ bool relayStates[4] = {
   false,
   false
 };
+
+bool restartRequested = false;
+unsigned long restartRequestedAt = 0;
 
 // ======================================================
 // FUNCIONES
@@ -1244,7 +1247,8 @@ void handleRoot() {
   json += "\"/api/functions\",";
   json += "\"/api/config\",";
   json += "\"/api/relays\",";
-  json += "\"/api/relay\"";
+  json += "\"/api/relay\",";
+  json += "\"/api/restart\"";
 
   json += "]}";
 
@@ -1574,6 +1578,23 @@ void handleApiSetRelay() {
     "application/json",
     json
   );
+}
+
+// ======================================================
+// SAFE DEVICE RESTART
+// Respondemos antes de reiniciar para que la app pueda
+// iniciar el seguimiento de reconexión.
+// ======================================================
+
+void handleApiRestart() {
+  addCORS();
+  server.send(
+    200,
+    "application/json",
+    "{\"ok\":true,\"restarting\":true}"
+  );
+  restartRequested = true;
+  restartRequestedAt = millis();
 }
 
 // ======================================================
@@ -2433,6 +2454,12 @@ void setup() {
   );
 
   server.on(
+    "/api/restart",
+    HTTP_POST,
+    handleApiRestart
+  );
+
+  server.on(
     "/api/status",
     HTTP_OPTIONS,
     handleOptions
@@ -2464,6 +2491,12 @@ void setup() {
 
   server.on(
     "/api/hardware",
+    HTTP_OPTIONS,
+    handleOptions
+  );
+
+  server.on(
+    "/api/restart",
     HTTP_OPTIONS,
     handleOptions
   );
@@ -2529,6 +2562,10 @@ void setup() {
 // ======================================================
 
 void loop() {
+
+  if (restartRequested && millis() - restartRequestedAt >= 750UL) {
+    ESP.restart();
+  }
 
   server.handleClient();
 

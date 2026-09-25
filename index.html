@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260925-transition1">
+<link rel="stylesheet" href="style.css?v=20260925-restart1">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -130,6 +130,7 @@
 </div>
 </button>
 </div>
+<section id="sensorRecoveryPanel" class="sensor-recovery panel" hidden><div><strong>El sensor no está respondiendo</strong><p>Podés reiniciar el Wemos sin borrar horarios ni configuración.</p></div><button class="secondary-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
 <section class="panel dashboard-cultivations-panel">
 <div class="section-heading"><div><p class="eyebrow">CULTIVOS</p><h3>Tandas concurrentes</h3></div><button class="text-button" data-view="agenda">Ver calendario</button></div>
 <div id="dashboardCultivations" class="dashboard-cultivations"></div>
@@ -503,6 +504,7 @@
 <button id="testConnection" class="primary-button" type="submit">Guardar y probar</button>
 </div>
 </form>
+<section class="panel device-restart-panel"><div><p class="eyebrow">RECUPERACIÓN</p><h3>Reiniciar dispositivo</h3><p>Reinicia el Wemos sin borrar horarios, pines ni automatizaciones guardadas.</p></div><button class="danger-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
 </section>
 </main>
 <footer>
@@ -523,6 +525,7 @@
 <button data-view="assistant"><span>✦</span><b>Asistente IA</b><small>Consultar y planificar</small></button>
 <button data-view="team"><span>◎</span><b>Proyectos y miembros</b><small>Accesos y administración</small></button>
 </div>
+<dialog id="restartDeviceDialog" class="app-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">REINICIO SEGURO</p><h3>¿Reiniciar el Wemos?</h3></div><button id="closeRestartDevice" class="icon-button" type="button">×</button></div><p class="dialog-copy">El dispositivo dejará de responder durante algunos segundos. La configuración guardada se conservará.</p><div class="form-actions split"><button id="cancelRestartDevice" class="secondary-button" type="button">Cancelar</button><button id="confirmRestartDevice" class="danger-button" type="button">Sí, reiniciar</button></div></div></dialog>
 </div>
 <button id="voiceAssistantButton" class="voice-fab" type="button" data-state="idle" aria-label="Registrar por voz"><span class="voice-icon">●</span><small id="voiceAssistantStatus"></small></button>
 <dialog id="voiceAssistantDialog" class="app-dialog voice-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">ASISTENTE RÁPIDO</p><h3>Consultar y planificar</h3></div><button class="icon-button" type="button" onclick="document.getElementById('voiceAssistantDialog').close()">×</button></div><label>Escribí o dictá qué necesitás<textarea id="voiceTranscript" rows="3" maxlength="1200" placeholder="Ej. Planificá una tanda de flora desde el 1 de octubre durante 8 semanas"></textarea></label><p class="field-help">La IA primero responde y arma una propuesta. Nada se guarda hasta que la confirmes.</p><div id="voiceAssistantError" class="message error" hidden></div><section id="voiceProposal" class="assistant-proposal" hidden></section><div class="dialog-actions"><button id="cancelVoiceAction" class="secondary-button" type="button">Cancelar</button><span></span><button id="processVoiceText" class="secondary-button" type="button">Consultar IA</button><button id="confirmVoiceAction" class="primary-button" type="button" disabled>Confirmar y guardar</button></div></div></dialog>
@@ -597,7 +600,7 @@
 <script src="environment-history.js?v=20260925-environment1" defer></script>
 <script src="auth.js?v=20260925-public2" defer>
 </script>
-<script src="app.js?v=20260925-transition1" defer>
+<script src="app.js?v=20260925-restart1" defer>
 </script>
 </body>
 </html>
