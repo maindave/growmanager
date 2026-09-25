@@ -13,7 +13,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.5-light-transition-restart";
+const char* firmwareVersion = "2.5-dht-diagnostics";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -214,11 +214,22 @@ float temperature = 0;
 float humidity = 0;
 
 bool dhtAvailable = false;
+bool dhtReadingFresh = false;
+bool dhtHasValidReading = false;
 
 unsigned long lastDHTRead = 0;
+unsigned long lastDHTSuccessAt = 0;
+unsigned long dhtReadCount = 0;
+unsigned long dhtSuccessCount = 0;
+unsigned long dhtFailureCount = 0;
+unsigned int dhtConsecutiveFailures = 0;
+unsigned int dhtReinitializations = 0;
 
 const unsigned long DHT_INTERVAL =
-  2500;
+  5000;
+
+const unsigned int DHT_FAILURE_THRESHOLD = 3;
+const unsigned int DHT_REINITIALIZE_EVERY = 5;
 
 // ======================================================
 // WEB SERVER
@@ -1018,8 +1029,10 @@ void automaticHeaterControl() {
   )
     return;
 
-  if (!dhtAvailable)
+  if (!dhtReadingFresh) {
+    setRelayState(relay + 1, false);
     return;
+  }
 
   if (
     temperature < tempMin
@@ -1065,7 +1078,7 @@ void automaticVentilationControl() {
     setRelayState(relay + 1, false);
   }
 
-  if (temperatureEnabled && dhtAvailable && temperature > tempMax &&
+  if (temperatureEnabled && dhtReadingFresh && temperature > tempMax &&
       (lastEmergencyVentilationEnd == 0 || now - lastEmergencyVentilationEnd >= ventilationEmergencyCooldown)) {
     periodicVentilationActive = false;
     emergencyVentilationActive = true;
@@ -1123,10 +1136,14 @@ void readDHT() {
   lastDHTRead =
     millis();
 
+  dhtReadCount++;
+  dhtReadingFresh = false;
+
   if (dht == nullptr) {
 
-    dhtAvailable =
-      false;
+    dhtFailureCount++;
+    dhtConsecutiveFailures++;
+    dhtAvailable = false;
 
     return;
   }
@@ -1148,14 +1165,23 @@ void readDHT() {
     humidity =
       newHumidity;
 
-    dhtAvailable =
-      true;
+    dhtReadingFresh = true;
+    dhtHasValidReading = true;
+    dhtAvailable = true;
+    lastDHTSuccessAt = millis();
+    dhtSuccessCount++;
+    dhtConsecutiveFailures = 0;
   }
 
   else {
+    dhtFailureCount++;
+    dhtConsecutiveFailures++;
+    dhtAvailable = dhtHasValidReading && dhtConsecutiveFailures < DHT_FAILURE_THRESHOLD;
 
-    dhtAvailable =
-      false;
+    if (dht != nullptr && dhtConsecutiveFailures % DHT_REINITIALIZE_EVERY == 0) {
+      dht->begin();
+      dhtReinitializations++;
+    }
   }
 }
 
@@ -1171,7 +1197,7 @@ void sendToGoogleSheets() {
   )
     return;
 
-  if (!dhtAvailable)
+  if (!dhtReadingFresh)
     return;
 
   WiFiClientSecure client;
@@ -1230,6 +1256,18 @@ void addCORS() {
 // API ROOT
 // ======================================================
 
+const char* dhtStateName() {
+  if (dhtReadingFresh) return "ok";
+  if (!dhtHasValidReading) return dhtReadCount == 0 ? "starting" : "offline";
+  if (dhtConsecutiveFailures < DHT_FAILURE_THRESHOLD) return "intermittent";
+  return "offline";
+}
+
+unsigned long dhtLastSuccessAgeSeconds() {
+  if (!dhtHasValidReading) return 0;
+  return (millis() - lastDHTSuccessAt) / 1000UL;
+}
+
 void handleRoot() {
 
   String json = "{";
@@ -1248,6 +1286,7 @@ void handleRoot() {
   json += "\"/api/config\",";
   json += "\"/api/relays\",";
   json += "\"/api/relay\",";
+  json += "\"/api/diagnostics\",";
   json += "\"/api/restart\"";
 
   json += "]}";
@@ -1281,7 +1320,7 @@ void handleApiStatus() {
 
   json += "\"temperature\":";
 
-  if (dhtAvailable)
+  if (dhtAvailable && dhtHasValidReading)
     json += String(
       temperature,
       1
@@ -1291,13 +1330,32 @@ void handleApiStatus() {
 
   json += ",\"humidity\":";
 
-  if (dhtAvailable)
+  if (dhtAvailable && dhtHasValidReading)
     json += String(
       humidity,
       1
     );
   else
     json += "null";
+
+  json += ",\"dht\":{";
+  json += "\"state\":\"";
+  json += dhtStateName();
+  json += "\",\"fresh\":";
+  json += dhtReadingFresh ? "true" : "false";
+  json += ",\"lastSuccessAgeSeconds\":";
+  json += String(dhtLastSuccessAgeSeconds());
+  json += ",\"consecutiveFailures\":";
+  json += String(dhtConsecutiveFailures);
+  json += ",\"readCount\":";
+  json += String(dhtReadCount);
+  json += ",\"successCount\":";
+  json += String(dhtSuccessCount);
+  json += ",\"failureCount\":";
+  json += String(dhtFailureCount);
+  json += ",\"reinitializations\":";
+  json += String(dhtReinitializations);
+  json += "}";
 
   // Soil
 
@@ -1595,6 +1653,37 @@ void handleApiRestart() {
   );
   restartRequested = true;
   restartRequestedAt = millis();
+}
+
+// ======================================================
+// SENSOR DIAGNOSTICS
+// ======================================================
+
+void handleApiDiagnostics() {
+  String json = "{\"dht\":{";
+  json += "\"type\":\"DHT21\",\"pin\":\"";
+  json += pinToString(pinDHT);
+  json += "\",\"state\":\"";
+  json += dhtStateName();
+  json += "\",\"fresh\":";
+  json += dhtReadingFresh ? "true" : "false";
+  json += ",\"available\":";
+  json += dhtAvailable ? "true" : "false";
+  json += ",\"lastSuccessAgeSeconds\":";
+  json += String(dhtLastSuccessAgeSeconds());
+  json += ",\"readCount\":";
+  json += String(dhtReadCount);
+  json += ",\"successCount\":";
+  json += String(dhtSuccessCount);
+  json += ",\"failureCount\":";
+  json += String(dhtFailureCount);
+  json += ",\"consecutiveFailures\":";
+  json += String(dhtConsecutiveFailures);
+  json += ",\"reinitializations\":";
+  json += String(dhtReinitializations);
+  json += "}}";
+  addCORS();
+  server.send(200, "application/json", json);
 }
 
 // ======================================================
@@ -2460,6 +2549,12 @@ void setup() {
   );
 
   server.on(
+    "/api/diagnostics",
+    HTTP_GET,
+    handleApiDiagnostics
+  );
+
+  server.on(
     "/api/status",
     HTTP_OPTIONS,
     handleOptions
@@ -2497,6 +2592,12 @@ void setup() {
 
   server.on(
     "/api/restart",
+    HTTP_OPTIONS,
+    handleOptions
+  );
+
+  server.on(
+    "/api/diagnostics",
     HTTP_OPTIONS,
     handleOptions
   );

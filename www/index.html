@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260925-restart1">
+<link rel="stylesheet" href="style.css?v=20260925-diagnostics1">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -130,7 +130,7 @@
 </div>
 </button>
 </div>
-<section id="sensorRecoveryPanel" class="sensor-recovery panel" hidden><div><strong>El sensor no está respondiendo</strong><p>Podés reiniciar el Wemos sin borrar horarios ni configuración.</p></div><button class="secondary-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
+<section id="sensorRecoveryPanel" class="sensor-recovery panel" hidden><div><strong id="sensorRecoveryTitle">El sensor no está respondiendo</strong><p id="sensorRecoveryText">Podés reiniciar el Wemos sin borrar horarios ni configuración.</p></div><button id="sensorRecoveryRestart" class="secondary-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
 <section class="panel dashboard-cultivations-panel">
 <div class="section-heading"><div><p class="eyebrow">CULTIVOS</p><h3>Tandas concurrentes</h3></div><button class="text-button" data-view="agenda">Ver calendario</button></div>
 <div id="dashboardCultivations" class="dashboard-cultivations"></div>
@@ -482,6 +482,7 @@
 <button class="primary-button" type="submit">Guardar asignación</button>
 </div>
 </form>
+<section class="panel"><div class="section-heading"><div><p class="eyebrow">DIAGNÓSTICO DHT</p><h3>Salud del sensor ambiental</h3></div></div><div id="dhtDiagnostics" class="sensor-diagnostics"><p class="field-help">Cargando diagnóstico del sensor…</p></div><div id="dhtDiagnosticLog" class="sensor-diagnostic-log"></div></section>
 </section>
 <section class="view" data-view-panel="connection">
 <div class="page-heading">
@@ -597,10 +598,10 @@
 <script src="voice-assistant.js?v=20260914-device1" defer></script>
 <script src="energy.js" defer>
 </script>
-<script src="environment-history.js?v=20260925-environment1" defer></script>
+<script src="environment-history.js?v=20260925-diagnostics1" defer></script>
 <script src="auth.js?v=20260925-public2" defer>
 </script>
-<script src="app.js?v=20260925-restart2" defer>
+<script src="app.js?v=20260925-diagnostics1" defer>
 </script>
 </body>
 </html>
