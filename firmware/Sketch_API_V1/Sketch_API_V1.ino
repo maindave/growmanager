@@ -73,11 +73,15 @@ const char* googleHost = "script.google.com";
 #define EEPROM_VENT_DURATION  112
 #define EEPROM_VENT_EMERGENCY 116
 #define EEPROM_VENT_MAGIC     120
+#define EEPROM_LIGHT_TRANSITION_MODE   124
+#define EEPROM_LIGHT_TRANSITION_UNTIL  128
+#define EEPROM_LIGHT_TRANSITION_MAGIC  132
 
 #define HW_MAGIC_VALUE        2303
 #define FN_MAGIC_VALUE        2404
 #define CONFIG_MAGIC_VALUE    2405
 #define VENT_MAGIC_VALUE      2501
+#define LIGHT_TRANSITION_MAGIC_VALUE 2502
 
 // ======================================================
 // HARDWARE
@@ -156,6 +160,15 @@ int lightStartHour = 18;
 int lightStartMinute = 0;
 
 int lightDurationHours = 12;
+
+enum LightTransitionMode : byte {
+  LIGHT_TRANSITION_NONE,
+  LIGHT_TRANSITION_HOLD_ON,
+  LIGHT_TRANSITION_WAIT_START
+};
+
+LightTransitionMode lightTransitionMode = LIGHT_TRANSITION_NONE;
+unsigned long lightTransitionUntil = 0;
 
 float tempMin = 23.0;
 float tempMax = 27.0;
@@ -633,6 +646,12 @@ void saveControlConfig() {
   int ventMagic = VENT_MAGIC_VALUE;
   EEPROM.put(EEPROM_VENT_MAGIC, ventMagic);
 
+  byte savedLightTransitionMode = (byte) lightTransitionMode;
+  EEPROM.put(EEPROM_LIGHT_TRANSITION_MODE, savedLightTransitionMode);
+  EEPROM.put(EEPROM_LIGHT_TRANSITION_UNTIL, lightTransitionUntil);
+  int lightTransitionMagic = LIGHT_TRANSITION_MAGIC_VALUE;
+  EEPROM.put(EEPROM_LIGHT_TRANSITION_MAGIC, lightTransitionMagic);
+
   int magic =
     CONFIG_MAGIC_VALUE;
 
@@ -718,6 +737,21 @@ void loadControlConfig() {
     ventilationInterval = 10UL * 60000UL;
     ventilationDuration = 2UL * 60000UL;
     ventilationEmergencyDuration = 3UL * 60000UL;
+    saveControlConfig();
+  }
+
+  int lightTransitionMagic = 0;
+  EEPROM.get(EEPROM_LIGHT_TRANSITION_MAGIC, lightTransitionMagic);
+  if (lightTransitionMagic == LIGHT_TRANSITION_MAGIC_VALUE) {
+    byte savedLightTransitionMode = LIGHT_TRANSITION_NONE;
+    EEPROM.get(EEPROM_LIGHT_TRANSITION_MODE, savedLightTransitionMode);
+    EEPROM.get(EEPROM_LIGHT_TRANSITION_UNTIL, lightTransitionUntil);
+    lightTransitionMode = savedLightTransitionMode <= LIGHT_TRANSITION_WAIT_START
+      ? (LightTransitionMode) savedLightTransitionMode
+      : LIGHT_TRANSITION_NONE;
+  } else {
+    lightTransitionMode = LIGHT_TRANSITION_NONE;
+    lightTransitionUntil = 0;
     saveControlConfig();
   }
 
@@ -939,6 +973,21 @@ void automaticLightControl() {
 
   if (!timeSynced)
     return;
+
+  if (lightTransitionMode != LIGHT_TRANSITION_NONE) {
+    unsigned long nowEpoch = timeClient.getEpochTime();
+    if (lightTransitionUntil > nowEpoch) {
+      setRelayState(
+        relay + 1,
+        lightTransitionMode == LIGHT_TRANSITION_HOLD_ON
+      );
+      return;
+    }
+
+    lightTransitionMode = LIGHT_TRANSITION_NONE;
+    lightTransitionUntil = 0;
+    saveControlConfig();
+  }
 
   setRelayState(
     relay + 1,
@@ -1802,6 +1851,18 @@ void handleApiConfig() {
     lightDurationHours
   );
 
+  json += ",\"lightTransitionActive\":";
+  json += lightTransitionMode == LIGHT_TRANSITION_NONE ? "false" : "true";
+
+  json += ",\"lightTransitionMode\":\"";
+  if (lightTransitionMode == LIGHT_TRANSITION_HOLD_ON) json += "hold_on";
+  else if (lightTransitionMode == LIGHT_TRANSITION_WAIT_START) json += "wait_start";
+  else json += "none";
+  json += "\"";
+
+  json += ",\"lightTransitionUntil\":";
+  json += String(lightTransitionUntil);
+
   json += ",\"tempMin\":";
   json += String(
     tempMin,
@@ -1857,6 +1918,9 @@ void handleApiConfig() {
 // ======================================================
 
 void handleApiSetConfig() {
+
+  int lightRelay = findRelayByFunction(FN_LIGHT);
+  bool lightWasOn = lightRelay >= 0 && relayStates[lightRelay];
 
   if (server.hasArg("hora")) {
 
@@ -1925,6 +1989,25 @@ void handleApiSetConfig() {
     server.send(400, "application/json", "{\"ok\":false,\"error\":\"invalid_ventilation_config\"}");
     return;
   }
+
+  bool extendedTransition = server.hasArg("extendedTransition") &&
+    (server.arg("extendedTransition") == "1" || server.arg("extendedTransition") == "true");
+
+  lightTransitionMode = LIGHT_TRANSITION_NONE;
+  lightTransitionUntil = 0;
+
+  if (extendedTransition && timeSynced && lightRelay >= 0 && relayModes[lightRelay] == MODE_AUTO) {
+    int currentMinute = timeClient.getHours() * 60 + timeClient.getMinutes();
+    int newStartMinute = lightStartHour * 60 + lightStartMinute;
+    int newEndMinute = (newStartMinute + lightDurationHours * 60) % 1440;
+    int targetMinute = lightWasOn ? newEndMinute : newStartMinute;
+    int minutesUntilTarget = (targetMinute - currentMinute + 1440) % 1440;
+    if (minutesUntilTarget == 0) minutesUntilTarget = 1440;
+    lightTransitionMode = lightWasOn
+      ? LIGHT_TRANSITION_HOLD_ON
+      : LIGHT_TRANSITION_WAIT_START;
+    lightTransitionUntil = timeClient.getEpochTime() + (unsigned long) minutesUntilTarget * 60UL;
+  }
   ventilationInterval = (unsigned long) intervalMinutes * 60000UL;
   ventilationDuration = (unsigned long) durationMinutes * 60000UL;
   ventilationEmergencyDuration = (unsigned long) emergencyMinutes * 60000UL;
@@ -1957,7 +2040,9 @@ void handleApiSetConfig() {
   server.send(
     200,
     "application/json",
-    "{\"ok\":true}"
+    lightTransitionMode == LIGHT_TRANSITION_NONE
+      ? "{\"ok\":true,\"lightTransitionActive\":false}"
+      : "{\"ok\":true,\"lightTransitionActive\":true}"
   );
 }
 

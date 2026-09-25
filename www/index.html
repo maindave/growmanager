@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260925-environment1">
+<link rel="stylesheet" href="style.css?v=20260925-transition1">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -425,6 +425,8 @@
 <label>Duración (horas)<input name="dur" type="number" min="1" max="24" required>
 </label>
 </div>
+<label class="transition-toggle"><input name="extendedTransition" type="checkbox" value="1"><span><strong>Transición extendida</strong><small>Mantiene la luz encendida hasta el nuevo apagado. Si está apagada, espera el nuevo horario de inicio.</small></span></label>
+<p id="lightTransitionStatus" class="field-help"></p>
 </section>
 <section class="panel form-panel">
 <div class="section-heading">
@@ -595,7 +597,7 @@
 <script src="environment-history.js?v=20260925-environment1" defer></script>
 <script src="auth.js?v=20260925-public2" defer>
 </script>
-<script src="app.js?v=20260925-environment1" defer>
+<script src="app.js?v=20260925-transition1" defer>
 </script>
 </body>
 </html>
