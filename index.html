@@ -50,8 +50,6 @@
 <button class="nav-item active" data-view="dashboard">⌂ Inicio</button>
 <button class="nav-item" data-view="cultivation">✦ Cultivo</button>
 <button class="nav-item" data-view="agenda">▣ Agenda</button>
-<button class="nav-item" data-view="recipes">◇ Recetas</button>
-<button class="nav-item" data-view="operations">≡ Bitácora</button>
 <button class="nav-item" data-view="assistant">✦ Asistente IA</button>
 <p class="nav-separator">WEMOS Y HARDWARE</p>
 <button class="nav-item" data-view="control">◉ Control</button>
@@ -132,7 +130,7 @@
 </button>
 </div>
 <section id="sensorRecoveryPanel" class="sensor-recovery panel" hidden><div><strong id="sensorRecoveryTitle">El sensor no está respondiendo</strong><p id="sensorRecoveryText">Podés reiniciar el Wemos sin borrar horarios ni configuración.</p></div><button id="sensorRecoveryRestart" class="secondary-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
-<section class="panel dashboard-cultivations-panel">
+<div class="dashboard-focus-grid"><section class="panel dashboard-cultivations-panel">
 <div class="section-heading"><div><p class="eyebrow">CULTIVOS</p><h3>Tandas concurrentes</h3></div><button class="text-button" data-view="agenda">Ver calendario</button></div>
 <div id="dashboardCultivations" class="dashboard-cultivations"></div>
 </section>
@@ -146,7 +144,7 @@
 </div>
 <div id="dashboardAgenda" class="dashboard-agenda">
 </div>
-</section>
+</section></div>
 <details class="panel dashboard-collapse dashboard-relays-panel">
 <summary><span><span class="eyebrow">HARDWARE</span><strong>Estado de relays</strong></span><span class="collapse-hint">Mostrar</span></summary>
 <div id="dashboardRelays" class="relays-grid collapse-body"></div>
@@ -178,7 +176,7 @@
 <h2>Cultivo</h2>
 <p class="subtle">Organizá el cultivo activo, sus espacios y lotes.</p>
 </div>
-<nav class="area-shortcuts" aria-label="Herramientas de cultivo"><button class="secondary-button" data-view="recipes">Recetas</button><button class="secondary-button" data-view="assistant">Asistente IA</button></nav>
+<nav class="hub-switch" aria-label="Universo cultivo"><button class="active" data-view="cultivation">Cultivos y lotes</button><button data-view="recipes">Recetas e insumos</button></nav>
 </div>
 <div id="cultivationRoot">
 </div>
@@ -186,7 +184,7 @@
 <section class="view" data-view-panel="agenda">
 <div class="page-heading"><div><p class="eyebrow">PLANIFICACIÓN COLABORATIVA</p><h2>Agenda</h2><p class="subtle">Eventos y evolución nutricional sobre las fechas reales del cultivo.</p></div><button id="openAgendaEvent" class="primary-button" type="button">Nuevo evento</button></div>
 <div id="agendaMessage" class="message"></div>
-<nav class="agenda-face-switch" aria-label="Vista de agenda"><button class="active" type="button" data-agenda-face="events">Eventos</button><button type="button" data-agenda-face="nutrition">Calendario nutricional</button></nav>
+<nav class="agenda-face-switch" aria-label="Universo agenda"><button class="active" type="button" data-agenda-face="events">Calendario</button><button type="button" data-agenda-face="nutrition">Nutrición</button><button type="button" data-view="operations">Bitácora</button></nav>
 <div class="agenda-book">
 <section class="agenda-face active" data-agenda-face-panel="events">
 <section id="agendaNotifications" class="panel agenda-notifications" hidden><div><strong id="agendaNotificationCount">0 asignaciones nuevas</strong><p id="agendaNotificationText"></p></div><button id="readAgendaNotifications" class="secondary-button compact" type="button">Marcar leídas</button></section>
@@ -205,13 +203,14 @@
 <p class="subtle">Productos, composiciones versionadas y cálculo por litro.</p>
 </div>
 </div>
+<nav class="hub-switch" aria-label="Universo cultivo"><button data-view="cultivation">Cultivos y lotes</button><button class="active" data-view="recipes">Recetas e insumos</button></nav>
 <div class="module-tabs" role="tablist">
-<button class="module-tab active" data-recipe-tab="products">Productos</button>
-<button class="module-tab" data-recipe-tab="recipes">Recetas</button>
+<button class="module-tab active" data-recipe-tab="recipes">Recetas</button>
+<button class="module-tab" data-recipe-tab="products">Insumos</button>
 </div>
-<section id="productsRoot" class="module-panel active" data-recipe-panel="products">
+<section id="productsRoot" class="module-panel" data-recipe-panel="products">
 </section>
-<section id="recipeListRoot" class="module-panel" data-recipe-panel="recipes">
+<section id="recipeListRoot" class="module-panel active" data-recipe-panel="recipes">
 </section>
 </section>
 <section class="view" data-view-panel="assistant">
@@ -291,7 +290,7 @@
 </div>
 </section>
 </section>
-<section id="operationsView" class="view" data-view-panel="operations"><div class="page-heading"><div><p class="eyebrow">TRAZABILIDAD DEL CULTIVO</p><h2>Bitácora</h2><p class="subtle">Todo lo realizado: riegos, podas, trasplantes, observaciones, incidentes y cambios del sistema.</p></div><button id="newOperationButton" class="primary-button" type="button">+ Nuevo registro</button></div><div id="operationsMessage" class="message"></div><section id="operationSummary" class="journal-summary"></section><section class="panel journal-panel"><div class="journal-toolbar"><label>Tipo<select id="operationFilter"><option value="all">Todo</option><option value="irrigation">Riegos</option><option value="activity">Actividades</option><option value="incident">Incidentes</option><option value="system">Sistema</option><option value="alerts">Alertas activas</option></select></label><label>Cultivo o lote<select id="operationRelation"><option value="all">Todos</option></select></label><label>Período<select id="operationPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el ciclo</option></select></label><input id="operationSearch" type="search" placeholder="Buscar poda, riego, receta…" aria-label="Buscar en la bitácora"></div><div id="operationList" class="operation-list"></div></section></section>
+<section id="operationsView" class="view" data-view-panel="operations"><div class="page-heading"><div><p class="eyebrow">TRAZABILIDAD DEL CULTIVO</p><h2>Bitácora</h2><p class="subtle">Todo lo realizado: riegos, podas, trasplantes, observaciones, incidentes y cambios del sistema.</p></div><button id="newOperationButton" class="primary-button" type="button">+ Nuevo registro</button></div><nav class="agenda-face-switch" aria-label="Universo agenda"><button type="button" data-view="agenda">Calendario</button><button class="active" type="button">Bitácora</button></nav><div id="operationsMessage" class="message"></div><section id="operationSummary" class="journal-summary"></section><section class="panel journal-panel"><div class="journal-toolbar"><label>Tipo<select id="operationFilter"><option value="all">Todo</option><option value="irrigation">Riegos</option><option value="activity">Actividades</option><option value="incident">Incidentes</option><option value="system">Sistema</option><option value="alerts">Alertas activas</option></select></label><label>Cultivo o lote<select id="operationRelation"><option value="all">Todos</option></select></label><label>Período<select id="operationPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el ciclo</option></select></label><input id="operationSearch" type="search" placeholder="Buscar poda, riego, receta…" aria-label="Buscar en la bitácora"></div><div id="operationList" class="operation-list"></div></section></section>
 <section class="view" data-view-panel="control">
 <div class="page-heading">
 <div>
@@ -523,8 +522,6 @@
 </nav>
 <div id="mobileMoreMenu" class="mobile-more-menu" hidden>
 <div><strong>Más herramientas</strong><button id="closeMobileMore" class="icon-button" type="button" aria-label="Cerrar menú">×</button></div>
-<button data-view="recipes"><span>◇</span><b>Recetas</b><small>Productos, mezclas y dosis</small></button>
-<button data-view="operations"><span>≡</span><b>Bitácora</b><small>Riegos, actividades e incidentes</small></button>
 <button data-view="assistant"><span>✦</span><b>Asistente IA</b><small>Consultar y planificar</small></button>
 <button data-view="team"><span>◎</span><b>Proyectos y miembros</b><small>Accesos y administración</small></button>
 </div>
@@ -587,13 +584,13 @@
 </script>
 <script src="workspaces.js?v=20260901-access1" defer>
 </script>
-<script src="agenda.js?v=20260924-agenda4" defer></script>
-<script src="operations.js?v=20260927-journal1" defer></script>
+<script src="agenda.js?v=20260927-visual1" defer></script>
+<script src="operations.js?v=20260927-history2" defer></script>
 <script src="cultivation.js?v=20260924-agenda4" defer>
 </script>
 <script src="products.js" defer>
 </script>
-<script src="recipes.js" defer>
+<script src="recipes.js?v=20260927-library1" defer>
 </script>
 <script src="nutrition-calendar.js?v=20260924-agenda4" defer></script>
 <script src="assistant.js?v=20260927-journal1" defer></script>
