@@ -54,6 +54,7 @@
 <p class="nav-separator">WEMOS Y HARDWARE</p>
 <button class="nav-item" data-view="control">◉ Control</button>
 <p class="nav-separator">GESTIÓN</p>
+<button id="openProjectHubNav" class="nav-item" type="button">◇ Mis proyectos</button>
 <button class="nav-item" data-view="team">◎ Proyectos y miembros</button>
 </nav>
 <div id="cloudAccount" class="cloud-account" hidden>
@@ -530,6 +531,7 @@
 <div id="mobileMoreMenu" class="mobile-more-menu" hidden>
 <div><strong>Más herramientas</strong><button id="closeMobileMore" class="icon-button" type="button" aria-label="Cerrar menú">×</button></div>
 <button data-view="assistant"><span>✦</span><b>Asistente IA</b><small>Consultar y planificar</small></button>
+<button id="openProjectHubMobile" type="button"><span>◇</span><b>Mis proyectos</b><small>Cambiar, crear o explorar demo</small></button>
 <button data-view="team"><span>◎</span><b>Proyectos y miembros</b><small>Accesos y administración</small></button>
 </div>
 <dialog id="restartDeviceDialog" class="app-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">REINICIO SEGURO</p><h3>¿Reiniciar el Wemos?</h3></div><button id="closeRestartDevice" class="icon-button" type="button">×</button></div><p class="dialog-copy">El dispositivo dejará de responder durante algunos segundos. La configuración guardada se conservará.</p><div class="form-actions split"><button id="cancelRestartDevice" class="secondary-button" type="button">Cancelar</button><button id="confirmRestartDevice" class="danger-button" type="button">Sí, reiniciar</button></div></div></dialog>
@@ -585,11 +587,11 @@
 </script>
 <script src="cultivo-db.js" defer>
 </script>
-<script src="cultivo-repository.js?v=20260928-onboarding1" defer>
+<script src="cultivo-repository.js?v=20260928-projects2" defer>
 </script>
 <script src="cultivo-migration.js" defer>
 </script>
-<script src="workspaces.js?v=20260928-onboarding1" defer>
+<script src="workspaces.js?v=20260928-projects2" defer>
 </script>
 <script src="agenda.js?v=20260927-visual1" defer></script>
 <script src="operations.js?v=20260927-history2" defer></script>
@@ -607,7 +609,7 @@
 <script src="environment-history.js?v=20260925-diagnostics1" defer></script>
 <script src="auth.js?v=20260927-public5" defer>
 </script>
-<script src="app.js?v=20260925-diagnostics1" defer>
+<script src="app.js?v=20260928-projects2" defer>
 </script>
 </body>
 </html>
