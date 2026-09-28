@@ -4,6 +4,7 @@ node_modules/
 *.log
 *.dmg
 *.apk
+.android-release/
 
 # Capacitor / Android regenerable
 android/.gradle/

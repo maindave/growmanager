@@ -1,0 +1,8 @@
+{
+  "versionName": "2.5.17",
+  "versionCode": 18,
+  "publishedAt": "2026-09-28T00:00:00-03:00",
+  "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
+  "apkAvailable": false,
+  "releaseNotes": "Actualizaciones desde la app, instalación PWA y mejoras visuales del dashboard."
+}

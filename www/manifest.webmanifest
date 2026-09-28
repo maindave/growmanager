@@ -1,0 +1,14 @@
+{
+  "name": "GrowManager",
+  "short_name": "GrowManager",
+  "description": "Gestión de cultivos, agenda, bitácora y control del Wemos.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0e0c13",
+  "theme_color": "#100d18",
+  "icons": [
+    {"src":"assets/icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"assets/icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}

@@ -4,14 +4,18 @@ import { dirname, join } from 'node:path';
 
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const webDir = join(projectRoot, 'www');
-const webFiles = ['index.html', 'style.css', 'app.js', 'energy.js', 'environment-history.js', 'supabase-config.js', 'supabase-client.js', 'auth.js', 'cultivo-models.js', 'cultivo-db.js', 'cultivo-repository.js', 'cultivo-migration.js', 'cultivation.js', 'products.js', 'recipes.js', 'nutrition-calendar.js', 'workspaces.js', 'ui-sections.js', 'onboarding-tour.js', 'agenda.js', 'operations.js', 'assistant.js', 'voice-assistant.js'];
+const webFiles = ['index.html', 'style.css', 'app.js', 'app-update.js', 'app-version.json', 'manifest.webmanifest', 'sw.js', 'energy.js', 'environment-history.js', 'supabase-config.js', 'supabase-client.js', 'auth.js', 'cultivo-models.js', 'cultivo-db.js', 'cultivo-repository.js', 'cultivo-migration.js', 'cultivation.js', 'products.js', 'recipes.js', 'nutrition-calendar.js', 'workspaces.js', 'ui-sections.js', 'onboarding-tour.js', 'agenda.js', 'operations.js', 'assistant.js', 'voice-assistant.js'];
 const vendorDir = join(webDir, 'vendor');
 const assetsDir = join(webDir, 'assets');
+const iconsDir = join(assetsDir, 'icons');
 
 await mkdir(webDir, { recursive: true });
 await mkdir(vendorDir, { recursive: true });
 await mkdir(assetsDir, { recursive: true });
+await mkdir(iconsDir, { recursive: true });
 await Promise.all(webFiles.map(file => copyFile(join(projectRoot, file), join(webDir, file))));
 await copyFile(join(projectRoot, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js'), join(vendorDir, 'supabase.js'));
 await copyFile(join(projectRoot, 'assets', 'grow-agent-orb.png'), join(assetsDir, 'grow-agent-orb.png'));
+await copyFile(join(projectRoot, 'assets', 'icons', 'icon-192.png'), join(iconsDir, 'icon-192.png'));
+await copyFile(join(projectRoot, 'assets', 'icons', 'icon-512.png'), join(iconsDir, 'icon-512.png'));
 console.log(`Assets web sincronizados en ${webDir}`);
