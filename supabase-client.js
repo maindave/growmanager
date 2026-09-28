@@ -1,7 +1,6 @@
-(() => {
-  'use strict';
-  const config=globalThis.GrowConfig||{};
-  const configured=Boolean(config.SUPABASE_URL&&config.SUPABASE_PUBLISHABLE_KEY&&globalThis.supabase?.createClient);
-  const client=configured?globalThis.supabase.createClient(config.SUPABASE_URL,config.SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{headers:{'x-application-name':'cultivo-flora-v2.5'}}}):null;
-  globalThis.GrowSupabase=Object.freeze({client,configured,projectId:config.PROJECT_ID,url:config.SUPABASE_URL});
+(()=>{'use strict';
+  const config=globalThis.GrowConfig||{};let instance=null,failure=null;
+  function loadSdk(){if(globalThis.supabase?.createClient)return Promise.resolve();return new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=`vendor/supabase.js?recovery=${Date.now()}`;script.onload=()=>globalThis.supabase?.createClient?resolve():reject(new Error('El SDK público de Supabase no se inicializó.'));script.onerror=()=>reject(new Error('No se pudo descargar el SDK público de Supabase.'));document.head.append(script)})}
+  const ready=(async()=>{try{if(!config.SUPABASE_URL||!config.SUPABASE_PUBLISHABLE_KEY)throw new Error('La configuración pública de Supabase está incompleta.');await loadSdk();instance=globalThis.supabase.createClient(config.SUPABASE_URL,config.SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true},global:{headers:{'x-application-name':'growmanager-v2.5'}}});const{error}=await instance.auth.getSession();if(error)throw error;dispatchEvent(new CustomEvent('grow-supabase-ready'));return instance}catch(error){failure=error;console.error('Supabase bootstrap:',error);dispatchEvent(new CustomEvent('grow-supabase-error',{detail:{message:error.message}}));return null}})();
+  globalThis.GrowSupabase=Object.freeze({get client(){return instance},get configured(){return Boolean(instance)},get error(){return failure},ready,projectId:config.PROJECT_ID,url:config.SUPABASE_URL});
 })();
