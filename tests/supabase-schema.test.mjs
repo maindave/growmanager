@@ -17,6 +17,7 @@ const cultivationEndAlerts=await readFile(new URL('../supabase/migrations/202609
 const spaceOperationalStage=await readFile(new URL('../supabase/migrations/202609070015_space_operational_stage.sql',import.meta.url),'utf8');
 const lotCalendarTracks=await readFile(new URL('../supabase/migrations/202609070016_lot_calendar_tracks.sql',import.meta.url),'utf8');
 const environmentReadings=await readFile(new URL('../supabase/migrations/202609250022_environment_readings.sql',import.meta.url),'utf8');
+const memberRemoval=await readFile(new URL('../supabase/migrations/202609290030_member_removal_relations.sql',import.meta.url),'utf8');
 const tables=['profiles','cultivations','spaces','lots','plants','products','recipes','recipe_versions','recipe_items','activities'];
 for(const table of tables){assert.match(schema,new RegExp(`create table public\\.${table} \\(`));assert.match(rls,new RegExp(`public\\.${table}`))}
 assert.doesNotMatch(rls,/using\s*\(\s*true\s*\)/i);
@@ -76,4 +77,8 @@ assert.match(environmentReadings,/create table public\.environment_readings/);
 assert.match(environmentReadings,/environment_readings_select/);
 assert.match(environmentReadings,/public\.is_workspace_member\(workspace_id\)/);
 assert.doesNotMatch(environmentReadings,/using\s*\(\s*true\s*\)/i);
+assert.match(memberRemoval,/function public\.remove_workspace_member/);
+assert.match(memberRemoval,/delete from public\.agenda_event_assignees/);
+assert.match(memberRemoval,/delete from public\.agenda_event_participants/);
+assert.match(memberRemoval,/update public\.agenda_event_history set actor_id=admin_id/);
 console.log('supabase-schema: estructura y RLS correctos');
