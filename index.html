@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#100d18">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="manifest" href="manifest.webmanifest?v=20260928-app1">
+<link rel="manifest" href="manifest.webmanifest?v=20260928-app2">
 <link rel="apple-touch-icon" href="assets/grow-agent-orb.png">
 <title>Growmanager · Armario de cultivo</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
@@ -125,8 +125,6 @@
 <strong id="temperature">—</strong>
 <small>°C</small>
 </div>
-<section id="appUpdatePanel" class="panel app-update-panel" hidden><div class="app-update-icon">↥</div><div><strong id="appUpdateTitle">Actualización disponible</strong><p id="appUpdateText">Hay una nueva versión de GrowManager.</p></div><button id="downloadAppUpdate" class="primary-button compact" type="button">Actualizar app</button></section>
-<div id="appUpdateMessage" class="message"></div>
 </button>
 <button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 24 horas">
 <div class="metric-icon">%</div>
@@ -137,6 +135,8 @@
 </div>
 </button>
 </div>
+<section id="appUpdatePanel" class="panel app-update-panel" hidden><div class="app-update-icon">↥</div><div><strong id="appUpdateTitle">Actualización disponible</strong><p id="appUpdateText">Hay una nueva versión de GrowManager.</p></div><button id="downloadAppUpdate" class="primary-button compact" type="button">Actualizar app</button></section>
+<div id="appUpdateMessage" class="message"></div>
 <section id="sensorRecoveryPanel" class="sensor-recovery panel" hidden><div><strong id="sensorRecoveryTitle">El sensor no está respondiendo</strong><p id="sensorRecoveryText">Podés reiniciar el Wemos sin borrar horarios ni configuración.</p></div><button id="sensorRecoveryRestart" class="secondary-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
 <div class="dashboard-focus-grid"><section class="panel dashboard-cultivations-panel">
 <div class="section-heading"><div><p class="eyebrow">CULTIVOS</p><h3>Tandas concurrentes</h3></div><button class="text-button" data-view="agenda">Ver calendario</button></div>
@@ -607,7 +607,7 @@
 <script src="workspaces.js?v=20260928-admin4" defer>
 </script>
 <script src="ui-sections.js?v=20260928-collapse1" defer></script>
-<script src="app-update.js?v=20260928-app1" defer></script>
+<script src="app-update.js?v=20260928-app2" defer></script>
 <script src="onboarding-tour.js?v=20260928-tour2" defer></script>
 <script src="agenda.js?v=20260927-visual1" defer></script>
 <script src="operations.js?v=20260927-history2" defer></script>
