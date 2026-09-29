@@ -17,6 +17,8 @@ concurrency:
 
 jobs:
   deploy:
+    env:
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -42,24 +44,24 @@ jobs:
           touch www/.nojekyll
 
       - name: Setup Java for Android
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Sync Android project
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         run: pnpm exec cap sync android
 
       - name: Restore Android signing key
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/growmanager-release.jks"
 
       - name: Build signed Android APK
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         env:
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/growmanager-release.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -71,7 +73,7 @@ jobs:
           ./gradlew assembleRelease
 
       - name: Publish Android download
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: ${{ env.HAS_ANDROID_SIGNING == 'true' }}
         run: |
           mkdir -p www/downloads
           cp android/app/build/outputs/apk/release/app-release.apk www/downloads/growmanager-latest.apk
