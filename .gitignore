@@ -5,6 +5,7 @@ node_modules/
 *.dmg
 *.apk
 .android-release/
+.sandbox-secrets/
 
 # Capacitor / Android regenerable
 android/.gradle/
