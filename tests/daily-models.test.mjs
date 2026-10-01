@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import '../daily-models.js';
+const M=globalThis.DailyModels,lot={id:'l',cultivationId:'c',spaceId:'s',name:'Tanda'},at='2026-01-01T12:00:00Z';
+const r=M.build({type:'irrigation',at,waterLiters:'2',ph:'6.2',ec:'1.1'},lot);
+assert.equal(r.store,'irrigations');assert.equal(r.value.status,'completed');assert.equal(r.value.waterLiters,2);assert.equal(r.value.completedAt,r.value.scheduledAt);
+assert.equal(M.build({type:'pruning',at},lot).store,'activities');
+assert.equal(M.build({type:'incident',at},lot).store,'logs');
+assert.equal(M.build({type:'irrigation',at,waterLiters:''},lot).value.waterLiters,null);
+for(const bad of [{waterLiters:'0'},{ph:'15'},{ec:'-1'}])assert.throws(()=>M.build({type:'irrigation',at,...bad},lot));
+assert.throws(()=>M.build({type:'pruning',at},null));assert.throws(()=>M.build({type:'invalid',at},lot));assert.throws(()=>M.build({type:'pruning',at:'2100-01-01'},lot));
+const week=M.range('week',new Date(2026,8,30,12));assert.equal(week.start.getDay(),1);assert.equal(week.start.getDate(),28);assert.equal(week.end.getDate(),5);
+const day=M.range('day',new Date(2026,8,30,12));assert.equal(day.start.getHours(),0);assert.equal(day.end.getDate(),1);
+assert.equal(M.completedAt({id:'a'},[{eventId:'b',action:'status_changed',details:{status:'completed'},createdAt:'wrong'},{eventId:'a',action:'status_changed',details:{status:'completed'},createdAt:at}]),at);
+assert.equal(M.completedAt({id:'a'},[]),null);
+console.log('Daily models: passed');
+assert.equal(M.completedAt({id:'a',metadata:{execution:{completedAt:'2026-02-01'}}},[]),'2026-02-01');
+assert.equal(M.executionText({waterLiters:2,ph:6,ec:1.2,notes:'Prueba',recipe:{name:'Base',version:3}}),'2 L totales · pH 6 · EC 1.2 · Base · v3 · Prueba');

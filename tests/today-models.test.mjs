@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import '../today-models.js';
+const M=globalThis.TodayModels,now=new Date('2026-09-30T12:00:00');
+assert.equal(M.lotAge({},now),'Sin fecha de inicio');
+assert.equal(M.lotAge({timelineStartedOn:'2026-10-01'},now),'Inicio previsto');
+assert.equal(M.lotAge({timelineStartedOn:'2026-09-23'},now),'Día 8 · semana 2');
+const base={startsAt:'2026-09-01T12:00:00',status:'pending',recurrence:'none'};
+assert.equal(M.overdue([base,{...base,status:'completed'},{...base,status:'cancelled'},{...base,archivedAt:'2026-09-01'},{...base,recurrence:'weekly'}],now).length,1);
+assert.equal(M.alerts([{severity:'info'},{severity:'warning'},{severity:'error',resolvedAt:'today'},{severity:'error',archivedAt:'today'}]).length,1);
+assert.equal(M.upcoming([{...base,status:'completed'},{...base,status:'cancelled'},base],e=>[{...e,occurrenceStart:now}],now).length,1);
+console.log('Today presentation models: passed');

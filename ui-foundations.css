@@ -1,0 +1,179 @@
+/* Phase 1 foundations. Existing modules and stored theme preference remain supported. */
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:16px;--space-1:8px;--space-2:16px;--space-3:24px;--space-4:32px}
+html:root[data-theme="light"],html:root[data-theme="light"][data-accent]{--bg:#f7f8fa;--surface:#fff;--surface-secondary:#f0f2f4;--text:#20262d;--text-muted:#626b76;--border:#dfe3e8;--primary:#293943;--primary-light:#293943;--primary-soft:#e8eef0;--success:#25714d;--warning:#8b5b0a;--danger:#b53440}
+body,button,input,select,textarea{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html[data-theme="light"] body,html[data-theme="light"] .auth-gate{background:var(--bg)}
+html[data-theme="light"] .auth-card,html[data-theme="light"] .sidebar,html[data-theme="light"] .mobile-header,html[data-theme="light"] .panel,html[data-theme="light"] .cultivation-hero{background:var(--surface);box-shadow:none}
+button,input,select{min-height:44px}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #4784b5;outline-offset:3px}
+input,select,textarea{min-width:0;max-width:100%;font-size:1rem;border-radius:8px}textarea{line-height:1.5}
+.primary-button{background:var(--primary);color:#fff;border-radius:8px;box-shadow:none;font-size:.875rem}
+.secondary-button,.text-button{font-size:.875rem;border-radius:8px}.icon-button{min-width:44px;min-height:44px}
+h2{letter-spacing:-.04em}h3{font-size:1.125rem;letter-spacing:-.02em}
+.page-heading{margin-bottom:32px;gap:16px}.page-heading h2{font-size:2rem}.panel{border-radius:12px;padding:24px}
+.subtle,.field-help,.card-copy,.project-subtitle{color:var(--text-muted);line-height:1.5;font-size:.875rem}.project-subtitle{margin-bottom:8px}
+.eyebrow{font-size:.75rem;letter-spacing:.05em}.section-heading{gap:16px;margin-bottom:16px}.section-heading h3{margin:0}
+.ui-icon{width:24px;height:24px;flex-shrink:0}.inline-actions{gap:8px}
+.today-layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:32px}
+.today-section{min-width:0;margin:0;padding:0}.today-next{grid-column:1}.today-crops{grid-column:1;grid-row:2 / span 2}.today-environment{grid-column:2;grid-row:1}.today-recent{grid-column:2;grid-row:2}.today-systems{grid-column:2;grid-row:3}
+.today-section .section-heading .text-button{white-space:nowrap}.today-list,.today-crop-list{display:grid;gap:8px}
+.today-event,.today-lot,.today-record{display:flex;align-items:center;gap:16px;padding:16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;text-align:left;color:var(--text);width:100%;min-width:0}
+.today-event>div,.today-lot-copy,.today-record>span:nth-child(2){display:grid;gap:4px;min-width:0;flex:1}
+.today-event strong,.today-lot strong,.today-record strong{font-size:.9375rem;line-height:1.4;overflow-wrap:anywhere}
+.today-event span,.today-lot-copy>span,.today-event small,.today-lot small,.today-record small{font-size:.8125rem;line-height:1.5;color:var(--text-muted)}
+.semantic-icon{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:var(--surface-secondary);color:var(--text-muted)}
+.semantic-icon.plant{background:#e9f3ed;color:#397452}.semantic-icon.water{background:#eaf2fa;color:#356b95}
+.today-empty{padding:24px;border:1px dashed var(--border);border-radius:12px;background:var(--surface)}.today-empty p{margin:8px 0;color:var(--text-muted);font-size:.875rem}
+.today-attention{margin-bottom:32px;padding:16px;border:1px solid #dac49c;border-radius:12px;background:#fff8ea;color:#674910}.attention-heading{display:flex;gap:8px;align-items:center;margin-bottom:8px}.attention-row{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;background:none;border:0;text-align:left;color:inherit;font-size:.875rem;padding:8px}
+.today-environment .metrics-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.today-environment .metric-card{padding:16px;border:1px solid var(--border);background:var(--surface);border-radius:12px;box-shadow:none}.today-device-detail{margin-top:32px}.today-device-detail summary small{display:block;margin-top:8px;color:var(--text-muted)}
+.today-systems .dashboard-systems{display:grid;grid-template-columns:1fr;gap:8px}.dashboard-system{background:var(--surface);box-shadow:none;min-width:0}.dashboard-system-copy em{font-size:.75rem}
+.context-tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border);margin:24px 0}.context-tabs button{background:none;border:0;border-bottom:3px solid transparent;color:var(--text-muted);font-size:.875rem}.context-tabs button.active{border-bottom-color:var(--primary);color:var(--text);font-weight:600}
+.lot-phase{display:grid;gap:8px;font-size:.9375rem}.lot-phase small{color:var(--text-muted)}.lot-dates,.lot-data{display:flex;flex-wrap:wrap;gap:32px;margin:24px 0}.lot-dates dt,.lot-data dt{font-size:.8125rem;color:var(--text-muted)}.lot-dates dd,.lot-data dd{margin:8px 0 0}.lot-context-content{max-width:800px}.lot-context-content>h3,.lot-context-content>p{margin-bottom:16px}.lot-context-content .today-event{margin-bottom:8px}.lot-title{text-align:left;font-weight:600}
+.quick-actions{display:grid;gap:8px}.quick-actions button{display:flex;align-items:center;text-align:left;gap:16px;padding:16px}.quick-actions strong,.quick-actions small{display:block}.quick-actions small{font-size:.8125rem;color:var(--text-muted);margin-top:4px}
+.space-list{grid-template-columns:1fr}.space-heading{display:flex;flex-wrap:wrap;align-items:flex-start}.space-heading>div:first-child{flex:1 1 100%;min-width:0}.space-heading h3,.space-heading .card-copy{overflow-wrap:anywhere}.space-heading .inline-actions{flex:1}.cultivation-metrics{gap:16px}.cultivation-metrics span,.lot-card p,.history-list small{font-size:.8125rem}.lot-card{gap:16px;padding:16px}.lot-card>div{min-width:0}
+.nutrition-toolbar{display:grid;grid-template-columns:1fr;gap:24px}.nutrition-selectors{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;min-width:0}.nutrition-selectors>label{min-width:0}.nutrition-date-summary{grid-column:1/-1}.nutrition-selectors select{width:100%;min-width:0}.dialog-form label,.toolbar label{font-size:.875rem}.dialog-form{padding:24px;gap:16px}
+html[data-theme="light"] .bottom-nav,html[data-theme="light"] .mobile-more-menu{background:var(--surface);box-shadow:0 -4px 24px #2633400a}
+.bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr))}.bottom-nav button{min-height:56px;font-size:.75rem}.bottom-nav button>span:first-child{display:grid;place-items:center}.bottom-nav .nav-register .ui-icon{background:var(--primary);color:white;border-radius:12px;width:40px;height:32px;padding:5px}.mobile-more-menu button{display:flex;align-items:center;gap:16px;min-height:48px;font-size:.9375rem}.mobile-more-menu button span{display:flex}.mobile-more-menu{border-radius:16px;padding:16px}
+@media(max-width:760px){.today-layout{grid-template-columns:1fr;gap:32px}.today-layout>.today-section{grid-column:auto;grid-row:auto}.today-heading>button{display:none}.page-heading{margin-bottom:24px}.page-heading h2{font-size:1.75rem}.panel{padding:16px}.today-event{flex-wrap:wrap;gap:8px}.today-event>.text-button{margin-left:48px}.today-lot,.today-record{gap:12px}.section-heading{gap:8px}.section-heading h3{font-size:1rem}.section-heading .text-button{font-size:.8125rem}.nutrition-selectors{grid-template-columns:1fr}.agenda-event-card{flex-wrap:wrap;min-width:0}.agenda-event-main{min-width:0}.agenda-event-actions{flex-wrap:wrap}.agenda-calendar-panel{overflow-x:auto}.agenda-toolbar{flex-wrap:wrap}.form-grid.two{grid-template-columns:1fr}.space-heading{display:flex}.today-device-detail summary{gap:8px}.today-attention{margin-bottom:24px}.context-tabs button{padding:8px 4px}.today-lot-copy>span{overflow-wrap:anywhere}.app-dialog{max-height:calc(100dvh - 24px)}.dialog-form{padding:16px}}
+
+.page-heading h2{font-size:26px}.today-environment .metric-value{font-size:32px}.mobile-more-menu{max-height:calc(100dvh - 112px);overflow-y:auto}.mobile-more-menu>button{display:grid;grid-template-columns:24px 1fr;gap:4px 16px;text-align:left}.mobile-more-menu>button>span{grid-row:1 / span 2}.mobile-more-menu>button>small{grid-column:2;font-size:12px}
+html:root[data-theme="light"] body{background:var(--bg);background-image:none}
+.today-environment .metric-history-button{display:flex;flex-wrap:wrap;gap:8px;padding:16px;box-shadow:none;min-height:120px;text-align:left}
+.today-environment .metric-history-button::after{content:'Ver 24 h →';display:block;flex:1 0 100%;font-size:12px;white-space:nowrap;color:var(--text-muted)}
+.today-environment .metric-card>div:last-child{min-width:0}.today-environment .metric-card strong{font-size:30px}.today-environment .metric-card span,.today-environment .metric-card small{font-size:12px}.today-environment .metric-icon{display:none}
+.today-layout{align-items:start}.dashboard-system{grid-template-columns:40px minmax(0,1fr) 16px}
+body:has(#mobileMoreMenu:not([hidden])) .voice-fab,body:has(dialog[open]) .voice-fab{visibility:hidden}
+@media(max-width:760px){.main-content{padding-left:16px;padding-right:16px}}
+html:root[data-theme="light"] .panel,html:root[data-theme="light"] .cultivation-hero{background:var(--surface);box-shadow:none}
+.section-collapse-button{min-width:44px;min-height:44px;font-size:12px}
+@media(max-width:760px){main{padding-left:16px;padding-right:16px}}
+.daily-type-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.daily-type-grid button{justify-content:center}.daily-type-grid [data-existing-action]{grid-column:1/-1}#dailyWaterFields{border:1px solid var(--border);padding:16px;border-radius:12px}.timeline-date{margin:24px 0 8px;font-size:14px;color:var(--text-muted)}.operation-list{border-left:2px solid var(--border);padding-left:16px}.agenda-event-actions small{display:block;max-width:180px;color:var(--text-muted)}.lot-context-content>.primary-button{margin-bottom:24px}
+/* F2.1: compact navigation, readable history and a docked assistant. */
+.content-shell{width:100%;max-width:1440px;min-width:0;margin-inline:auto}
+[data-view-panel="agenda"]>.page-heading{margin:16px 0 8px;align-items:center}
+.agenda-secondary{display:flex;justify-content:flex-end;gap:8px}.agenda-secondary .text-button{font-size:13px;min-height:36px}
+[data-view-panel="agenda"] .context-tabs{margin:0 0 12px;grid-template-columns:repeat(3,1fr);max-width:540px}
+#agendaPeriodList>.section-heading{margin:8px 0;align-items:center}#agendaPeriodList>.section-heading h3{font-size:16px}
+.agenda-seven-days{display:grid;gap:8px}.agenda-week-day{padding:12px 0;border-top:1px solid var(--border)}.agenda-week-day h4{margin:0 0 8px;font-size:14px;text-transform:capitalize}.agenda-week-day>.field-help{font-size:12px}.agenda-event-card{box-shadow:none}.agenda-event-icon .ui-icon{width:22px;height:22px}
+#operationsView{max-width:1040px;margin-inline:auto}#operationsView>.page-heading{margin-bottom:12px}#operationsView>.page-heading .subtle{display:none}#operationsView .journal-panel{padding:0;border:0;background:transparent;box-shadow:none}#operationsView .journal-panel>.section-heading{display:none}
+#operationSummary{display:flex;gap:8px;overflow:auto;margin:8px 0 12px}#operationSummary>button{display:flex;align-items:center;gap:8px;flex:0 0 auto;min-height:40px;padding:6px 12px;background:transparent;border:1px solid var(--border);border-radius:8px}#operationSummary strong{font-size:14px}#operationSummary small{display:none}
+.journal-toolbar{gap:8px;margin-bottom:12px}.journal-toolbar input,.journal-toolbar select{min-height:40px}.journal-toolbar label{font-size:12px}
+#operationList{max-width:860px;padding-left:16px}#operationList .operation-row{border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent;box-shadow:none;padding:12px 0}#operationList .type-chip{padding:0;background:none;border:0;font-size:12px;color:var(--text-muted)}#operationList .journal-meta span{background:none;padding:0}#operationList h3{font-size:16px}#operationList p{font-size:14px}.timeline-date{margin:16px 0 4px}
+.cultivation-hero .cultivation-metrics>span{background:none;border:0;padding:0}.cultivation-metrics{gap:16px}.space-card .eyebrow,.cultivation-hero .eyebrow{font-size:12px;letter-spacing:0;text-transform:none}.lot-card{background:transparent}.lot-nutrition-profile{color:var(--text-muted);font-size:12px}
+.tanda-summary{padding:12px 0;border-bottom:1px solid var(--border);font-size:14px;line-height:1.6}.tanda-history-row{padding:12px 0;border-bottom:1px solid var(--border)}.tanda-history-row strong{display:block;margin:4px 0}.tanda-history-row small{color:var(--text-muted)}
+.voice-fab{position:relative!important;inset:auto!important;width:44px!important;height:44px!important;min-width:44px;flex:0 0 44px;filter:none!important;animation:none!important;transform:none!important;box-shadow:none!important;margin:0;z-index:auto;touch-action:auto;cursor:pointer}.voice-fab img{filter:saturate(.65)}.voice-fab small{display:none}.sidebar .brand{flex-wrap:wrap}.mobile-header{flex-wrap:wrap;gap:8px}.mobile-header>.brand{flex:1;min-width:150px}.mobile-header .mini-status{order:5;margin:0;font-size:11px}.mobile-header>.voice-fab{order:3}.mobile-header .theme-mobile{order:2}
+@media(min-width:920px){.today-layout{grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:24px 32px}.content-shell{padding:24px 32px 48px}.agenda-seven-days{grid-template-columns:repeat(2,minmax(0,1fr))}.today-heading{margin-bottom:16px}}
+@media(max-width:760px){.content-shell{padding-bottom:calc(88px + env(safe-area-inset-bottom))}.journal-toolbar{display:grid;grid-template-columns:1fr 1fr}.journal-toolbar input{grid-column:1/-1}.agenda-event-card{padding:12px;gap:8px}.agenda-event-actions{width:100%;justify-content:flex-end}#advancedOperationButton{font-size:12px}.today-section{min-width:0}}
+
+/* F3: shared presentation for the remaining product surfaces. */
+html:root:not([data-theme="light"]),html:root:not([data-theme="light"])[data-accent]{--bg:#141719;--surface:#1c2023;--surface-secondary:#252b2f;--border:#394147;--text:#f1f3f4;--text-muted:#aab4bc;--primary:#c5d2d9;--primary-light:#d3dce1;--primary-soft:#303c43}
+html:root body,html:root .auth-gate{background:var(--bg)}
+html:root .panel,html:root .auth-card,html:root .control-card,html:root .metric-card,html:root .cultivation-hero{background:var(--surface);box-shadow:none}
+html:root .brand-mark{box-shadow:none}
+.eyebrow,.workspace-picker,.nutrition-week-label,.tour-copy .eyebrow{letter-spacing:0;text-transform:none;font-weight:600;color:var(--text-muted)}
+html:root .primary-button{background:var(--primary);color:var(--bg);box-shadow:none;border-radius:8px}
+html:root[data-theme="light"] .primary-button{color:#fff}
+.secondary-button,.danger-button,.text-button{border-radius:8px;box-shadow:none}
+input:not([type="checkbox"]):not([type="radio"]),select,textarea{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.dialog-form label,.auth-form label,.assistant-form>label,.workspace-manager label{font-size:.875rem;line-height:1.5}
+.app-dialog{border-radius:12px;box-shadow:0 16px 48px #0004;max-height:calc(100dvh - 24px)}
+.app-dialog::backdrop{background:#10182099;backdrop-filter:blur(2px)}
+.dialog-heading h3{font-size:1.25rem;line-height:1.3}.dialog-copy{font-size:.9375rem;line-height:1.6}
+.dialog-actions,.form-actions{gap:8px;flex-wrap:wrap}.dialog-form fieldset{min-width:0}
+.empty-state{padding:32px 16px;background:transparent;box-shadow:none}.empty-state p{font-size:.875rem;line-height:1.6}.empty-icon{border-radius:10px}
+.message{border-radius:8px;font-size:.875rem;line-height:1.5;box-shadow:none}.message.info{color:var(--text-muted)}
+/* Nutrition and the recipe / supply library retain their existing grids. */
+.nutrition-week{background:var(--surface);border-radius:10px;box-shadow:none}.nutrition-week.is-current{outline:2px solid var(--text-muted)}
+.nutrition-week-label{color:var(--text);font-size:.8125rem}.nutrition-week-label b,.nutrition-status{font-size:.75rem}
+.nutrition-card-main{padding:16px}.nutrition-card-main>small,.nutrition-stage-pair span,.nutrition-targets,.nutrition-actual-select{font-size:.8125rem}
+.nutrition-stage-pair strong{font-size:.875rem;line-height:1.5}.nutrition-legend span{background:transparent;color:var(--text-muted);font-size:.75rem}
+.nutrition-detail-grid>div,.recipe-targets>div{padding:12px 0;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent}
+.nutrition-detail-grid span,.recipe-targets span,.recipe-targets small{font-size:.8125rem}.nutrition-detail-grid p{font-size:.875rem}
+.nutrition-date-summary{background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:8px 0}.nutrition-date-summary span,.nutrition-date-summary strong{font-size:.8125rem}
+.recipe-guide{background:transparent;border:0;padding:0 0 16px}.recipe-steps span{background:transparent;border:0;border-bottom:2px solid var(--border);border-radius:0}.recipe-steps .done b{background:var(--primary-soft);color:var(--text)}
+.recipe-card:hover{transform:none}.recipe-library details{border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent}
+.recipe-library summary{padding:16px 0;font-weight:600}.recipe-library-row{padding:16px 0}.recipe-library-row p,.recipe-library-row small,.product-card>div:first-child>p,.recipe-card>p{font-size:.8125rem;line-height:1.5}
+.recipe-item-row,.supply-row{padding:16px 0;border:0;border-bottom:1px solid var(--border);border-radius:0}.recipe-detail .panel{border:0;padding:16px 0;background:transparent}
+/* Chat: distinguish speakers without nested cards or saturated surfaces. */
+.assistant-panel{margin-inline:auto;border:0;background:transparent;padding:0}.assistant-conversation{gap:20px;padding:8px 0}
+.assistant-bubble{max-width:min(85%,680px);background:transparent;border:0;border-radius:0;padding:8px 0}
+.assistant-bubble.user{background:var(--surface-secondary);border:0;border-radius:12px;padding:12px 16px}
+.assistant-bubble strong{color:var(--text-muted);font-size:.8125rem}.assistant-bubble p{font-size:.9375rem;line-height:1.65;overflow-wrap:anywhere}
+.assistant-proposal{background:transparent;border:0;border-left:3px solid var(--border);border-radius:0;padding:12px 16px}.assistant-proposal p{font-size:.875rem;line-height:1.6}
+.assistant-form{padding-top:16px}.assistant-form-actions span{font-size:.8125rem}
+/* Projects, membership, first run and ordinary administration. */
+.workspace-picker{font-size:.8125rem}.workspace-picker select,.mobile-project-bar select{min-height:44px;font-size:.875rem}.workspace-picker small{font-size:.75rem}
+.project-hub-card{background:transparent;border-radius:8px;padding:16px 12px}.project-hub-card.active,.project-hub-card:hover{background:var(--surface-secondary);border-color:var(--text-muted)}
+.project-hub-card>span:nth-child(2){min-width:0;overflow-wrap:anywhere}.project-hub-card small,.project-hub-card>b{font-size:.8125rem}
+.member-row,.member-person{background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:16px 0}.member-person-head{flex-wrap:wrap}.member-person-head>div{min-width:0;overflow-wrap:anywhere}
+.member-row small,.member-access strong,.demo-project-form label{font-size:.8125rem}.member-accesses{gap:12px}
+.project-app-tools,.welcome-demo-card{background:transparent;border:0;border-bottom:1px solid var(--border);border-radius:0;padding:16px 0}.project-app-tools small,.welcome-demo-card p{font-size:.8125rem;line-height:1.6}
+.onboarding-options span{background:transparent;border-radius:8px}.onboarding-options input:checked+span{background:var(--surface-secondary);border-color:var(--text-muted);box-shadow:none}.onboarding-options input:focus-visible+span{outline:3px solid #4784b5;outline-offset:3px}.onboarding-options small{font-size:.8125rem}
+.auth-card{border-radius:12px}.auth-card h2{font-size:1.75rem}.auth-note{font-size:.8125rem}.tour-copy p:last-child{font-size:.8125rem;line-height:1.6}
+@media(max-width:760px){.recipe-detail-heading,.member-row{flex-wrap:wrap}.recipe-detail-heading>div,.member-row>div{min-width:0}.recipe-library-toolbar{grid-template-columns:1fr}.recipe-item-row,.supply-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.recipe-item-row label:first-child,.supply-row label:first-child{grid-column:1/-1}.nutrition-toolbar label{min-width:0}.nutrition-grid{grid-template-columns:minmax(0,1fr)}.project-hub-list{grid-template-columns:minmax(0,1fr)}.assistant-bubble{max-width:95%}.onboarding-options{grid-template-columns:1fr}.project-hub-actions{grid-template-columns:1fr}.recipe-targets{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Existing accent choice is reserved for identity icons. */
+:root{--identity-accent:#8073a5}:root[data-accent="blue"]{--identity-accent:#5080b8}:root[data-accent="teal"]{--identity-accent:#32948c}:root[data-accent="green"]{--identity-accent:#4c9160}:root[data-accent="orange"]{--identity-accent:#b97c44}:root[data-accent="demo"]{--identity-accent:#2494a0}
+.brand-mark,.project-hub-icon,.recipe-symbol,.empty-icon,.tour-copy>span{color:var(--identity-accent);background:var(--surface-secondary)}
+/* Connect is opt-in; hide device-only surfaces before initialization too. */
+html:not([data-connect="true"]) :is([data-connect-only],[data-view="control"],#connectionBadge,#mobileStatus,[data-dashboard-widget="systems"],[data-dashboard-widget="environment"],[data-dashboard-widget="telemetry"],[data-dashboard-widget="energy"],#sensorRecoveryPanel){display:none!important}
+html:not([data-connect="true"]) .today-layout>.today-crops{grid-row:auto}
+html:not([data-connect="true"]) .today-layout>.today-recent{grid-row:1}
+.connect-toggle{display:flex;align-items:center;gap:12px;margin:24px 0 12px}.connect-toggle input{min-height:24px;width:20px;height:20px}.connect-channel-settings{margin:12px 0}.connect-channel-settings summary{cursor:pointer;font-size:.875rem;color:var(--text-muted)}
+@media(max-width:760px){html:not([data-connect="true"]) .today-layout>.today-recent{grid-row:auto}}
+
+/* F5: responsive layout, with the existing 920px sidebar breakpoint. */
+html{scroll-padding-bottom:100px}.content-shell,main,.view,.panel,.dialog-form,.form-grid>*,.section-heading>*,.page-heading>*,.agenda-event-main{min-width:0}
+.page-heading h2,.dialog-heading h3,.lot-phase,.operation-row,.recipe-library-row{overflow-wrap:anywhere}
+.inline-actions,.control-shortcuts,.agenda-toolbar{flex-wrap:wrap}.dialog-heading{align-items:flex-start}.dialog-heading>.icon-button{flex-shrink:0}
+.app-dialog{overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.dialog-form{width:100%;max-width:100%}.dialog-form textarea{resize:vertical}
+.context-tabs{min-width:0}.context-tabs button{min-width:0;white-space:normal;overflow-wrap:anywhere}
+.assistant-conversation{overscroll-behavior:contain}.assistant-bubble pre{max-width:100%;overflow:auto}.assistant-bubble img{max-width:100%;height:auto}
+#operationList{width:100%;margin-inline:auto}.journal-meta,.journal-row-actions{flex-wrap:wrap}
+@media(max-width:919px){
+ .content-shell{padding:0 max(16px,env(safe-area-inset-right)) calc(104px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+ main{padding:20px 0 0}.mobile-header{height:auto;min-height:64px;box-sizing:border-box;padding-block:12px;gap:8px}.mobile-header>.brand{min-width:0;flex:1 1 140px}.mobile-header .brand strong{max-width:100%;overflow:hidden;text-overflow:ellipsis}.mobile-header .mini-status{flex-basis:100%;justify-content:flex-end}
+ .bottom-nav{grid-template-columns:repeat(5,minmax(0,1fr));min-height:76px}.bottom-nav .nav-item{min-width:0;min-height:56px}.bottom-nav .nav-item small{font-size:.6875rem}
+ .mobile-more-menu{bottom:calc(84px + env(safe-area-inset-bottom));max-height:calc(100dvh - 172px - env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain}
+ .page-heading{gap:12px;margin-block:8px 20px}.section-heading{flex-wrap:wrap;align-items:center}.page-heading>.inline-actions{width:100%}
+ .form-actions>button,.dialog-actions>button{flex:1 1 140px;white-space:normal}.app-dialog{width:calc(100% - 24px);max-height:calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+ .agenda-event-main{flex:1 1 180px}.agenda-event-actions{flex-wrap:wrap}.agenda-event-actions select{max-width:100%}
+ .today-section .section-heading .text-button{white-space:normal}.voice-fab{align-self:center}
+}
+@media(max-width:619px){
+ .panel{padding:16px}.form-grid.two,.form-grid.three,.energy-config-grid,.hardware-grid{grid-template-columns:minmax(0,1fr)}
+ .page-heading h2{font-size:1.625rem;line-height:1.2}.dialog-form{padding:16px}.dialog-heading h3{font-size:1.125rem}
+ .toolbar{flex-wrap:wrap}.toolbar>label,.toolbar>input{min-width:0;flex:1 1 100%}.journal-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.journal-toolbar input{grid-column:1/-1}
+ #operationList{padding-left:12px}.operation-row{gap:8px}.operation-row .inline-actions{width:100%}
+ .agenda-calendar-panel{padding:8px;overflow-x:auto}.agenda-calendar,.agenda-week{min-width:0}.agenda-day{min-width:0;padding:4px 2px}.agenda-day button{max-width:100%;overflow-wrap:anywhere;white-space:normal}
+ .recipe-library-row{grid-template-columns:32px minmax(0,1fr) auto;gap:8px}.lot-dates,.lot-data{gap:16px;justify-content:space-between}.context-tabs{margin-block:16px}.context-tabs button{font-size:.8125rem;padding:10px 4px}
+ .assistant-form-actions{align-items:stretch}.assistant-form-actions>button{width:100%}.assistant-conversation{max-height:50dvh}
+}
+@media(min-width:620px) and (max-width:919px){
+ .content-shell{max-width:900px}.form-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.nutrition-grid,.product-grid,.recipe-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.agenda-seven-days{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(min-width:920px){
+ html{scroll-padding-bottom:24px}.content-shell{max-width:1440px;padding:24px clamp(24px,3vw,48px) 48px}.sidebar{height:100dvh;overflow-y:auto;overscroll-behavior:contain}.sidebar .brand{flex-shrink:0}.bottom-nav,.mobile-more-menu{display:none!important}
+ .page-heading{flex-direction:row;justify-content:space-between;align-items:flex-start}.page-heading>.inline-actions{flex-shrink:0}.today-layout{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:24px 32px}
+ .form-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.dialog-form .form-grid{gap:16px}.wide-dialog{width:min(900px,calc(100% - 64px))}.onboarding-dialog{width:min(800px,calc(100% - 64px))}
+ .agenda-seven-days{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 24px}.agenda-week-day{min-width:0}.agenda-calendar-panel{padding:20px}.agenda-day{min-height:112px}
+ [data-view-panel="agenda"] .context-tabs{max-width:none}.journal-toolbar{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr)) minmax(180px,1.5fr)}
+ .nutrition-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}.assistant-panel{width:100%;max-width:960px}.workspace-manager{max-width:800px}
+ #lotContextRoot{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,280px);column-gap:32px;align-items:start}#lotContextRoot>.page-heading{grid-column:1/-1}#lotContextRoot>.lot-phase{grid-column:2;grid-row:2;padding-top:16px}#lotContextRoot>.lot-dates{grid-column:2;grid-row:3;display:grid;gap:16px;margin-top:16px}#lotContextRoot>.context-tabs{grid-column:1;grid-row:2;margin-top:0}#lotContextRoot>.lot-context-content{grid-column:1;grid-row:3;max-width:860px;width:100%}
+}
+
+/* F6: shared beta presentation; preserve visibility and semantic states. */
+.page-heading h2{line-height:1.2}.section-heading h3,.dialog-heading h3{line-height:1.35}.subtle,.field-help,.section-note{line-height:1.5}
+.main-nav .nav-item{display:flex;align-items:center;gap:12px}.main-nav .ui-icon{width:20px;height:20px;flex:0 0 20px}
+.primary-button,.secondary-button,.danger-button,.text-button,.version-button,.module-tab{font-size:.875rem;font-weight:600;line-height:1.4;min-height:44px}
+input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:1rem;border-radius:8px}button:disabled{opacity:.55}
+.module-tabs{padding:0;gap:0;border:0;border-bottom:1px solid var(--border);border-radius:0;background:transparent}
+.module-tab,.version-button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--text-muted);padding:10px 12px}
+.module-tab.active,.version-button.active{background:transparent;color:var(--text);border-bottom-color:var(--primary)}.version-tabs{gap:4px;margin:16px 0;scrollbar-width:thin}
+.empty-state h3,.today-empty strong{font-size:1rem;line-height:1.4}.empty-state p,.compact-empty p{font-size:.875rem;line-height:1.6}.empty-icon .ui-icon{width:24px;height:24px}
+.message.success{color:var(--success);border-color:color-mix(in srgb,var(--success) 45%,var(--border));background:color-mix(in srgb,var(--success) 6%,var(--surface))}
+.message.error{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--border));background:color-mix(in srgb,var(--danger) 6%,var(--surface))}
+.message.info{color:var(--text-muted);background:var(--surface-secondary)}.message:empty{display:none}
+[aria-busy="true"],.loading{color:var(--text-muted)}.dialog-heading{gap:16px}.dialog-form>.field-help{margin:0}.dialog-actions,.form-actions{margin-top:8px}
+html:root .metric-card.sensor-invalid{background:var(--surface)}.semantic-icon.neutral{color:var(--text-muted);background:var(--surface-secondary)}
+html:root:not([data-theme="light"]) .semantic-icon.plant{background:#223b2e;color:#9bc9ad}html:root:not([data-theme="light"]) .semantic-icon.water{background:#213847;color:#9cc6e5}
+html:root:not([data-theme="light"]) .today-attention{background:#332c1e;border-color:#76623b;color:#e2c48a}

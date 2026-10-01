@@ -5,7 +5,7 @@
   const PRODUCT_TYPES = freeze(['fertilizer','biostimulant','amendment','ph_corrector','preventive','substrate','other']);
   const RECIPE_TYPES = freeze(['irrigation','substrate','foliar']);
   const ACTIVITY_TYPES = freeze(['irrigation','transplant','pruning','application','measurement','stage_change','observation']);
-  const LOT_STAGES = freeze(['mother','clone','rooting','vegetative','flowering','harvest','finished']);
+  const LOT_STAGES = freeze(['germination','mother','clone','rooting','vegetative','flowering','harvest','finished']);
   const UNITS = freeze(['g','ml','l','percent','g_per_l','ml_per_l','other']);
   const CULTIVATION_STATUSES = freeze(['active','finished','archived']);
   const CULTIVATION_MODES = freeze(['continuous','cycle']);
@@ -13,7 +13,7 @@
   const UNIT_LABELS = Object.freeze({g:'g',ml:'ml',l:'L',percent:'%',g_per_l:'g/L',ml_per_l:'ml/L',other:'Otra'});
   const PRODUCT_TYPE_LABELS = Object.freeze({fertilizer:'Fertilizante',biostimulant:'Bioestimulante',amendment:'Enmienda',ph_corrector:'Corrector de pH',preventive:'Preventivo',substrate:'Sustrato',other:'Otro'});
   const RECIPE_TYPE_LABELS = Object.freeze({irrigation:'Riego / Nutrientes',substrate:'Sustrato',foliar:'Foliar'});
-  const LOT_STAGE_LABELS = Object.freeze({mother:'Madre',clone:'Esqueje',rooting:'Enraizado',vegetative:'Vegetativo',flowering:'Floración',harvest:'Cosecha',finished:'Finalizado'});
+  const LOT_STAGE_LABELS = Object.freeze({germination:'Germinación',mother:'Madre',clone:'Esqueje',rooting:'Enraizado',vegetative:'Vegetativo',flowering:'Floración',harvest:'Cosecha',finished:'Finalizado'});
   const CULTIVATION_STATUS_LABELS = Object.freeze({active:'Activo',finished:'Finalizado',archived:'Archivado'});
   const UNIT_ALIASES = Object.freeze({'g':'g','gram':'g','grams':'g','ml':'ml','milliliter':'ml','l':'l','liter':'l','litre':'l','%':'percent','percent':'percent','g/l':'g_per_l','g_per_l':'g_per_l','ml/l':'ml_per_l','ml_per_l':'ml_per_l','other':'other'});
 

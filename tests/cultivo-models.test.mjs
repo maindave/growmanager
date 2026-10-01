@@ -6,7 +6,7 @@ const M=globalThis.CultivoModels;
 assert.equal(M.isEnumValue('fertilizer',M.PRODUCT_TYPES),true);
 assert.equal(M.isEnumValue('unknown',M.PRODUCT_TYPES),false);
 assert.equal(M.isEnumValue('flowering',M.LOT_STAGES),true);
-assert.deepEqual(M.LOT_STAGES,['mother','clone','rooting','vegetative','flowering','harvest','finished']);
+assert.deepEqual(M.LOT_STAGES,['germination','mother','clone','rooting','vegetative','flowering','harvest','finished']);
 assert.equal(M.PRODUCT_TYPE_LABELS.ph_corrector,'Corrector de pH');
 assert.equal(M.RECIPE_TYPE_LABELS.irrigation,'Riego / Nutrientes');
 assert.equal(M.normalizeUnit('g/L'),'g_per_l');

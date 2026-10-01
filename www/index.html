@@ -1,16 +1,17 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-connect="false">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#100d18">
+<meta name="theme-color" content="#F6F7F8">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.webmanifest?v=20260928-app2">
 <link rel="apple-touch-icon" href="assets/grow-agent-orb.png">
-<title>Growmanager · Armario de cultivo</title>
-<script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"dark"</script>
-<link rel="stylesheet" href="style.css?v=20260928-collapse1">
+<title>Growmanager Sandbox · Pruebas</title>
+<script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
+<link rel="stylesheet" href="style.css?v=20260929-beta1">
+<link rel="stylesheet" href="ui-foundations.css?v=20260930-phase6">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -18,7 +19,7 @@
 <div class="brand auth-brand">
 <div class="brand-mark">G</div>
 <div>
-<p class="eyebrow">GROWMANAGER</p>
+<p class="eyebrow">Growmanager</p>
 <h1>Growmanager V2.5</h1>
 </div>
 </div>
@@ -37,7 +38,7 @@
 <button class="secondary-button" type="submit" data-auth-action="register">Crear cuenta</button>
 <button class="secondary-button" type="submit" formnovalidate data-auth-action="magic">Recibir enlace por email</button>
 </form>
-<p class="auth-note">Los datos del Wemos permanecen locales. La gestión del cultivo se guarda en Supabase.</p>
+<p class="auth-note">Tus cultivos se guardan en tu cuenta. La conexión de equipos es opcional.</p>
 </div>
 </section>
 <div id="appLayout" class="app-layout" hidden>
@@ -45,21 +46,23 @@
 <div class="brand">
 <div class="brand-mark">G</div>
 <div>
-<p class="eyebrow">GROWMANAGER</p>
+<p class="eyebrow">Growmanager</p>
 <h1 id="brandName">Proyecto</h1>
 </div>
 </div>
 <nav class="main-nav" aria-label="Secciones">
-<p class="nav-separator">CULTIVO</p>
-<button class="nav-item active" data-view="dashboard">⌂ Inicio</button>
-<button class="nav-item" data-view="cultivation">✦ Cultivo</button>
-<button class="nav-item" data-view="agenda">▣ Agenda</button>
-<button class="nav-item" data-view="assistant">✦ Asistente IA</button>
-<p class="nav-separator">WEMOS Y HARDWARE</p>
-<button class="nav-item" data-view="control">◉ Control</button>
-<p class="nav-separator">GESTIÓN</p>
-<button id="openProjectHubNav" class="nav-item" type="button">◇ Mis proyectos</button>
-<button class="nav-item" data-view="team">◎ Proyectos y miembros</button>
+<p class="nav-separator">Tu cultivo</p>
+<button class="nav-item active" data-view="dashboard"><span data-ui-icon="home"></span>Hoy</button>
+<button class="nav-item" data-view="cultivation"><span data-ui-icon="leaf"></span>Cultivos</button>
+<button class="nav-item" data-view="agenda"><span data-ui-icon="calendar"></span>Agenda</button>
+<button class="nav-item" data-view="recipes"><span data-ui-icon="book"></span>Recetas e insumos</button>
+<button class="nav-item" data-view="operations"><span data-ui-icon="history"></span>Bitácora</button>
+<button class="nav-item" data-view="assistant"><span data-ui-icon="spark"></span>Asistente IA</button>
+<p class="nav-separator" data-connect-only>Dispositivos</p>
+<button class="nav-item" data-view="control"><span data-ui-icon="sliders"></span>Control</button>
+<p class="nav-separator">Proyecto</p>
+<button id="openProjectHubNav" class="nav-item" type="button"><span data-ui-icon="folder"></span>Mis proyectos</button>
+<button class="nav-item" data-view="team"><span data-ui-icon="users"></span>Proyectos y miembros</button><button class="nav-item" data-view="integrations">Configuración / Integraciones</button>
 </nav>
 <div id="cloudAccount" class="cloud-account" hidden>
 <label class="workspace-picker">Proyecto<select id="workspaceSelect" aria-label="Proyecto activo">
@@ -101,88 +104,35 @@
 </header>
 <div class="mobile-project-bar"><label>Proyecto<select id="mobileWorkspaceSelect" aria-label="Proyecto activo"></select></label><button id="mobileCloudRefresh" class="icon-button" type="button" aria-label="Actualizar proyectos" title="Actualizar">↻</button><button id="mobileSignOutButton" class="icon-button" type="button" aria-label="Cerrar sesión" title="Salir">↪</button></div>
 <main>
-<section class="view active" data-view-panel="dashboard">
-<div class="page-heading">
-<div>
-<p class="eyebrow">GROWMANAGER <span id="firmwareVersion">—</span>
-</p>
-<h2>Growmanager</h2>
-<h3 id="dashboardProjectName" class="project-subtitle">Proyecto</h3>
-<p id="deviceSummary" class="subtle">Esperando datos del dispositivo local.</p>
+<section class="view active today-view" data-view-panel="dashboard">
+<div class="page-heading today-heading"><div><p id="dashboardProjectName" class="project-subtitle">Proyecto</p><h2>Hoy</h2><p id="todayDate" class="subtle"></p></div><button class="primary-button" type="button" data-open-register>+ Registrar</button></div>
+<button id="customizeDashboard" class="text-button" type="button">Personalizar Hoy</button>
+<div id="todayLoadMessage" class="message" role="status"></div>
+<section id="todayAttention" class="today-attention" aria-label="Requiere atención" hidden></section>
+<section id="appUpdatePanel" class="panel app-update-panel" hidden><div class="app-update-icon">↥</div><div><strong id="appUpdateTitle">Actualización disponible</strong><p id="appUpdateText">Hay una nueva versión de Growmanager.</p></div><button id="downloadAppUpdate" class="primary-button compact" type="button">Actualizar app</button></section><div id="appUpdateMessage" class="message"></div>
+<div class="today-layout">
+<section class="today-section today-next" data-dashboard-widget="agenda"><div class="section-heading"><h3>Próximo</h3><button class="text-button" data-view="agenda">Ver agenda →</button></div><div id="dashboardAgenda" class="today-list"><p class="field-help">Cargando próximos eventos…</p></div></section>
+<section class="today-section today-crops" data-dashboard-widget="cultivations"><div class="section-heading"><h3>Cultivos y tandas</h3><button class="text-button" data-view="cultivation">Ver todos →</button></div><div id="dashboardCultivations" class="today-crop-list"><p class="field-help">Cargando tandas…</p></div></section>
+<section class="today-section today-environment" data-dashboard-widget="environment"><div class="section-heading"><h3>Ambiente</h3><button class="text-button" data-view="control">Ver dispositivo →</button></div><p id="todayEnvironmentStatus" class="subtle">Buscando el dispositivo local…</p><div class="metrics-grid">
+<button class="metric-card metric-history-button temperature" type="button" data-environment-metric="temperature" aria-label="Ver histórico de temperatura de las últimas 24 horas"><div class="metric-icon">°</div><div><span>Temperatura</span><strong id="temperature">—</strong><small>°C</small></div></button>
+<button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 24 horas"><div class="metric-icon">%</div><div><span>Humedad</span><strong id="humidity">—</strong><small>%</small></div></button></div><p class="field-help">Tocá una lectura para ver las últimas 24 horas.</p></section>
+<section class="today-section today-recent" data-dashboard-widget="recent"><div class="section-heading"><h3>Actividad reciente</h3><button class="text-button" data-view="operations">Ver bitácora →</button></div><div id="todayRecent" class="today-list"><p class="field-help">Cargando actividad…</p></div></section>
+<section id="dashboardSystemsPanel" class="today-section today-systems" data-dashboard-widget="systems"><div class="section-heading"><h3>Sistemas</h3><button class="text-button" data-view="control">Ver control →</button></div><div id="dashboardRelays" class="dashboard-systems"></div></section>
 </div>
-<div class="last-update">
-<span>Última actualización</span>
-<strong id="lastUpdate">Nunca</strong>
-<small id="offlineSince">
-</small>
-</div>
-</div>
-<div class="metrics-grid">
-<button class="metric-card metric-history-button temperature" type="button" data-environment-metric="temperature" aria-label="Ver histórico de temperatura de las últimas 24 horas">
-<div class="metric-icon">°</div>
-<div>
-<span>Temperatura</span>
-<strong id="temperature">—</strong>
-<small>°C</small>
-</div>
-</button>
-<button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 24 horas">
-<div class="metric-icon">%</div>
-<div>
-<span>Humedad</span>
-<strong id="humidity">—</strong>
-<small>%</small>
-</div>
-</button>
-</div>
-<section id="appUpdatePanel" class="panel app-update-panel" hidden><div class="app-update-icon">↥</div><div><strong id="appUpdateTitle">Actualización disponible</strong><p id="appUpdateText">Hay una nueva versión de GrowManager.</p></div><button id="downloadAppUpdate" class="primary-button compact" type="button">Actualizar app</button></section>
-<div id="appUpdateMessage" class="message"></div>
-<section id="sensorRecoveryPanel" class="sensor-recovery panel" hidden><div><strong id="sensorRecoveryTitle">El sensor no está respondiendo</strong><p id="sensorRecoveryText">Podés reiniciar el Wemos sin borrar horarios ni configuración.</p></div><button id="sensorRecoveryRestart" class="secondary-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
-<div class="dashboard-focus-grid"><section class="panel dashboard-cultivations-panel">
-<div class="section-heading"><div><p class="eyebrow">CULTIVOS</p><h3>Tandas concurrentes</h3></div><button class="text-button" data-view="agenda">Ver calendario</button></div>
-<div id="dashboardCultivations" class="dashboard-cultivations"></div>
+<details class="panel dashboard-collapse today-device-detail" data-dashboard-widget="telemetry"><summary><span><strong>Detalles del dispositivo y energía</strong><small>Conexión, diagnóstico y consumo estimado</small></span><span class="collapse-hint">Mostrar</span></summary><div class="collapse-body">
+<p id="deviceSummary" class="subtle">Esperando datos del dispositivo local.</p><div class="last-update"><span>Última actualización</span><strong id="lastUpdate">Nunca</strong><small id="offlineSince"></small></div><p class="field-help">Firmware <span id="firmwareVersion">—</span></p>
+<section id="sensorRecoveryPanel" class="sensor-recovery panel" hidden><div><strong id="sensorRecoveryTitle">El sensor no está respondiendo</strong><p id="sensorRecoveryText">Podés reiniciar el Wemos sin borrar su configuración.</p></div><button id="sensorRecoveryRestart" class="secondary-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
+<div class="device-grid"><div class="detail"><span>Hora del Wemos</span><strong id="deviceTime">—:—</strong><small id="timeSync">Sin datos</small></div><div class="detail"><span>Dirección IP</span><strong id="deviceIp">—</strong></div><div class="detail"><span>Señal Wi-Fi</span><strong id="rssi">—</strong><small id="signalQuality"></small></div><div class="detail"><span>Tiempo activo</span><strong id="uptime">—</strong></div><div class="detail"><span>Sensor de suelo</span><strong id="soilStatus">Deshabilitado</strong></div></div>
+<div class="energy-compact-grid" data-dashboard-widget="energy"><div><span>Actual</span><strong id="dashPower">0 W</strong></div><div><span>Hoy</span><strong id="dashToday">0,00 kWh</strong></div><div><span>Costo hoy</span><strong id="dashCost">$ 0</strong></div></div><button class="text-button" data-view="energy">Ver detalle de energía →</button></div></details>
+<dialog id="dashboardCustomizerDialog" class="app-dialog"><form method="dialog" class="dialog-form dashboard-customizer-form"><div class="dialog-heading"><div><p class="eyebrow">Tu inicio</p><h3>Elegí qué querés ver</h3></div><button class="icon-button" value="cancel" aria-label="Cerrar">×</button></div><p class="form-intro">Podés ocultar paneles para dejar a mano solo la información que usás.</p><div id="dashboardWidgetChoices" class="dashboard-widget-choices"></div><div class="form-actions split"><button id="dashboardRestoreDefaults" class="text-button" type="button">Restaurar</button><button class="primary-button" value="default">Listo</button></div></form></dialog>
 </section>
-<section class="panel dashboard-agenda-panel">
-<div class="section-heading">
-<div>
-<p class="eyebrow">AGENDA</p>
-<h3>Próximos eventos</h3>
-</div>
-<button class="text-button" data-view="agenda">Ver agenda</button>
-</div>
-<div id="dashboardAgenda" class="dashboard-agenda">
-</div>
-</section></div>
-<section id="dashboardSystemsPanel" class="panel dashboard-systems-panel">
-<div class="section-heading"><div><p class="eyebrow">AMBIENTE EN VIVO</p><h3>Luces y climatización</h3></div><button class="text-button" type="button" data-view="control">Ver control</button></div>
-<div id="dashboardRelays" class="dashboard-systems"></div>
-</section>
-<details class="panel dashboard-collapse">
-<summary><span><span class="eyebrow">TELEMETRÍA</span><strong>Dispositivo</strong></span><span class="collapse-hint">Mostrar</span></summary>
-<div class="device-grid collapse-body">
-<div class="detail"><span>Hora del Wemos</span><strong id="deviceTime">—:—</strong><small id="timeSync">Sin datos</small></div>
-<div class="detail"><span>Dirección IP</span><strong id="deviceIp">—</strong></div>
-<div class="detail"><span>Señal Wi-Fi</span><strong id="rssi">—</strong><small id="signalQuality"></small></div>
-<div class="detail"><span>Tiempo activo</span><strong id="uptime">—</strong></div>
-<div class="detail"><span>Sensor de suelo</span><strong id="soilStatus">Deshabilitado</strong></div>
-</div>
-</details>
-<details class="panel dashboard-collapse">
-<summary><span><span class="eyebrow">ENERGÍA</span><strong>Consumo estimado</strong></span><span class="collapse-hint">Mostrar</span></summary>
-<div class="energy-compact-grid collapse-body">
-<div><span>Actual</span><strong id="dashPower">0 W</strong></div>
-<div><span>Hoy</span><strong id="dashToday">0,00 kWh</strong></div>
-<div><span>Costo hoy</span><strong id="dashCost">$ 0</strong></div>
-</div>
-<button class="text-button collapse-link" data-view="energy">Ver detalle de energía</button>
-</details>
-</section>
+<section class="view" data-view-panel="lot"><button class="text-button" data-view="cultivation">← Cultivos</button><div id="lotContextRoot"></div></section>
 <section class="view" data-view-panel="cultivation">
 <div class="page-heading">
 <div>
-<p class="eyebrow">GESTIÓN LOCAL-FIRST</p>
-<h2>Cultivo</h2>
-<p class="subtle">Organizá el cultivo activo, sus espacios y lotes.</p>
+
+<h2>Cultivos</h2>
+<p class="subtle">Tus cultivos, espacios y tandas en un mismo lugar.</p>
 </div>
 <nav class="hub-switch" aria-label="Universo cultivo"><button class="active" data-view="cultivation">Cultivos y lotes</button><button data-view="recipes">Recetas e insumos</button></nav>
 </div>
@@ -190,15 +140,16 @@
 </div>
 </section>
 <section class="view" data-view-panel="agenda">
-<div class="page-heading"><div><p class="eyebrow">PLANIFICACIÓN COLABORATIVA</p><h2>Agenda</h2><p class="subtle">Eventos y evolución nutricional sobre las fechas reales del cultivo.</p></div><button id="openAgendaEvent" class="primary-button" type="button">Nuevo evento</button></div>
+<div class="page-heading"><div><h2>Agenda</h2></div><button id="openAgendaEvent" class="primary-button" type="button">Nuevo evento</button></div>
 <div id="agendaMessage" class="message"></div>
-<nav class="agenda-face-switch" aria-label="Universo agenda"><button class="active" type="button" data-agenda-face="events">Calendario</button><button type="button" data-agenda-face="nutrition">Nutrición</button><button type="button" data-view="operations">Bitácora</button></nav>
+<div class="agenda-secondary"><button class="text-button active" type="button" data-agenda-face="events" hidden>Volver a Agenda</button><button class="text-button" type="button" data-agenda-face="nutrition">Nutrición →</button></div>
 <div class="agenda-book">
 <section class="agenda-face active" data-agenda-face-panel="events">
+<nav class="context-tabs" aria-label="Período de agenda"><button data-agenda-period="day">Hoy</button><button data-agenda-period="week">Semana</button><button class="active" data-agenda-period="month">Mes</button></nav><div id="agendaPeriodList" hidden></div>
 <section id="agendaNotifications" class="panel agenda-notifications" hidden><div><strong id="agendaNotificationCount">0 asignaciones nuevas</strong><p id="agendaNotificationText"></p></div><button id="readAgendaNotifications" class="secondary-button compact" type="button">Marcar leídas</button></section>
-<section class="panel agenda-toolbar"><div class="agenda-month-nav"><button id="agendaPrevMonth" class="secondary-button compact" type="button" aria-label="Mes anterior">‹</button><strong id="agendaMonthTitle">—</strong><button id="agendaNextMonth" class="secondary-button compact" type="button" aria-label="Mes siguiente">›</button><button id="agendaToday" class="text-button" type="button">Hoy</button></div><div class="agenda-filters"><label>Cultivo o lote<select id="agendaRelation"><option value="all">Todos</option></select></label><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></section>
+<section class="panel agenda-toolbar"><div class="agenda-filters"><label>Cultivo o lote<select id="agendaRelation"><option value="all">Todos</option></select></label><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></section>
 <details class="panel agenda-upcoming"><summary><span><span class="eyebrow">EVENTOS</span><strong id="agendaListTitle">Próximos eventos</strong></span><span class="collapse-hint">Mostrar</span></summary><div id="agendaList" class="agenda-list collapse-body"></div></details>
-<div class="agenda-layout"><section class="panel agenda-calendar-panel"><div class="agenda-week"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="agendaCalendar" class="agenda-calendar"></div></section></div>
+<div class="agenda-layout"><section class="panel agenda-calendar-panel"><div class="agenda-calendar-heading"><div class="agenda-month-nav"><button id="agendaPrevMonth" class="secondary-button compact" type="button" aria-label="Mes anterior">‹</button><strong id="agendaMonthTitle">—</strong><button id="agendaNextMonth" class="secondary-button compact" type="button" aria-label="Mes siguiente">›</button><button id="agendaToday" class="text-button" type="button">Hoy</button></div><small>Los inicios se toman de las fechas definidas en Cultivo.</small></div><div class="agenda-week"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="agendaCalendar" class="agenda-calendar"></div></section></div>
 </section>
 <section class="agenda-face" data-agenda-face-panel="nutrition"><div id="nutritionCalendarRoot"></div></section>
 </div>
@@ -206,23 +157,23 @@
 <section class="view" data-view-panel="recipes">
 <div class="page-heading">
 <div>
-<p class="eyebrow">INSUMOS Y DOSIS</p>
-<h2>Recetas</h2>
-<p class="subtle">Productos, composiciones versionadas y cálculo por litro.</p>
+<p class="eyebrow">Insumos y dosis</p>
+<h2>Sustratos e insumos</h2>
+<p class="subtle">Primero cargá los insumos; después combinalos en una receta de sustrato.</p>
 </div>
 </div>
 <nav class="hub-switch" aria-label="Universo cultivo"><button data-view="cultivation">Cultivos y lotes</button><button class="active" data-view="recipes">Recetas e insumos</button></nav>
 <div class="module-tabs" role="tablist">
-<button class="module-tab active" data-recipe-tab="recipes">Recetas</button>
-<button class="module-tab" data-recipe-tab="products">Insumos</button>
+<button class="module-tab active" data-recipe-tab="products">1 · Insumos</button>
+<button class="module-tab" data-recipe-tab="recipes">2 · Recetas de sustrato</button>
 </div>
-<section id="productsRoot" class="module-panel" data-recipe-panel="products">
+<section id="productsRoot" class="module-panel active" data-recipe-panel="products">
 </section>
-<section id="recipeListRoot" class="module-panel active" data-recipe-panel="recipes">
+<section id="recipeListRoot" class="module-panel" data-recipe-panel="recipes">
 </section>
 </section>
 <section class="view" data-view-panel="assistant">
-<div class="page-heading"><div><p class="eyebrow">GEMINI · ASISTENCIA SEGURA</p><h2>Asistente del cultivo</h2><p class="subtle">Consultá el proyecto activo y prepará registros sin perder el control.</p></div></div>
+<div class="page-heading"><div><p class="eyebrow">Gemini · asistencia segura</p><h2>Asistente del cultivo</h2><p class="subtle">Consultá el proyecto activo y prepará registros sin perder el control.</p></div></div>
 <div id="assistantMessage" class="message"></div>
 <section class="panel assistant-panel">
 <div id="assistantConversation" class="assistant-conversation" aria-live="polite"><article class="assistant-bubble assistant"><strong>Growmanager IA</strong><p>Puedo consultar cultivos, productos, recetas y agenda. Las modificaciones siempre necesitan tu confirmación.</p></article></div>
@@ -233,7 +184,7 @@
 <section class="view" data-view-panel="team">
 <div class="page-heading">
 <div>
-<p class="eyebrow">COLABORACIÓN SEGURA</p>
+<p class="eyebrow">Colaboración segura</p>
 <h2>Miembros</h2>
 <p class="subtle">Administrá quién accede a cada uno de tus proyectos y con qué permisos.</p>
 </div>
@@ -248,7 +199,7 @@
 <div class="team-summary-actions"><span id="teamCurrentRole" class="tag">—</span></div>
 </section>
 <form id="manageWorkspaceForm" class="panel form-panel workspace-manager" data-collapsible data-collapse-key="team-project-admin">
-<div class="section-heading"><div><p class="eyebrow">ADMINISTRACIÓN</p><h3>Editar o eliminar cultivo</h3></div></div>
+<div class="section-heading"><div><p class="eyebrow">Administración</p><h3>Editar o eliminar cultivo</h3></div></div>
 <label>Cultivo<select name="workspaceId" id="manageWorkspaceSelect" required></select></label>
 <label>Nombre<input name="name" maxlength="60" required></label>
 <p class="field-help">Solo aparecen los cultivos en los que sos Administrador.</p>
@@ -258,7 +209,7 @@
 <form id="inviteMemberForm" class="panel form-panel" data-collapsible data-collapse-key="team-invite" data-default-open="true">
 <div class="section-heading">
 <div>
-<p class="eyebrow">INVITACIÓN</p>
+<p class="eyebrow">Invitación</p>
 <h3>Sumar una persona</h3>
 </div>
 </div>
@@ -279,7 +230,7 @@
 <section class="panel" data-collapsible data-collapse-key="team-members" data-default-open="true">
 <div class="section-heading">
 <div>
-<p class="eyebrow">ACCESOS GLOBALES</p>
+<p class="eyebrow">Accesos globales</p>
 <h3>Personas y proyectos</h3>
 </div>
 </div>
@@ -290,7 +241,7 @@
 <section class="panel" data-collapsible data-collapse-key="team-invitations">
 <div class="section-heading">
 <div>
-<p class="eyebrow">PENDIENTES</p>
+<p class="eyebrow">Pendientes</p>
 <h3>Invitaciones</h3>
 </div>
 </div>
@@ -298,30 +249,26 @@
 </div>
 </section>
 <section id="platformAdminPanel" class="panel" hidden data-collapsible data-collapse-key="team-platform-admin">
-<div class="section-heading"><div><p class="eyebrow">ADMINISTRACIÓN GENERAL</p><h3>Usuarios de GrowManager</h3></div><span id="platformUserCount" class="tag">0 usuarios</span></div>
+<div class="section-heading"><div><p class="eyebrow">Administración general</p><h3>Usuarios de GrowManager</h3></div><span id="platformUserCount" class="tag">0 usuarios</span></div>
 <p class="field-help">Vista exclusiva del administrador general. Muestra registros y cantidad de proyectos, sin exponer contraseñas ni contenido privado.</p>
 <div id="platformUsersList" class="member-list"></div>
-<div class="section-heading admin-projects-heading"><div><p class="eyebrow">PANORAMA DE PROYECTOS</p><h3>Todos los proyectos</h3></div><span id="platformProjectCount" class="tag">0 proyectos</span></div>
+<div class="section-heading admin-projects-heading"><div><p class="eyebrow">Panorama de proyectos</p><h3>Todos los proyectos</h3></div><span id="platformProjectCount" class="tag">0 proyectos</span></div>
 <div id="platformProjectsList" class="member-list"></div>
 <form id="demoProjectForm" class="demo-project-form"><label>Copiar proyecto privado como muestra<select id="demoSourceWorkspace" name="sourceWorkspaceId" required></select></label><label>Nombre público<input name="name" value="GrowManager · Proyecto de muestra" maxlength="80" required></label><button class="secondary-button" type="submit">Crear nueva copia demo</button></form>
 </section>
 </section>
-<section id="operationsView" class="view" data-view-panel="operations"><div class="page-heading"><div><p class="eyebrow">TRAZABILIDAD DEL CULTIVO</p><h2>Bitácora</h2><p class="subtle">Todo lo realizado: riegos, podas, trasplantes, observaciones, incidentes y cambios del sistema.</p></div><button id="newOperationButton" class="primary-button" type="button">+ Nuevo registro</button></div><nav class="agenda-face-switch" aria-label="Universo agenda"><button type="button" data-view="agenda">Calendario</button><button class="active" type="button">Bitácora</button></nav><div id="operationsMessage" class="message"></div><section id="operationSummary" class="journal-summary"></section><section class="panel journal-panel" data-collapsible data-collapse-key="journal-records" data-default-open="true"><div class="section-heading"><div><p class="eyebrow">HISTORIAL</p><h3>Registros del cultivo</h3></div></div><div class="journal-toolbar"><label>Tipo<select id="operationFilter"><option value="all">Todo</option><option value="irrigation">Riegos</option><option value="activity">Actividades</option><option value="incident">Incidentes</option><option value="system">Sistema</option><option value="alerts">Alertas activas</option></select></label><label>Cultivo o lote<select id="operationRelation"><option value="all">Todos</option></select></label><label>Período<select id="operationPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el ciclo</option></select></label><input id="operationSearch" type="search" placeholder="Buscar poda, riego, receta…" aria-label="Buscar en la bitácora"></div><div id="operationList" class="operation-list"></div></section></section>
+<section id="operationsView" class="view" data-view-panel="operations"><div class="page-heading"><div><h2>Bitácora</h2><p class="subtle">Todo lo realizado: riegos, podas, trasplantes, observaciones, incidentes y cambios del sistema.</p></div><button id="newOperationButton" class="primary-button" type="button">+ Nuevo registro</button></div><button id="advancedOperationButton" class="text-button" type="button">Registro avanzado de bitácora</button><div id="operationsMessage" class="message"></div><section id="operationSummary" class="journal-summary"></section><section class="panel journal-panel" data-collapsible data-collapse-key="journal-records" data-default-open="true"><div class="section-heading"><div><p class="eyebrow">Historial</p><h3>Registros del cultivo</h3></div></div><div class="journal-toolbar"><label>Tipo<select id="operationFilter"><option value="all">Todo</option><option value="irrigation">Riegos</option><option value="activity">Actividades</option><option value="incident">Incidentes</option><option value="system">Sistema</option><option value="alerts">Alertas activas</option></select></label><label>Cultivo o lote<select id="operationRelation"><option value="all">Todos</option></select></label><label>Período<select id="operationPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el ciclo</option></select></label><input id="operationSearch" type="search" placeholder="Buscar poda, riego, receta…" aria-label="Buscar en la bitácora"></div><div id="operationList" class="operation-list"></div></section></section>
+<section class="view" data-view-panel="integrations"><div class="page-heading"><h2>Configuración / Integraciones</h2></div><section class="panel"><h3>GrowManager Connect</h3><p class="subtle">Conectá equipos y sensores opcionales. Podés usar GrowManager sin ellos.</p><label class="connect-toggle"><input id="connectEnabled" type="checkbox"> Habilitar GrowManager Connect en este navegador</label><p class="field-help">Al desactivarlo, GrowManager deja de consultar el dispositivo. Los equipos conservan su funcionamiento.</p><button class="secondary-button" data-view="connection" data-connect-only>Configurar conexión</button><button class="text-button" data-view="connectAdvanced" data-connect-only>Configuración avanzada</button></section></section>
+<section class="view" data-view-panel="connectAdvanced"><div class="page-heading"><h2>Configuración avanzada</h2></div><nav class="control-shortcuts"><button class="secondary-button" data-view="control">Volver a Control</button><button class="secondary-button" data-view="connection">Conexión · IP / hostname</button><button class="secondary-button" data-view="hardware">Hardware, pines y diagnóstico</button><button class="secondary-button" data-view="energy">Energía</button><button class="text-button" data-view="integrations">GrowManager Connect</button></nav><div id="connectAdvancedContent"></div></section>
 <section class="view" data-view-panel="control">
 <div class="page-heading">
 <div>
-<p class="eyebrow">4 CANALES</p>
+<p class="eyebrow">GrowManager Connect</p>
 <h2>Control</h2>
-<p class="subtle">Operación manual y configuración del sistema Arduino.</p>
+<p class="subtle">Luz, ventilación y otros equipos de tu cultivo.</p>
 </div>
 </div>
-<nav class="control-shortcuts" aria-label="Configuración Arduino">
-<button class="secondary-button alert-shortcut" data-view="operations">Bitácora y alertas <span id="operationAlertCount">0</span></button>
-<button class="secondary-button" data-view="energy">Energía</button>
-<button class="secondary-button" data-view="automation">Automatización</button>
-<button class="secondary-button" data-view="hardware">Hardware</button>
-<button class="secondary-button" data-view="connection">Conexión</button>
-</nav>
+<nav class="control-shortcuts" aria-label="Dispositivos"><button class="secondary-button" data-view="automation">Automatización</button><button class="text-button" data-view="connectAdvanced">Configuración avanzada</button></nav>
 <div id="controlMessage" class="message">
 </div>
 <div id="controlRelays" class="control-grid">
@@ -330,7 +277,7 @@
 <section class="view" data-view-panel="energy">
 <div class="page-heading">
 <div>
-<p class="eyebrow">ESTIMACIÓN LOCAL</p>
+<p class="eyebrow">Estimación local</p>
 <h2>Energía</h2>
 <p class="subtle">Potencia nominal y tiempo de encendido de los relays.</p>
 </div>
@@ -375,7 +322,7 @@
 <section class="panel" data-collapsible data-collapse-key="energy-relays" data-default-open="true">
 <div class="section-heading">
 <div>
-<p class="eyebrow">SALIDAS</p>
+<p class="eyebrow">Salidas</p>
 <h3>Detalle eléctrico</h3>
 </div>
 </div>
@@ -385,7 +332,7 @@
 <form id="energyForm" class="panel form-panel" data-collapsible data-collapse-key="energy-settings">
 <div class="section-heading">
 <div>
-<p class="eyebrow">CONFIGURACIÓN LOCAL</p>
+<p class="eyebrow">Configuración local</p>
 <h3>Dispositivos y tarifa</h3>
 </div>
 </div>
@@ -399,7 +346,7 @@
 </div>
 </form>
 <section class="panel energy-note" data-collapsible data-collapse-key="energy-method">
-<div class="section-heading"><div><p class="eyebrow">CÓMO SE CALCULA</p><h3>Metodología</h3></div></div>
+<div class="section-heading"><div><p class="eyebrow">Cómo se calcula</p><h3>Metodología</h3></div></div>
 <p>El cálculo se basa en la potencia nominal configurada para cada dispositivo y en el tiempo que cada relay permanece encendido. No reemplaza un medidor eléctrico.</p>
 </section>
 <section class="panel danger-zone" data-collapsible data-collapse-key="energy-reset">
@@ -420,7 +367,7 @@
 <section class="view" data-view-panel="automation">
 <div class="page-heading">
 <div>
-<p class="eyebrow">REGLAS DEL WEMOS</p>
+<p class="eyebrow">Reglas del wemos</p>
 <h2>Automatización</h2>
 <p class="subtle">Los valores se guardan en el dispositivo.</p>
 </div>
@@ -431,7 +378,7 @@
 <section class="panel form-panel" data-collapsible data-collapse-key="automation-light" data-default-open="true">
 <div class="section-heading">
 <div>
-<p class="eyebrow">ILUMINACIÓN</p>
+<p class="eyebrow">Iluminación</p>
 <h3>Horario de luz</h3>
 </div>
 </div>
@@ -449,7 +396,7 @@
 <section class="panel form-panel" data-collapsible data-collapse-key="automation-temperature">
 <div class="section-heading">
 <div>
-<p class="eyebrow">TEMPERATURA</p>
+<p class="eyebrow">Temperatura</p>
 <h3>Rango automático</h3>
 </div>
 </div>
@@ -461,7 +408,7 @@
 </div>
 </section>
 <section class="panel form-panel" data-collapsible data-collapse-key="automation-ventilation">
-<div class="section-heading"><div><p class="eyebrow">VENTILACIÓN</p><h3>Control del cooler</h3></div></div>
+<div class="section-heading"><div><p class="eyebrow">Ventilación</p><h3>Control del cooler</h3></div></div>
 <div class="form-grid two">
 <label>Modo<select name="ventMode"><option value="interval">Solo intervalos</option><option value="temperature">Solo temperatura</option><option value="combined">Intervalos + emergencia</option></select></label>
 <label>Intervalo (minutos)<input name="ventInterval" type="number" min="1" max="1440" step="1" required></label>
@@ -478,7 +425,7 @@
 <section class="view" data-view-panel="hardware">
 <div class="page-heading">
 <div>
-<p class="eyebrow">ASIGNACIÓN DE PINES</p>
+<p class="eyebrow">Asignación de pines</p>
 <h2>Hardware</h2>
 <p class="subtle">Una salida física por dispositivo.</p>
 </div>
@@ -486,7 +433,7 @@
 <div id="hardwareMessage" class="message">
 </div>
 <form id="hardwareForm" class="panel form-panel" novalidate data-collapsible data-collapse-key="hardware-pins" data-default-open="true">
-<div class="section-heading"><div><p class="eyebrow">SALIDAS</p><h3>Asignación de dispositivos</h3></div></div>
+<div class="section-heading"><div><p class="eyebrow">Salidas</p><h3>Asignación de dispositivos</h3></div></div>
 <div id="hardwareFields" class="hardware-grid">
 </div>
 <div class="soil-row">
@@ -500,12 +447,12 @@
 <button class="primary-button" type="submit">Guardar asignación</button>
 </div>
 </form>
-<section class="panel" data-collapsible data-collapse-key="hardware-dht"><div class="section-heading"><div><p class="eyebrow">DIAGNÓSTICO DHT</p><h3>Salud del sensor ambiental</h3></div></div><div id="dhtDiagnostics" class="sensor-diagnostics"><p class="field-help">Cargando diagnóstico del sensor…</p></div><div id="dhtDiagnosticLog" class="sensor-diagnostic-log"></div></section>
+<section class="panel" data-collapsible data-collapse-key="hardware-dht"><div class="section-heading"><div><p class="eyebrow">Diagnóstico dht</p><h3>Salud del sensor ambiental</h3></div></div><div id="dhtDiagnostics" class="sensor-diagnostics"><p class="field-help">Cargando diagnóstico del sensor…</p></div><div id="dhtDiagnosticLog" class="sensor-diagnostic-log"></div></section>
 </section>
 <section class="view" data-view-panel="connection">
 <div class="page-heading">
 <div>
-<p class="eyebrow">RED LOCAL</p>
+<p class="eyebrow">Red local</p>
 <h2>Conexión</h2>
 <p class="subtle">Datos guardados solamente en este navegador.</p>
 </div>
@@ -513,7 +460,7 @@
 <div id="connectionMessage" class="message">
 </div>
 <form id="connectionForm" class="panel form-panel narrow" novalidate data-collapsible data-collapse-key="connection-device" data-default-open="true">
-<div class="section-heading"><div><p class="eyebrow">DISPOSITIVO</p><h3>Dirección local</h3></div></div>
+<div class="section-heading"><div><p class="eyebrow">Dispositivo</p><h3>Dirección local</h3></div></div>
 <label>Nombre amigable<input id="deviceName" name="deviceName" type="text" maxlength="40" required>
 </label>
 <label>IP o hostname<input id="deviceAddress" name="deviceAddress" type="text" autocomplete="off" spellcheck="false" required>
@@ -524,48 +471,53 @@
 <button id="testConnection" class="primary-button" type="submit">Guardar y probar</button>
 </div>
 </form>
-<section class="panel device-restart-panel" data-collapsible data-collapse-key="connection-restart"><div data-collapse-header><p class="eyebrow">RECUPERACIÓN</p><h3>Reiniciar dispositivo</h3><p>Reinicia el Wemos sin borrar horarios, pines ni automatizaciones guardadas.</p></div><button class="danger-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
+<section class="panel device-restart-panel" data-collapsible data-collapse-key="connection-restart"><div data-collapse-header><p class="eyebrow">Recuperación</p><h3>Reiniciar dispositivo</h3><p>Reinicia el Wemos sin borrar horarios, pines ni automatizaciones guardadas.</p></div><button class="danger-button" type="button" data-restart-device>Reiniciar Wemos</button></section>
 </section>
 </main>
 <footer>
 <span>Growmanager · V2.5</span>
-<span>Supabase + control Wemos local</span>
+<span>Gestión de cultivos</span>
 </footer>
 </div>
-<nav class="bottom-nav">
-<button class="nav-item active" data-view="dashboard"><span>⌂</span><small>Inicio</small></button>
-<button class="nav-item" data-view="cultivation"><span>✦</span><small>Cultivo</small></button>
-<button class="nav-item" data-view="agenda"><span>▣</span><small>Agenda</small></button>
-<button class="nav-item" data-view="control"><span>◉</span><small>Control</small></button>
-<button id="mobileMoreButton" class="nav-item" type="button" aria-expanded="false"><span>☰</span><small>Más</small></button>
+<nav class="bottom-nav" aria-label="Navegación principal">
+<button class="nav-item active" data-view="dashboard"><span data-ui-icon="home"></span><small>Hoy</small></button>
+<button class="nav-item" data-view="cultivation"><span data-ui-icon="leaf"></span><small>Cultivos</small></button>
+<button class="nav-item nav-register" type="button" data-open-register aria-label="Registrar"><span data-ui-icon="plus"></span><small>Registrar</small></button>
+<button class="nav-item" data-view="agenda"><span data-ui-icon="calendar"></span><small>Agenda</small></button>
+<button id="mobileMoreButton" class="nav-item" type="button" aria-expanded="false" aria-controls="mobileMoreMenu"><span data-ui-icon="menu"></span><small>Más</small></button>
 </nav>
-<div id="mobileMoreMenu" class="mobile-more-menu" hidden>
+<div id="mobileMoreMenu" class="mobile-more-menu" hidden aria-label="Más herramientas">
 <div><strong>Más herramientas</strong><button id="closeMobileMore" class="icon-button" type="button" aria-label="Cerrar menú">×</button></div>
-<button data-view="assistant"><span>✦</span><b>Asistente IA</b><small>Consultar y planificar</small></button>
-<button id="openProjectHubMobile" type="button"><span>◇</span><b>Mis proyectos</b><small>Cambiar, crear o explorar demo</small></button>
-<button data-view="team"><span>◎</span><b>Proyectos y miembros</b><small>Accesos y administración</small></button>
+<button data-view="assistant"><span data-ui-icon="spark"></span><b>Asistente IA</b><small>Consultar y preparar acciones</small></button>
+<button data-view="recipes"><span data-ui-icon="book"></span><b>Recetas e insumos</b><small>Fórmulas y productos</small></button>
+<button data-view="operations"><span data-ui-icon="history"></span><b>Bitácora</b><small>Todo lo realizado</small></button>
+<button data-view="integrations"><span data-ui-icon="sliders"></span><b>Configuración / Integraciones</b></button><button data-view="control"><span data-ui-icon="sliders"></span><b>Control y dispositivos</b><small>Ambiente y configuración avanzada</small></button>
+<button id="openProjectHubMobile" type="button"><span data-ui-icon="folder"></span><b>Mis proyectos</b><small>Cambiar, crear o explorar demo</small></button>
+<button data-view="team"><span data-ui-icon="users"></span><b>Proyectos y miembros</b><small>Accesos y administración</small></button>
 </div>
-<dialog id="restartDeviceDialog" class="app-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">REINICIO SEGURO</p><h3>¿Reiniciar el Wemos?</h3></div><button id="closeRestartDevice" class="icon-button" type="button">×</button></div><p class="dialog-copy">El dispositivo dejará de responder durante algunos segundos. La configuración guardada se conservará.</p><div class="form-actions split"><button id="cancelRestartDevice" class="secondary-button" type="button">Cancelar</button><button id="confirmRestartDevice" class="danger-button" type="button">Sí, reiniciar</button></div></div></dialog>
+<dialog id="quickRegisterDialog" class="app-dialog"><div class="dialog-form"><div class="dialog-heading"><div><h3>¿Qué querés hacer?</h3><p class="subtle">¿Qué hiciste? Elegí una tarea para registrarla.</p></div><button class="icon-button" value="cancel" type="button" aria-label="Cerrar">×</button></div><div class="quick-actions daily-type-grid"><button class="secondary-button" data-daily-type="irrigation">Riego</button><button class="secondary-button" data-daily-type="pruning">Poda</button><button class="secondary-button" data-daily-type="transplant">Trasplante</button><button class="secondary-button" data-daily-type="measurement">Medición</button><button class="secondary-button" data-daily-type="application">Aplicación</button><button class="secondary-button" data-daily-type="observation">Observación</button><button class="secondary-button" data-daily-type="incident">Incidente</button><button class="secondary-button" data-daily-type="stage_change">Cambio de etapa</button><button class="secondary-button" data-existing-action="event"><span data-ui-icon="calendar"></span><span><strong>Planificar un evento</strong><small>Abrir el calendario actual</small></span></button><button class="secondary-button" data-existing-action="assistant"><span data-ui-icon="spark"></span><span><strong>Escribir o dictar al asistente</strong><small>Revisar su propuesta antes de guardar</small></span></button></div><p id="registerRoleNote" class="field-help"></p></div></dialog>
+<dialog id="restartDeviceDialog" class="app-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">Reinicio seguro</p><h3>¿Reiniciar el Wemos?</h3></div><button id="closeRestartDevice" class="icon-button" type="button">×</button></div><p class="dialog-copy">El dispositivo dejará de responder durante algunos segundos. La configuración guardada se conservará.</p><div class="form-actions split"><button id="cancelRestartDevice" class="secondary-button" type="button">Cancelar</button><button id="confirmRestartDevice" class="danger-button" type="button">Sí, reiniciar</button></div></div></dialog>
 </div>
-<button id="voiceAssistantButton" class="voice-fab" type="button" data-state="idle" aria-label="Abrir asistente" title="Arrastrá para mover · Tocá para abrir"><img src="assets/grow-agent-orb.png" alt="" draggable="false"><small id="voiceAssistantStatus"></small></button>
-<dialog id="projectHubDialog" class="app-dialog wide-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">TUS ESPACIOS</p><h3>Elegí un proyecto</h3><p class="subtle">Solo aparecen los proyectos a los que tenés acceso.</p></div><button class="icon-button" type="button" value="cancel" aria-label="Cerrar">×</button></div><div id="projectHubList" class="project-hub-list"></div><section class="theme-accent-picker"><div><strong>Color de la interfaz</strong><small>Se aplica en tema claro y oscuro. El proyecto demo usa su color exclusivo.</small></div><div id="themeAccentOptions"><button type="button" data-accent="violet" aria-label="Violeta"></button><button type="button" data-accent="blue" aria-label="Azul"></button><button type="button" data-accent="teal" aria-label="Turquesa"></button><button type="button" data-accent="green" aria-label="Verde"></button><button type="button" data-accent="orange" aria-label="Naranja"></button></div></section><div class="project-app-tools"><div><strong>Aplicación</strong><small>La versión web se actualiza sola. En Android podés buscar una nueva APK.</small></div><div><button id="installPwaButton" class="secondary-button compact" type="button" hidden>Instalar web app</button><button id="checkAppUpdateButton" class="secondary-button compact" type="button">Buscar actualización</button></div></div><div class="form-actions project-hub-actions"><button id="startTourButton" class="secondary-button" type="button">? Recorrer la aplicación</button><span></span><button id="projectHubDemo" class="secondary-button" type="button">Abrir muestra</button><button id="projectHubNew" class="primary-button" type="button">+ Nuevo proyecto</button></div></div></dialog>
-<dialog id="welcomeWizardDialog" class="app-dialog onboarding-dialog"><form id="welcomeWizardForm" class="dialog-form"><div class="wizard-progress"><i class="active"></i><i></i><i></i></div><div class="dialog-heading"><div><p class="eyebrow">BIENVENIDO A GROWMANAGER</p><h3>Ya tenés un proyecto para explorar</h3></div></div><div class="welcome-demo-card"><span>◈</span><div><strong>GrowManager · Proyecto de muestra</strong><p>Te lo asignamos automáticamente en modo lectura para que veas cultivos, agenda, recetas y registros sin configurar nada. Es independiente y no da acceso a proyectos privados.</p></div></div><h4>¿Cómo querés comenzar?</h4><div class="onboarding-options welcome-options"><label><input type="radio" name="mode" value="demo" checked><span><b>Explorar la muestra</b><small>Recorré primero la herramienta y creá tu proyecto cuando quieras.</small></span></label><label><input type="radio" name="mode" value="base"><span><b>Crear proyecto base</b><small>Incluye espacios Vegetativo y Floración listos para editar.</small></span></label><label><input type="radio" name="mode" value="blank"><span><b>Crear desde cero</b><small>Comenzá con un proyecto completamente vacío.</small></span></label></div><label id="welcomeProjectName" hidden>Nombre de tu proyecto<input name="name" value="Mi cultivo" maxlength="80" required></label><div id="welcomeWizardMessage" class="message"></div><div class="form-actions split"><button id="welcomeSkipTour" class="secondary-button" type="button">Omitir guía</button><button class="primary-button" type="submit">Continuar y conocer la app</button></div></form></dialog>
+<button id="voiceAssistantButton" class="voice-fab" type="button" data-state="idle" aria-label="Abrir asistente" title="Abrir asistente"><img src="assets/grow-agent-orb.png" alt="" draggable="false"><small id="voiceAssistantStatus"></small></button>
+<dialog id="projectHubDialog" class="app-dialog wide-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">Tus espacios</p><h3>Elegí un proyecto</h3><p class="subtle">Solo aparecen los proyectos a los que tenés acceso.</p></div><button class="icon-button" type="button" value="cancel" aria-label="Cerrar">×</button></div><div id="projectHubList" class="project-hub-list"></div><section class="theme-accent-picker"><div><strong>Color de identificación</strong><small>Identifica elementos del proyecto. La interfaz mantiene una base neutra.</small></div><div id="themeAccentOptions"><button type="button" data-accent="violet" aria-label="Violeta"></button><button type="button" data-accent="blue" aria-label="Azul"></button><button type="button" data-accent="teal" aria-label="Turquesa"></button><button type="button" data-accent="green" aria-label="Verde"></button><button type="button" data-accent="orange" aria-label="Naranja"></button></div></section><div class="project-app-tools"><div><strong>Aplicación</strong><small>La versión web se actualiza sola. En Android podés buscar una nueva APK.</small></div><div><button id="installPwaButton" class="secondary-button compact" type="button" hidden>Instalar web app</button><button id="checkAppUpdateButton" class="secondary-button compact" type="button">Buscar actualización</button></div></div><div class="form-actions project-hub-actions"><button id="startTourButton" class="secondary-button" type="button">? Recorrer la aplicación</button><span></span><button id="projectHubDemo" class="secondary-button" type="button">Abrir muestra</button><button id="projectHubNew" class="primary-button" type="button">+ Nuevo proyecto</button></div></div></dialog>
+<dialog id="welcomeWizardDialog" class="app-dialog onboarding-dialog"><form id="welcomeWizardForm" class="dialog-form"><div class="wizard-progress"><i class="active"></i><i></i><i></i></div><div class="dialog-heading"><div><p class="eyebrow">Bienvenido a growmanager</p><h3>Ya tenés un proyecto para explorar</h3></div></div><div class="welcome-demo-card"><span>◈</span><div><strong>GrowManager · Proyecto de muestra</strong><p>Te lo asignamos automáticamente en modo lectura para que veas cultivos, agenda, recetas y registros sin configurar nada. Es independiente y no da acceso a proyectos privados.</p></div></div><h4>¿Cómo querés comenzar?</h4><div class="onboarding-options welcome-options"><label><input type="radio" name="mode" value="demo" checked><span><b>Explorar la muestra</b><small>Recorré primero la herramienta y creá tu proyecto cuando quieras.</small></span></label><label><input type="radio" name="mode" value="base"><span><b>Crear proyecto base</b><small>Incluye espacios Vegetativo y Floración listos para editar.</small></span></label><label><input type="radio" name="mode" value="blank"><span><b>Crear desde cero</b><small>Comenzá con un proyecto completamente vacío.</small></span></label></div><label id="welcomeProjectName" hidden>Nombre de tu proyecto<input name="name" value="Mi cultivo" maxlength="80" required></label><div id="welcomeWizardMessage" class="message"></div><div class="form-actions split"><button id="welcomeSkipTour" class="secondary-button" type="button">Omitir guía</button><button class="primary-button" type="submit">Continuar y conocer la app</button></div></form></dialog>
 <dialog id="appTourDialog" class="app-dialog tour-dialog"><div class="dialog-form"><div class="wizard-progress" id="tourProgress"></div><div class="tour-copy"><span id="tourIcon">⌂</span><div><p class="eyebrow" id="tourEyebrow">RECORRIDO</p><h3 id="tourTitle">Inicio</h3><p id="tourDescription"></p></div></div><div class="dialog-actions"><button id="tourExit" class="secondary-button" type="button">Salir de la guía</button><span></span><button id="tourPrevious" class="secondary-button" type="button">Anterior</button><button id="tourNext" class="primary-button" type="button">Siguiente</button></div></div></dialog>
-<dialog id="onboardingDialog" class="app-dialog onboarding-dialog"><form id="onboardingForm" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">PRIMEROS PASOS</p><h3>Prepará tu espacio en GrowManager</h3><p class="subtle">Podés empezar acompañado, desde cero o recorrer una demostración.</p></div><button id="closeOnboarding" class="icon-button" type="button" value="cancel" aria-label="Cerrar">×</button></div><div class="onboarding-options"><label><input type="radio" name="mode" value="base" checked><span><b>Proyecto base</b><small>Incluye un cultivo y espacios Vegetativo y Floración, listos para editar.</small></span></label><label><input type="radio" name="mode" value="blank"><span><b>Empezar de cero</b><small>Crea un proyecto vacío y te guía desde la sección Cultivo.</small></span></label><label><input type="radio" name="mode" value="demo"><span><b>Ver proyecto de muestra</b><small>Recorré datos reales anonimizados en modo lectura. Tu proyecto privado queda aislado.</small></span></label></div><label id="onboardingNameField">Nombre del proyecto<input name="name" value="Mi cultivo" maxlength="80" required></label><div id="onboardingMessage" class="message"></div><div class="form-actions"><button class="primary-button" type="submit">Continuar</button></div></form></dialog>
-<dialog id="voiceAssistantDialog" class="app-dialog voice-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">ASISTENTE RÁPIDO</p><h3>Escribir, dictar o planificar</h3></div><button class="icon-button" type="button" onclick="document.getElementById('voiceAssistantDialog').close()">×</button></div><label>¿Qué necesitás registrar o consultar?<textarea id="voiceTranscript" rows="4" maxlength="2000" placeholder="Ej. Hoy regué las madres con la receta vegetativa, 4 litros, pH 6.2. Mañana revisar humedad."></textarea></label><p class="field-help">Podés pegar un texto completo o dictarlo. Nada se guarda hasta que confirmes.</p><div id="voiceAssistantError" class="message error" hidden></div><section id="voiceProposal" class="assistant-proposal" hidden></section><div class="dialog-actions voice-actions"><button id="cancelVoiceAction" class="secondary-button" type="button">Cancelar</button><button id="dictateVoiceText" class="secondary-button" type="button">🎙 Dictar</button><button id="processVoiceText" class="secondary-button" type="button">Consultar IA</button><button id="confirmVoiceAction" class="primary-button" type="button" disabled>Confirmar y guardar</button></div></div></dialog>
-<dialog id="operationDialog" class="app-dialog"><form id="operationForm" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">NUEVO REGISTRO</p><h3>Actividad o incidente</h3></div><button id="closeOperationDialog" class="icon-button" type="button">×</button></div><div class="form-grid two"><label>Tipo<select name="kind"><option value="activity">Actividad</option><option value="incident">Incidente</option></select></label><label>Categoría<select name="category"><option value="general">General</option><option value="irrigation">Riego</option><option value="transplant">Trasplante</option><option value="pruning">Poda</option><option value="pests">Plagas</option><option value="fungus">Hongos</option><option value="lighting">Iluminación</option><option value="maintenance">Mantenimiento</option><option value="power">Electricidad</option></select></label><label>Cultivo<select id="operationCultivation" name="cultivationId"><option value="">General del proyecto</option></select></label><label>Lote<select id="operationLot" name="lotId"><option value="">Sin lote específico</option></select></label><label>Fecha y hora<input id="operationOccurredAt" name="occurredAt" type="datetime-local" required></label><label>Importancia<select name="severity"><option value="info">Informativa</option><option value="warning">Advertencia</option><option value="critical">Crítica</option></select></label></div><label>Título<input name="title" maxlength="120" required></label><label>Detalle<textarea name="description" maxlength="1200" rows="4"></textarea></label><div class="form-actions split"><button class="secondary-button" type="button" onclick="document.getElementById('operationDialog').close()">Cancelar</button><button class="primary-button" type="submit">Guardar en Supabase</button></div></form></dialog>
+<dialog id="onboardingDialog" class="app-dialog onboarding-dialog"><form id="onboardingForm" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">Primeros pasos</p><h3>Prepará tu espacio en GrowManager</h3><p class="subtle">Podés empezar acompañado, desde cero o recorrer una demostración.</p></div><button id="closeOnboarding" class="icon-button" type="button" value="cancel" aria-label="Cerrar">×</button></div><div class="onboarding-options"><label><input type="radio" name="mode" value="base" checked><span><b>Proyecto base</b><small>Incluye un cultivo y espacios Vegetativo y Floración, listos para editar.</small></span></label><label><input type="radio" name="mode" value="blank"><span><b>Empezar de cero</b><small>Crea un proyecto vacío y te guía desde la sección Cultivo.</small></span></label><label><input type="radio" name="mode" value="demo"><span><b>Ver proyecto de muestra</b><small>Recorré datos reales anonimizados en modo lectura. Tu proyecto privado queda aislado.</small></span></label></div><label id="onboardingNameField">Nombre del proyecto<input name="name" value="Mi cultivo" maxlength="80" required></label><div id="onboardingMessage" class="message"></div><div class="form-actions"><button class="primary-button" type="submit">Continuar</button></div></form></dialog>
+<dialog id="voiceAssistantDialog" class="app-dialog voice-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">Asistente rápido</p><h3>Escribir, dictar o planificar</h3></div><button class="icon-button" type="button" onclick="document.getElementById('voiceAssistantDialog').close()">×</button></div><label>¿Qué necesitás registrar o consultar?<textarea id="voiceTranscript" rows="4" maxlength="2000" placeholder="Ej. Hoy regué las madres con la receta vegetativa, 4 litros, pH 6.2. Mañana revisar humedad."></textarea></label><p class="field-help">Podés pegar un texto completo o dictarlo. Nada se guarda hasta que confirmes.</p><div id="voiceAssistantError" class="message error" hidden></div><section id="voiceProposal" class="assistant-proposal" hidden></section><div class="dialog-actions voice-actions"><button id="cancelVoiceAction" class="secondary-button" type="button">Cancelar</button><button id="dictateVoiceText" class="secondary-button" type="button">Dictar</button><button id="processVoiceText" class="secondary-button" type="button">Consultar IA</button><button id="confirmVoiceAction" class="primary-button" type="button" disabled>Confirmar y guardar</button></div></div></dialog>
+<dialog id="dailyRecordDialog" class="app-dialog"><form id="dailyRecordForm" class="dialog-form"><div class="dialog-heading"><div><h3>Registrar lo realizado</h3><p class="subtle">Se guardará en el historial de la tanda.</p></div><button id="closeDailyRecord" class="icon-button" type="button" aria-label="Cerrar registro">×</button></div><label>Qué hiciste<select name="type"></select></label><label>Tanda<select name="lotId" required></select></label><label id="dailyPlanLabel">Plan relacionado<select name="eventId"></select></label><label>Cuándo<input name="at" type="datetime-local" required></label><fieldset id="dailyWaterFields" class="form-grid two"><legend>Datos del riego</legend><label>Agua total de la tanda (L)<input name="waterLiters" type="number" min="0.001" step="0.001"></label><label>pH<input name="ph" type="number" min="0" max="14" step="0.01"></label><label>EC (mS/cm)<input name="ec" type="number" min="0" step="0.001"></label><label>Receta<select name="recipeId"><option value="">Sin receta</option></select></label></fieldset><label>Notas<textarea name="notes" rows="3" maxlength="1200" placeholder="Qué hiciste o qué observaste"></textarea></label><p id="dailyRecordMessage" role="status" class="field-help"></p><button type="submit" class="primary-button">Guardar registro</button></form></dialog>
+<dialog id="operationDialog" class="app-dialog"><form id="operationForm" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">Nuevo registro</p><h3>Actividad o incidente</h3></div><button id="closeOperationDialog" class="icon-button" type="button">×</button></div><div class="form-grid two"><label>Tipo<select name="kind"><option value="activity">Actividad</option><option value="incident">Incidente</option></select></label><label>Categoría<select name="category"><option value="general">General</option><option value="irrigation">Riego</option><option value="transplant">Trasplante</option><option value="pruning">Poda</option><option value="pests">Plagas</option><option value="fungus">Hongos</option><option value="lighting">Iluminación</option><option value="maintenance">Mantenimiento</option><option value="power">Electricidad</option></select></label><label>Cultivo<select id="operationCultivation" name="cultivationId"><option value="">General del proyecto</option></select></label><label>Lote<select id="operationLot" name="lotId"><option value="">Sin lote específico</option></select></label><label>Fecha y hora<input id="operationOccurredAt" name="occurredAt" type="datetime-local" required></label><label>Importancia<select name="severity"><option value="info">Informativa</option><option value="warning">Advertencia</option><option value="critical">Crítica</option></select></label></div><label>Título<input name="title" maxlength="120" required></label><label>Detalle<textarea name="description" maxlength="1200" rows="4"></textarea></label><div class="form-actions split"><button class="secondary-button" type="button" onclick="document.getElementById('operationDialog').close()">Cancelar</button><button class="primary-button" type="submit">Guardar registro</button></div></form></dialog>
 <dialog id="agendaEventDialog" class="app-dialog wide-dialog">
 <form id="agendaEventForm" class="dialog-form">
-<div class="dialog-heading"><div><p class="eyebrow">AGENDA</p><h3 id="agendaDialogTitle">Nuevo evento</h3></div><button id="closeAgendaEvent" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
+<div class="dialog-heading"><div><p class="eyebrow">Agenda</p><h3 id="agendaDialogTitle">Nuevo evento</h3></div><button id="closeAgendaEvent" class="icon-button" type="button" aria-label="Cerrar">×</button></div>
 <input name="id" type="hidden"><div class="form-grid two"><label>Título<input name="title" maxlength="100" required></label><label>Categoría<select name="eventType" required><option value="irrigation">Riego</option><option value="transplant">Trasplante</option><option value="cuttings">Esquejado</option><option value="pruning">Poda</option><option value="fertilization">Fertilización</option><option value="pests">Control de plagas</option><option value="fungus">Control de hongos</option><option value="lighting">Cambio de iluminación</option><option value="cleaning">Limpieza</option><option value="harvest">Cosecha</option><option value="maintenance">Mantenimiento</option><option value="other">Otro</option></select></label><label>Inicio<input name="startsAt" type="datetime-local" required></label><label>Fin<input name="endsAt" type="datetime-local" required></label><label>Cultivo<select name="cultivationId"></select></label><label>Lote<select name="lotId"></select></label><label>Prioridad<select name="priority"><option value="low">Baja</option><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></label><label>Estado<select name="status"><option value="pending">Pendiente</option><option value="accepted">Aceptada</option><option value="in_progress">En curso</option><option value="completed">Completada</option><option value="cancelled">Cancelada</option></select></label><label>Repetición<select name="recurrence"><option value="none">No repetir</option><option value="daily">Diaria</option><option value="weekly">Semanal</option><option value="monthly">Mensual</option></select></label></div>
 <div class="form-grid two agenda-people"><label>Responsables<select name="assignees" multiple size="4"></select><small>Podés seleccionar varios.</small></label><label>Participantes<select name="participants" multiple size="4"></select><small>Miembros informados, sin responsabilidad asignada.</small></label></div><label>Descripción<textarea name="description" maxlength="1000" rows="3"></textarea></label>
 <section id="agendaHistorySection" class="agenda-history" hidden><strong>Historial</strong><div id="agendaHistory"></div></section>
-<div class="dialog-actions"><button id="archiveAgendaEvent" class="secondary-button" type="button" hidden>Archivar</button><button id="deleteAgendaEvent" class="danger-button" type="button" hidden>Eliminar definitivamente</button><button id="googleAgendaEvent" class="secondary-button" type="button" hidden>Google Calendar</button><span></span><button id="closeAgendaEventBottom" class="secondary-button" type="button">Cancelar</button><button class="primary-button" type="submit">Guardar evento</button></div>
+<div class="dialog-actions"><button id="archiveAgendaEvent" class="secondary-button" type="button" hidden>Archivar</button><button id="deleteAgendaEvent" class="danger-button" type="button" hidden>Eliminar definitivamente</button><button id="executeAgendaEvent" type="button" class="primary-button" hidden>Realizar riego</button><button id="googleAgendaEvent" class="secondary-button" type="button" hidden>Google Calendar</button><span></span><button id="closeAgendaEventBottom" class="secondary-button" type="button">Cancelar</button><button class="primary-button" type="submit">Guardar evento</button></div>
 </form>
 </dialog>
 <dialog id="environmentHistoryDialog" class="app-dialog environment-dialog">
 <div class="dialog-form">
-<div class="dialog-heading"><div><p class="eyebrow">AMBIENTE · ÚLTIMAS 24 HORAS</p><h3 id="environmentHistoryTitle">Temperatura y humedad</h3></div><button class="icon-button" type="button" value="cancel" aria-label="Cerrar">×</button></div>
+<div class="dialog-heading"><div><p class="eyebrow">Ambiente · últimas 24 horas</p><h3 id="environmentHistoryTitle">Temperatura y humedad</h3></div><button class="icon-button" type="button" value="cancel" aria-label="Cerrar">×</button></div>
 <div id="environmentHistoryStats" class="environment-stats"></div>
 <div id="environmentHistoryChart" class="environment-chart" role="img" aria-label="Gráfico histórico"></div>
 <div class="environment-legend"><span class="temperature-line">Temperatura °C</span><span class="humidity-line">Humedad %</span></div>
@@ -576,11 +528,11 @@
 <div class="dialog-form">
 <div class="dialog-heading">
 <div>
-<p class="eyebrow">MIGRACIÓN SEGURA</p>
+<p class="eyebrow">Migración segura</p>
 <h3>Datos locales encontrados</h3>
 </div>
 </div>
-<p>Encontramos <strong data-local-count>0</strong> registros en IndexedDB. Podés importarlos a tu cuenta de Supabase. El respaldo local no se borrará.</p>
+<p>Encontramos <strong data-local-count>0</strong> registros en este navegador. Podés importarlos a tu cuenta. El respaldo local no se borrará.</p>
 <div data-remote-warning class="migration-warning" hidden>Esta cuenta ya contiene datos remotos. Importar puede generar registros conceptualmente duplicados.</div>
 <label data-confirm-import class="check-field" hidden>
 <input type="checkbox" data-migration-action="confirm"> Entiendo y quiero importar igualmente</label>
@@ -593,39 +545,43 @@
 </div>
 </dialog>
 <meta name="grow-public-base" content="https://maindave.github.io/growmanager/">
-<script>globalThis.GrowConfig=Object.freeze({SUPABASE_URL:'https://rzkocbaztxasbnchgwwy.supabase.co',SUPABASE_PUBLISHABLE_KEY:'sb_publishable_xnMIKJ72WwniGvsKuUJ0xQ_HKiX8M0K',PROJECT_ID:'rzkocbaztxasbnchgwwy',PUBLIC_URL:'https://maindave.github.io/growmanager/'});</script>
-<script src="https://maindave.github.io/growmanager/vendor/supabase.js?v=20260927-public5"></script>
-<script src="https://maindave.github.io/growmanager/supabase-client.js?v=20260927-public5"></script>
-<script src="cultivo-models.js?v=20260924-agenda4" defer>
+<script src="supabase-config.js?v=20260929-beta1"></script>
+<script src="vendor/supabase.js?v=20260929-beta1"></script>
+<script src="supabase-client.js?v=20260929-beta1"></script>
+<script src="cultivo-models.js?v=20260929-beta1" defer>
 </script>
 <script src="cultivo-db.js" defer>
 </script>
-<script src="cultivo-repository.js?v=20260928-tour1" defer>
+<script src="cultivo-repository.js?v=20260930-phase21" defer>
 </script>
 <script src="cultivo-migration.js" defer>
 </script>
 <script src="workspaces.js?v=20260928-admin4" defer>
 </script>
 <script src="ui-sections.js?v=20260928-collapse1" defer></script>
+<script src="dashboard-customizer.js?v=20260930-phase4" defer></script>
 <script src="app-update.js?v=20260928-app2" defer></script>
-<script src="onboarding-tour.js?v=20260928-tour2" defer></script>
-<script src="agenda.js?v=20260927-visual1" defer></script>
-<script src="operations.js?v=20260927-history2" defer></script>
-<script src="cultivation.js?v=20260924-agenda4" defer>
+<script src="onboarding-tour.js?v=20260930-phase21" defer></script>
+<script src="agenda.js?v=20260930-phase6" defer></script>
+<script src="operations.js?v=20261001-beta-fix" defer></script>
+<script src="cultivation.js?v=20260930-phase21" defer>
 </script>
 <script src="products.js" defer>
 </script>
-<script src="recipes.js?v=20260927-library1" defer>
+<script src="recipes.js?v=20260930-phase6" defer>
 </script>
-<script src="nutrition-calendar.js?v=20260924-agenda4" defer></script>
+<script src="nutrition-calendar.js?v=20260930-phase21" defer></script>
 <script src="assistant.js?v=20260927-journal1" defer></script>
-<script src="voice-assistant.js?v=20260927-text1" defer></script>
+<script src="voice-assistant.js?v=20260930-phase21" defer></script>
 <script src="energy.js" defer>
 </script>
 <script src="environment-history.js?v=20260925-diagnostics1" defer></script>
 <script src="auth.js?v=20260927-public5" defer>
 </script>
-<script src="app.js?v=20260928-dashboard1" defer>
+<script src="daily-models.js?v=20260930-phase21" defer></script><script src="daily.js?v=20260930-phase21" defer></script>
+<script src="today-models.js?v=20260930-phase21" defer></script>
+<script src="today.js?v=20260930-phase21" defer></script>
+<script src="app.js?v=20260930-phase4" defer>
 </script>
 </body>
 </html>

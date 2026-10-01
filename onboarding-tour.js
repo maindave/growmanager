@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
 const steps=[
-  {view:'dashboard',selector:'[data-view-panel="dashboard"] .page-heading',icon:'⌂',title:'Inicio',description:'Tu panorama diario: ambiente, cultivos concurrentes, próximos trabajos y estado del dispositivo. Los bloques secundarios pueden contraerse para priorizar lo importante.'},
+  {view:'dashboard',selector:'[data-view-panel="dashboard"] .page-heading',icon:'⌂',title:'Hoy',description:'Tu panorama diario: atención, próximos trabajos, tandas y actividad reciente. El ambiente y los detalles del dispositivo siguen disponibles.'},
   {view:'cultivation',selector:'[data-view-panel="cultivation"] .page-heading',icon:'✦',title:'Cultivos, espacios y lotes',description:'Un proyecto puede contener varios cultivos simultáneos. Dentro de cada uno organizás espacios —como Vegetativo o Floración— y lotes independientes —madres, esquejes o tandas SOG— con fechas, etapas y cantidades propias.'},
   {view:'cultivation',selector:'[data-view-panel="cultivation"] .hub-switch',icon:'↔',title:'El universo Cultivo',description:'Desde este selector alternás entre Cultivos y lotes y Recetas e insumos. Los lotes son la unidad que después vincula eventos, registros de bitácora y planificación nutricional.'},
   {view:'recipes',selector:'[data-view-panel="recipes"] .page-heading',icon:'◇',title:'Recetas e insumos',description:'Armá fórmulas reutilizables para riego, nutrición o aplicaciones foliares. Cada receta puede reunir productos, dosis por litro y una etapa de uso; los insumos conservan la información de cada producto.'},
