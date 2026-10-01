@@ -8,7 +8,7 @@
   }
   function build(input,lot) {
     if(!TYPES[input.type])throw new Error('Elegí una actividad válida.');
-    if(!lot)throw new Error('Elegí la tanda donde realizaste la tarea.');
+    if(!lot)throw new Error('Elegí el cultivo donde realizaste la tarea.');
     const at=new Date(input.at);if(!Number.isFinite(at.getTime()))throw new Error('Revisá la fecha.');
     if(at.getTime()>Date.now()+60000)throw new Error('Para una tarea futura, usá Planificar en Agenda.');
     const shared={cultivationId:lot.cultivationId,lotId:lot.id};

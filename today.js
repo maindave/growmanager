@@ -17,6 +17,7 @@
     wind:'M3 8h12c5 0 5-6 1-6 M3 12h16c4 0 4 6 0 6 M3 16h7', heat:'M7 20c-6-6 6-10 0-16 M12 20c-6-6 6-10 0-16 M17 20c-6-6 6-10 0-16'
   };
   function icon(name) { return `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.leaf}"/></svg>`; }
+  let cropPlants=[],cropRooms=[];
   let data={events:[],lots:[],cultivations:[],nutritionProgress:[]}, records=[], loaded=false, selectedLot=null, tab='today', device={online:null}, epoch=0, cloud='';
   const stage = lot => CultivoModels.LOT_STAGE_LABELS[lot.stage] || lot.stage;
   const editable = () => ['owner','editor'].includes(CultivoRepository.getCurrentWorkspace()?.role);
@@ -40,7 +41,7 @@
     const upcoming=TodayModels.upcoming(data.events,Agenda.occurrences);
     $('dashboardAgenda').innerHTML=upcoming.length?upcoming.map(eventRow).join(''):'<div class="today-empty"><strong>No hay próximos eventos pendientes</strong><p>Consultá el calendario para ver tu planificación.</p><button class="text-button" data-view="agenda">Abrir agenda →</button></div>';
     const active=data.lots.filter(l=>l.active);
-    $('dashboardCultivations').innerHTML=active.length?active.map(l=>`<button class="today-lot" data-open-lot="${esc(l.id)}"><span class="semantic-icon plant">${icon('leaf')}</span><span class="today-lot-copy"><strong>${esc(l.name)}</strong><span>${esc(stage(l))} · ${NutritionCalendar.profileKey(l)==='mothers'?'Continuo':esc(TodayModels.lotAge(l))}</span>${phase(l)}</span><span aria-hidden="true">→</span></button>`).join(''):'<div class="today-empty"><strong>Tus tandas aparecerán acá</strong><p>Organizalas en un espacio dentro de Cultivos.</p><button class="text-button" data-view="cultivation">Ver cultivos →</button></div>';
+    $('dashboardCultivations').innerHTML=active.length?active.map(l=>`<button class="today-lot" data-open-lot="${esc(l.id)}"><span class="semantic-icon plant">${icon('leaf')}</span><span class="today-lot-copy"><strong>${esc(l.name)}</strong><span>${esc(stage(l))} · ${NutritionCalendar.profileKey(l)==='mothers'?'Continuo':esc(TodayModels.lotAge(l))}</span>${phase(l)}</span><span aria-hidden="true">→</span></button>`).join(''):'<div class="today-empty"><strong>Tus cultivos aparecerán acá</strong><p>Creá una sala y agregá su cultivo.</p><button class="text-button" data-view="cultivation">Ver cultivos →</button></div>';
     renderAttention(); if(selectedLot)renderLot();
   }
   function renderAttention() {
@@ -71,6 +72,8 @@
     const token=++epoch,workspace=CultivoRepository.getCurrentWorkspace()?.id;
     if(!workspace)return;
     const result=await Promise.allSettled([Agenda.load(),Operations.load()]);
+    const [ps,rs]=await Promise.all([CultivoRepository.getAll('plants'),CultivoRepository.getAll('rooms')]);
+    if(token!==epoch)return;cropPlants=ps;cropRooms=rs;
     if(token!==epoch||workspace!==CultivoRepository.getCurrentWorkspace()?.id)return;
     const error=result.some(r=>r.status==='rejected'||r.value===false);
     $('todayLoadMessage').textContent=error?'No se pudieron actualizar todos los datos. Podés reintentar desde Actualizar.':'';
@@ -79,18 +82,19 @@
   async function openLot(id) { await load();selectedLot=id;tab='today';await GrowNavigation.showView('lot');renderLot(); }
   function renderLot() {
     const lot=data.lots.find(l=>l.id===selectedLot),root=$('lotContextRoot');
-    if(!lot){root.innerHTML='<div class="panel empty-state"><h2>Tanda no disponible</h2><p>Elegí una tanda del proyecto actual.</p></div>';return;}
+    if(!lot){root.innerHTML='<div class="panel empty-state"><h2>Cultivo no disponible</h2><p>Elegí un cultivo del proyecto actual.</p></div>';return;}
     const cultivation=data.cultivations.find(c=>c.id===lot.cultivationId);
-    const tabs=[['today','Hoy'],['history','Historial'],['plan','Plan'],['data','Datos']];
-    const upcoming=TodayModels.upcoming(data.events.filter(e=>e.lotId===lot.id),Agenda.occurrences);
-    const history=records.filter(r=>r.lotId===lot.id||r.metadata?.lotId===lot.id).slice(0,20);
+    const tabs=[['today','Hoy'],['history','Historial'],['plan','Plan'],['plants','Plantas'],['data','Datos']];
+    const upcoming=TodayModels.upcoming(data.events.filter(e=>e.lotId===lot.id||(!e.lotId&&e.cultivationId===lot.cultivationId)),Agenda.occurrences);
+    const history=records.filter(r=>r.lotId===lot.id||r.metadata?.lotId===lot.id||(!(r.lotId||r.metadata?.lotId)&&(r.cultivationId||r.metadata?.cultivationId)===lot.cultivationId)).slice(0,20);
     const lastWater=history.find(r=>r.kind==='irrigation');
     const emptyToday=`<p class="subtle">Sin tareas pendientes.</p>${lastWater?`<p class="tanda-summary"><strong>Último riego</strong> ${time(lastWater.occurredAt)}<br>${esc(lastWater.description||'')}</p>`:''}${device.online===true&&device.sensorValid?`<p class="tanda-summary"><strong>Ambiente del dispositivo</strong> ${esc($('temperature').textContent)} °C · ${esc($('humidity').textContent)} %</p>`:''}`;
-    const content=tab==='today'?`<button class="primary-button" data-daily-type="observation" data-lot-id="${esc(lot.id)}">+ Registrar en esta tanda</button><h3>Próximo en esta tanda</h3>${upcoming.length?upcoming.map(eventRow).join(''):emptyToday}`
-      :tab==='history'?`<h3>Historial de esta tanda</h3>${history.map(r=>`<article class="tanda-history-row"><div><small>${time(r.occurredAt)}</small><strong>${esc(r.title)}</strong><p>${esc(r.description||'')}</p>${r.source==='agenda'?'<small>Realizado desde Agenda</small>':''}</div></article>`).join('')||'<p class="subtle">Todavía no hay registros en esta tanda.</p>'}<button class="secondary-button" data-lot-link="history">Ver historial de la tanda →</button>`
-      :tab==='plan'?'<h3>Tu planificación</h3><p class="subtle">El calendario conserva los eventos y responsables. Nutrición muestra el programa y las etapas confirmadas.</p><div class="inline-actions"><button class="secondary-button" data-lot-link="agenda">Ver agenda de la tanda →</button><button class="secondary-button" data-lot-link="nutrition">Ver nutrición →</button></div>'
-      :`<h3>Datos de la tanda</h3><dl class="lot-data"><div><dt>Cultivo</dt><dd>${esc(cultivation?.name||'Sin definir')}</dd></div><div><dt>Tabla nutricional</dt><dd>${esc(NutritionCalendar.PROFILE_LABELS[NutritionCalendar.profileKey(lot)])}</dd></div><div><dt>Estado</dt><dd>${lot.active?'Activa':'Inactiva'}</dd></div></dl><p class="subtle">${esc(lot.description||'Sin descripción.')}</p>${editable()?'<button class="secondary-button" data-lot-link="edit">Editar datos de la tanda →</button>':'<p class="field-help">Tu acceso a este proyecto es de lectura.</p>'}`;
-    root.innerHTML=`<div class="page-heading"><div><p class="project-subtitle">${esc(cultivation?.name||'Tanda')}</p><h2>${esc(lot.name)}</h2><p class="subtle">${esc(stage(lot))} · ${esc(TodayModels.lotAge(lot))}</p></div></div><div class="lot-phase">${phase(lot)}</div><dl class="lot-dates"><div><dt>Inicio</dt><dd>${date(lot.timelineStartedOn)}</dd></div><div><dt>Fin estimado</dt><dd>${NutritionCalendar.profileKey(lot)==='mothers'?'Continuo':date(lot.timelineEndOn)}</dd></div></dl><nav class="context-tabs" aria-label="Secciones de la tanda">${tabs.map(([id,label])=>`<button class="${id===tab?'active':''}" data-lot-tab="${id}" aria-current="${id===tab?'page':'false'}">${label}</button>`).join('')}</nav><section class="lot-context-content">${content}</section>`;
+    const content=tab==='today'?`<button class="primary-button" data-daily-type="observation" data-lot-id="${esc(lot.id)}">+ Registrar en este cultivo</button><h3>Próximo en este cultivo</h3>${upcoming.length?upcoming.map(eventRow).join(''):emptyToday}`
+      :tab==='history'?`<h3>Historial de este cultivo</h3>${history.map(r=>`<article class="tanda-history-row"><div><small>${time(r.occurredAt)}</small><strong>${esc(r.title)}</strong><p>${esc(r.description||'')}</p>${r.source==='agenda'?'<small>Realizado desde Agenda</small>':''}</div></article>`).join('')||'<p class="subtle">Todavía no hay registros en este cultivo.</p>'}<button class="secondary-button" data-lot-link="history">Ver historial del cultivo →</button>`
+      :tab==='plants'?`<h3>Plantas del cultivo</h3>${editable()&&lot.active?`<button class="primary-button" data-add-plants="${lot.id}">Agregar plantas</button>`:''}${cropPlants.filter(p=>p.lotId===lot.id).map(p=>`<article class="tanda-history-row"><strong>${esc(p.code)}</strong><p>${esc(p.variety||'Sin variedad')} · ${esc(p.status==='active'?'Activa':p.status==='harvested'?'Cosechada':'Inactiva')}</p>${editable()?`<button class="text-button" data-edit-plant="${p.id}">Editar</button>`:''}</article>`).join('')||'<p class="subtle">Todavía no hay plantas registradas.</p>'}`
+      :tab==='plan'?'<h3>Tu planificación</h3><p class="subtle">El calendario conserva los eventos y responsables. Nutrición muestra el programa y las etapas confirmadas.</p><div class="inline-actions"><button class="secondary-button" data-lot-link="agenda">Ver agenda del cultivo →</button><button class="secondary-button" data-lot-link="nutrition">Ver nutrición →</button></div>'
+      :`<h3>Datos del cultivo</h3><dl class="lot-data"><div><dt>Sala</dt><dd>${esc(cropRooms.find(r=>r.id===cultivation?.roomId)?.name||'Sin definir')}</dd></div><div><dt>Tabla nutricional</dt><dd>${esc(NutritionCalendar.PROFILE_LABELS[NutritionCalendar.profileKey(lot)])}</dd></div><div><dt>Estado</dt><dd>${lot.active?'Activo':'Finalizado'}</dd></div></dl><p class="subtle">${esc(lot.description||'Sin descripción.')}</p>${editable()?'<button class="secondary-button" data-lot-link="edit">Editar datos del cultivo →</button>':'<p class="field-help">Tu acceso a este proyecto es de lectura.</p>'}`;
+    root.innerHTML=`<div class="page-heading"><div><p class="project-subtitle">${esc(cropRooms.find(r=>r.id===cultivation?.roomId)?.name||'Cultivo')}</p><h2>${esc(lot.name)}</h2><p class="subtle">${esc(stage(lot))} · ${esc(TodayModels.lotAge(lot))}</p></div></div><div class="lot-phase">${phase(lot)}</div><dl class="lot-dates"><div><dt>Inicio</dt><dd>${date(lot.timelineStartedOn)}</dd></div><div><dt>Fin estimado</dt><dd>${NutritionCalendar.profileKey(lot)==='mothers'?'Continuo':date(lot.timelineEndOn)}</dd></div></dl><nav class="context-tabs" aria-label="Secciones del cultivo">${tabs.map(([id,label])=>`<button class="${id===tab?'active':''}" data-lot-tab="${id}" aria-current="${id===tab?'page':'false'}">${label}</button>`).join('')}</nav><section class="lot-context-content">${content}</section>`;
   }
   async function lotLink(target) {
     const id=selectedLot;
@@ -132,5 +136,5 @@
     addEventListener('grow-workspace-changed',()=>{epoch++;data={events:[],lots:[],cultivations:[],nutritionProgress:[]};records=[];selectedLot=null;loaded=false;render();renderRecent();$('lotContextRoot').innerHTML='';load();});
     addEventListener('grow-sync-status',event=>{cloud=event.detail.state;renderAttention();});
   }
-  globalThis.GrowToday=Object.freeze({init,load,updateAgenda,updateActivity,updateDevice,openLot,icon});
+  globalThis.GrowToday=Object.freeze({async refreshCrop(){await load();if(selectedLot)renderLot()},init,load,updateAgenda,updateActivity,updateDevice,openLot,icon});
 })();

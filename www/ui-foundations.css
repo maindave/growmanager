@@ -177,3 +177,5 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:1rem;
 html:root .metric-card.sensor-invalid{background:var(--surface)}.semantic-icon.neutral{color:var(--text-muted);background:var(--surface-secondary)}
 html:root:not([data-theme="light"]) .semantic-icon.plant{background:#223b2e;color:#9bc9ad}html:root:not([data-theme="light"]) .semantic-icon.water{background:#213847;color:#9cc6e5}
 html:root:not([data-theme="light"]) .today-attention{background:#332c1e;border-color:#76623b;color:#e2c48a}
+/* Sala → Cultivo → Plantas */
+#lotContextRoot>.context-tabs{grid-template-columns:repeat(5,minmax(0,1fr))}.space-card .lot-card{border:0;padding:16px 0}.space-card .history-panel{margin-top:16px;border-top:1px solid var(--border);padding-top:16px}

@@ -9,10 +9,10 @@
     const [values,events,recipeRows]=await Promise.all([CultivoRepository.getAll('lots'),CultivoRepository.getAgendaEvents(),CultivoRepository.getAll('recipes')]);plans=events;recipes=recipeRows.filter(r=>r.active&&r.type==='irrigation');if(token!==opening||id!==CultivoRepository.getCurrentWorkspace()?.id)return;
     lots=values.filter(l=>l.active||l.id===plan?.lotId);workspace=id;
     const form=$('dailyRecordForm');form.reset();form.elements.type.value=type;form.elements.at.value=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
-    form.elements.lotId.innerHTML='<option value="">Elegí una tanda</option>'+lots.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
+    form.elements.lotId.innerHTML='<option value="">Elegí un cultivo</option>'+lots.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join('');
     if(lotId)form.elements.lotId.value=lotId;else if(lots.length===1)form.elements.lotId.value=lots[0].id;
     form.elements.type.disabled=Boolean(plan);form.elements.lotId.disabled=Boolean(plan?.lotId);form.elements.recipeId.innerHTML='<option value="">Sin receta</option>'+recipes.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('');
-    $('dailyRecordMessage').textContent=lots.length?'':'Primero creá una tanda en Cultivos.';update();syncPlans();prefill();$('dailyRecordDialog').showModal();
+    $('dailyRecordMessage').textContent=lots.length?'':'Primero creá un cultivo en Cultivos.';update();syncPlans();prefill();$('dailyRecordDialog').showModal();
   }
   function update(){const irrigation=$('dailyRecordForm').elements.type.value==='irrigation';$('dailyWaterFields').hidden=!irrigation;$('dailyWaterFields').querySelectorAll('input,select').forEach(n=>n.disabled=!irrigation);}
   function syncPlans(){
@@ -42,7 +42,7 @@
         else await CultivoRepository.create(payload.store,payload.value);
         // The write has succeeded. Close before refreshing so a refresh failure cannot invite a duplicate submission.
         $('dailyRecordDialog').close();await GrowNavigation.showView('operations');Operations.filterLot(input.lotId);
-        $('operationsMessage').textContent='Registro guardado. Ya está en el historial de la tanda.';$('operationsMessage').className='message show success';
+        $('operationsMessage').textContent='Registro guardado. Ya está en el historial del cultivo.';$('operationsMessage').className='message show success';
       }catch(error){if($('dailyRecordDialog').open)message.textContent=error.message;else{$('operationsMessage').textContent='El registro se guardó, pero no pudimos actualizar el historial. Usá Actualizar.';$('operationsMessage').className='message show error';}}finally{busy=false;form.querySelector('[type=submit]').disabled=false;}
     });
     addEventListener('grow-workspace-changed',()=>{opening++;if(!busy)$('dailyRecordDialog').close()});
