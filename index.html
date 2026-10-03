@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="assets/grow-agent-orb.png">
 <title>GrowManager · Beta</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
-<link rel="stylesheet" href="style.css?v=20261003-photos">
+<link rel="stylesheet" href="style.css?v=20261003-cultivos-agenda">
 <link rel="stylesheet" href="ui-foundations.css?v=20261003-photos">
 </head>
 <body>
@@ -145,9 +145,9 @@
 <div class="agenda-secondary"><button class="text-button active" type="button" data-agenda-face="events" hidden>Volver a Agenda</button><button class="text-button" type="button" data-agenda-face="nutrition">Nutrición →</button></div>
 <div class="agenda-book">
 <section class="agenda-face active" data-agenda-face-panel="events">
-<nav class="context-tabs" aria-label="Período de agenda"><button data-agenda-period="day">Hoy</button><button data-agenda-period="week">Semana</button><button class="active" data-agenda-period="month">Mes</button></nav><div id="agendaPeriodList" hidden></div>
+<nav class="context-tabs" aria-label="Período de agenda"><button data-agenda-period="day">Día</button><button data-agenda-period="week">Semana</button><button class="active" data-agenda-period="month">Mes</button></nav><details class="panel agenda-toolbar agenda-filter-details"><summary>Filtros</summary><div class="agenda-filters"><label>Cultivo<select id="agendaRelation"><option value="all">Todos</option></select></label><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></details><div id="agendaPeriodList" hidden></div>
 <section id="agendaNotifications" class="panel agenda-notifications" hidden><div><strong id="agendaNotificationCount">0 asignaciones nuevas</strong><p id="agendaNotificationText"></p></div><button id="readAgendaNotifications" class="secondary-button compact" type="button">Marcar leídas</button></section>
-<section class="panel agenda-toolbar"><div class="agenda-filters"><label>Cultivo<select id="agendaRelation"><option value="all">Todos</option></select></label><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></section>
+
 <details class="panel agenda-upcoming"><summary><span><span class="eyebrow">EVENTOS</span><strong id="agendaListTitle">Próximos eventos</strong></span><span class="collapse-hint">Mostrar</span></summary><div id="agendaList" class="agenda-list collapse-body"></div></details>
 <div class="agenda-layout"><section class="panel agenda-calendar-panel"><div class="agenda-calendar-heading"><div class="agenda-month-nav"><button id="agendaPrevMonth" class="secondary-button compact" type="button" aria-label="Mes anterior">‹</button><strong id="agendaMonthTitle">—</strong><button id="agendaNextMonth" class="secondary-button compact" type="button" aria-label="Mes siguiente">›</button><button id="agendaToday" class="text-button" type="button">Hoy</button></div><small>Los inicios se toman de las fechas definidas en Cultivo.</small></div><div class="agenda-week"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div><div id="agendaCalendar" class="agenda-calendar"></div></section></div>
 </section>
