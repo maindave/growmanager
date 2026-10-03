@@ -13,7 +13,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.5-dht-diagnostics";
+const char* firmwareVersion = "2.5-multi-light";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -82,6 +82,9 @@ const char* googleHost = "script.google.com";
 #define CONFIG_MAGIC_VALUE    2405
 #define VENT_MAGIC_VALUE      2501
 #define LIGHT_TRANSITION_MAGIC_VALUE 2502
+#define EEPROM_LIGHT_CHANNEL_MAGIC 140
+#define EEPROM_LIGHT_CHANNELS 144
+#define LIGHT_CHANNEL_MAGIC_VALUE 2701
 
 // ======================================================
 // HARDWARE
@@ -163,6 +166,8 @@ int lightStartHour = 18;
 int lightStartMinute = 0;
 
 int lightDurationHours = 12;
+struct LightChannelConfig { int independent; int hour; int minute; int duration; };
+LightChannelConfig lightChannels[4] = {{0,18,0,12},{0,18,0,12},{0,18,0,12},{0,18,0,12}};
 
 enum LightTransitionMode : byte {
   LIGHT_TRANSITION_NONE,
@@ -948,6 +953,7 @@ bool lightShouldBeOn() {
       lightDurationHours * 60
     ) % 1440;
 
+  if (lightDurationHours == 24) return true;
   if (start == end)
     return false;
 
@@ -969,44 +975,39 @@ bool lightShouldBeOn() {
 // AUTOMATIC LIGHT
 // ======================================================
 
-void automaticLightControl() {
-
-  int relay =
-    findRelayByFunction(
-      FN_LIGHT
-    );
-
-  if (relay < 0)
-    return;
-
-  if (
-    relayModes[relay] !=
-    MODE_AUTO
-  )
-    return;
-
-  if (!timeSynced)
-    return;
-
-  if (lightTransitionMode != LIGHT_TRANSITION_NONE) {
-    unsigned long nowEpoch = timeClient.getEpochTime();
-    if (lightTransitionUntil > nowEpoch) {
-      setRelayState(
-        relay + 1,
-        lightTransitionMode == LIGHT_TRANSITION_HOLD_ON
-      );
-      return;
-    }
-
-    lightTransitionMode = LIGHT_TRANSITION_NONE;
-    lightTransitionUntil = 0;
-    saveControlConfig();
+void loadLightChannels() {
+  int magic=0; EEPROM.get(EEPROM_LIGHT_CHANNEL_MAGIC,magic);
+  if(magic!=LIGHT_CHANNEL_MAGIC_VALUE) return;
+  for(int i=0;i<4;i++) {
+    LightChannelConfig value; EEPROM.get(EEPROM_LIGHT_CHANNELS+i*16,value);
+    if((value.independent==0||value.independent==1)&&value.hour>=0&&value.hour<24&&value.minute>=0&&value.minute<60&&value.duration>=1&&value.duration<=24) lightChannels[i]=value;
   }
-
-  setRelayState(
-    relay + 1,
-    lightShouldBeOn()
-  );
+}
+void saveLightChannels() {
+  int magic=LIGHT_CHANNEL_MAGIC_VALUE; EEPROM.put(EEPROM_LIGHT_CHANNEL_MAGIC,magic);
+  for(int i=0;i<4;i++) EEPROM.put(EEPROM_LIGHT_CHANNELS+i*16,lightChannels[i]);
+  EEPROM.commit();
+}
+bool channelLightShouldBeOn(int i) {
+  if(!lightChannels[i].independent) return lightShouldBeOn();
+  if(!timeSynced) return false;
+  if(lightChannels[i].duration==24) return true;
+  int now=timeClient.getHours()*60+timeClient.getMinutes();
+  int start=lightChannels[i].hour*60+lightChannels[i].minute;
+  int end=(start+lightChannels[i].duration*60)%1440;
+  return start<end ? now>=start&&now<end : now>=start||now<end;
+}
+void automaticLightControl() {
+  if(!timeSynced) return;
+  if(lightTransitionMode!=LIGHT_TRANSITION_NONE&&lightTransitionUntil<=timeClient.getEpochTime()) {
+    lightTransitionMode=LIGHT_TRANSITION_NONE;lightTransitionUntil=0;saveControlConfig();
+  }
+  for(int i=0;i<4;i++) {
+    if(relayFunctions[i]!=FN_LIGHT||relayModes[i]!=MODE_AUTO) continue;
+    bool on=channelLightShouldBeOn(i);
+    if(!lightChannels[i].independent&&lightTransitionMode!=LIGHT_TRANSITION_NONE) on=lightTransitionMode==LIGHT_TRANSITION_HOLD_ON;
+    setRelayState(i+1,on);
+  }
 }
 
 // ======================================================
@@ -1832,11 +1833,10 @@ void handleApiSetFunctions() {
         functionArg
       );
 
-    // No permitimos dos relays con la misma función
-    // excepto NONE.
+    // Light supports multiple independently controlled channels.
 
     if (
-      newFunction != FN_NONE
+      newFunction != FN_NONE && newFunction != FN_LIGHT
     ) {
 
       for (int i = 0; i < 4; i++) {
@@ -1946,6 +1946,12 @@ void handleApiConfig() {
 
   String json = "{";
 
+  json += "\"lightChannels\":[";
+  for(int i=0;i<4;i++) {
+    if(i) json+=",";
+    json+="{\"relay\":"+String(i+1)+",\"independent\":"+(lightChannels[i].independent?String("true"):String("false"))+",\"hour\":"+String(lightChannels[i].hour)+",\"minute\":"+String(lightChannels[i].minute)+",\"duration\":"+String(lightChannels[i].duration)+"}";
+  }
+  json+="],";
   json += "\"lightStartHour\":";
   json += String(
     lightStartHour
@@ -2029,7 +2035,20 @@ void handleApiConfig() {
 
 void handleApiSetConfig() {
 
-  int lightRelay = findRelayByFunction(FN_LIGHT);
+  if(server.hasArg("relay")) {
+    int index=server.arg("relay").toInt()-1;
+    if(index<0||index>=4||relayFunctions[index]!=FN_LIGHT) {addCORS();server.send(400,"application/json","{\"ok\":false,\"error\":\"invalid_light_channel\"}");return;}
+    LightChannelConfig value=lightChannels[index];
+    value.independent=server.hasArg("independent")&&server.arg("independent")=="1";
+    if(value.independent) {
+      if(!server.hasArg("hora")||!server.hasArg("min")||!server.hasArg("dur")) {addCORS();server.send(400,"application/json","{\"ok\":false,\"error\":\"invalid_light_schedule\"}");return;}
+      value.hour=server.arg("hora").toInt();value.minute=server.arg("min").toInt();value.duration=server.arg("dur").toInt();
+      if(value.hour<0||value.hour>23||value.minute<0||value.minute>59||value.duration<1||value.duration>24) {addCORS();server.send(400,"application/json","{\"ok\":false,\"error\":\"invalid_light_schedule\"}");return;}
+    }
+    lightChannels[index]=value;saveLightChannels();runAutomations();addCORS();server.send(200,"application/json","{\"ok\":true}");return;
+  }
+  int lightRelay = -1;
+  for(int i=0;i<4;i++) if(relayFunctions[i]==FN_LIGHT&&relayModes[i]==MODE_AUTO&&!lightChannels[i].independent) {lightRelay=i;break;}
   bool lightWasOn = lightRelay >= 0 && relayStates[lightRelay];
 
   if (server.hasArg("hora")) {
@@ -2444,6 +2463,7 @@ void setup() {
   loadFunctionConfig();
 
   loadControlConfig();
+  loadLightChannels();
 
   initializeHardware();
 

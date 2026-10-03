@@ -1,0 +1,9 @@
+(()=>{'use strict';
+let queue=Promise.resolve();
+const key=id=>`growmanager.controller.${id}`;
+function valid(value={}){return {...value,enabled:value.enabled===true,address:String(value.address||'192.168.1.25').trim().replace(/^https?:\/\//i,'').replace(/\/+$/,''),name:String(value.name||'Controlador').slice(0,40),channels:value.channels&&typeof value.channels==='object'?value.channels:{}}}
+async function load(){const{data,error}=await GrowSupabase.client.auth.getUser();if(error||!data.user)throw error||new Error('Iniciá sesión para cargar tu controlador.');let cached;try{cached=JSON.parse(localStorage.getItem(key(data.user.id))||'null')}catch{}const value=valid(data.user.user_metadata?.growmanagerConnect||cached||{});localStorage.setItem(key(data.user.id),JSON.stringify(value));return value}
+function save(changes){const task=queue.catch(()=>{}).then(async()=>{const{data,error}=await GrowSupabase.client.auth.getUser();if(error||!data.user)throw error||new Error('Iniciá sesión para guardar tu controlador.');const prior=valid(data.user.user_metadata?.growmanagerConnect||{}),channels={...prior.channels};for(const [address,names] of Object.entries(changes.channels||{}))channels[address]={...channels[address],...names};const value=valid({...prior,...changes,channels});const result=await GrowSupabase.client.auth.updateUser({data:{growmanagerConnect:value}});if(result.error)throw result.error;localStorage.setItem(key(data.user.id),JSON.stringify(value));return value});queue=task;return task}
+async function nameChannel(address,id,name){const clean=String(name||'').trim();if(!clean||clean.length>40)throw new Error('Ingresá un nombre de hasta 40 caracteres.');return save({channels:{[address]:{[id]:clean}}})}
+globalThis.ControllerAccount=Object.freeze({load,save,nameChannel});
+})();
