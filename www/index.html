@@ -10,8 +10,8 @@
 <link rel="apple-touch-icon" href="assets/grow-agent-orb.png">
 <title>GrowManager · Beta</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
-<link rel="stylesheet" href="style.css?v=20261003-management">
-<link rel="stylesheet" href="ui-foundations.css?v=20261003-management">
+<link rel="stylesheet" href="style.css?v=20261003-photos">
+<link rel="stylesheet" href="ui-foundations.css?v=20261003-photos">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -134,7 +134,7 @@
 <h2>Cultivos</h2>
 <p class="subtle">Tus salas, cultivos y plantas en un mismo lugar.</p>
 </div>
-<nav class="hub-switch" aria-label="Universo cultivo"><button class="active" data-view="cultivation">Salas y cultivos</button><button data-view="recipes">Recetas e insumos</button></nav>
+
 </div>
 <div id="cultivationRoot">
 </div>
@@ -162,7 +162,7 @@
 <p class="subtle">Primero cargá los insumos; después combinalos en una receta de sustrato.</p>
 </div>
 </div>
-<nav class="hub-switch" aria-label="Universo cultivo"><button data-view="cultivation">Salas y cultivos</button><button class="active" data-view="recipes">Recetas e insumos</button></nav>
+
 <div class="module-tabs" role="tablist">
 <button class="module-tab active" data-recipe-tab="products">1 · Insumos</button>
 <button class="module-tab" data-recipe-tab="recipes">2 · Recetas de sustrato</button>
@@ -257,7 +257,7 @@
 <form id="demoProjectForm" class="demo-project-form"><label>Copiar proyecto privado como muestra<select id="demoSourceWorkspace" name="sourceWorkspaceId" required></select></label><label>Nombre público<input name="name" value="GrowManager · Proyecto de muestra" maxlength="80" required></label><button class="secondary-button" type="submit">Crear nueva copia demo</button></form>
 </section>
 </section>
-<section id="operationsView" class="view" data-view-panel="operations"><div class="page-heading"><div><h2>Bitácora</h2><p class="subtle">Todo lo realizado: riegos, podas, trasplantes, observaciones, incidentes y cambios del sistema.</p></div><button id="newOperationButton" class="primary-button" type="button">+ Nuevo registro</button></div><button id="advancedOperationButton" class="text-button" type="button">Registro avanzado de bitácora</button><div id="operationsMessage" class="message"></div><section id="operationSummary" class="journal-summary"></section><section class="panel journal-panel" data-collapsible data-collapse-key="journal-records" data-default-open="true"><div class="section-heading"><div><p class="eyebrow">Historial</p><h3>Registros del cultivo</h3></div></div><div class="journal-toolbar"><label>Tipo<select id="operationFilter"><option value="all">Todo</option><option value="irrigation">Riegos</option><option value="activity">Actividades</option><option value="incident">Incidentes</option><option value="system">Sistema</option><option value="alerts">Alertas activas</option></select></label><label>Cultivo<select id="operationRelation"><option value="all">Todos</option></select></label><label>Período<select id="operationPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el ciclo</option></select></label><input id="operationSearch" type="search" placeholder="Buscar poda, riego, receta…" aria-label="Buscar en la bitácora"></div><div id="operationList" class="operation-list"></div></section></section>
+<section id="operationsView" class="view" data-view-panel="operations"><div class="page-heading"><div><h2>Bitácora</h2><p class="subtle">Todo lo realizado: riegos, podas, trasplantes, observaciones, incidentes y cambios del sistema.</p></div><button id="newOperationButton" class="primary-button" type="button">+ Nuevo registro</button></div><button class="secondary-button" type="button" data-journal-photos="">+ Fotos de diagnóstico</button><button id="advancedOperationButton" class="text-button" type="button">Registro avanzado de bitácora</button><div id="operationsMessage" class="message"></div><section id="operationSummary" class="journal-summary"></section><section class="panel journal-panel" data-collapsible data-collapse-key="journal-records" data-default-open="true"><div class="section-heading"><div><p class="eyebrow">Historial</p><h3>Registros del cultivo</h3></div></div><div class="journal-toolbar"><label>Tipo<select id="operationFilter"><option value="all">Todo</option><option value="irrigation">Riegos</option><option value="activity">Actividades</option><option value="incident">Incidentes</option><option value="system">Sistema</option><option value="alerts">Alertas activas</option></select></label><label>Cultivo<select id="operationRelation"><option value="all">Todos</option></select></label><label>Período<select id="operationPeriod"><option value="30">Últimos 30 días</option><option value="90">Últimos 90 días</option><option value="all">Todo el ciclo</option></select></label><input id="operationSearch" type="search" placeholder="Buscar poda, riego, receta…" aria-label="Buscar en la bitácora"></div><div id="operationList" class="operation-list"></div></section></section>
 <section class="view" data-view-panel="integrations"><div class="page-heading"><h2>Configuración / Integraciones</h2></div><section class="panel"><h3>GrowManager Connect</h3><p class="subtle">Conectá equipos y sensores opcionales. Podés usar GrowManager sin ellos.</p><label class="connect-toggle"><input id="connectEnabled" type="checkbox" autocomplete="off"> Habilitar GrowManager Connect</label><p class="field-help">Al desactivarlo, GrowManager deja de consultar el dispositivo. Los equipos conservan su funcionamiento.</p><button class="secondary-button" data-view="connection" data-connect-only>Configurar conexión</button><button class="text-button" data-view="connectAdvanced" data-connect-only>Configuración avanzada</button></section></section>
 <section class="view" data-view-panel="connectAdvanced"><div class="page-heading"><h2>Configuración avanzada</h2></div><nav class="control-shortcuts"><button class="secondary-button" data-view="control">Volver a Control</button><button class="secondary-button" data-view="connection">Conexión · IP / hostname</button><button class="secondary-button" data-view="hardware">Hardware, pines y diagnóstico</button><button class="secondary-button" data-view="energy">Energía</button><button class="text-button" data-view="integrations">GrowManager Connect</button></nav><div id="connectAdvancedContent"></div></section>
 <section class="view" data-view-panel="control">
@@ -545,43 +545,44 @@
 </div>
 </dialog>
 <meta name="grow-public-base" content="https://maindave.github.io/growmanager/">
-<script src="supabase-config.js?v=20261003-management"></script>
-<script src="vendor/supabase.js?v=20261003-management"></script>
-<script src="supabase-client.js?v=20261003-management"></script>
-<script src="cultivo-models.js?v=20261003-management" defer>
+<script src="supabase-config.js?v=20261003-photos"></script>
+<script src="vendor/supabase.js?v=20261003-photos"></script>
+<script src="supabase-client.js?v=20261003-photos"></script>
+<script src="cultivo-models.js?v=20261003-photos" defer>
 </script>
-<script src="cultivo-db.js?v=20261003-management" defer>
+<script src="cultivo-db.js?v=20261003-photos" defer>
 </script>
-<script src="cultivo-repository.js?v=20261003-management" defer>
+<script src="cultivo-repository.js?v=20261003-photos" defer>
 </script>
-<script src="cultivo-migration.js?v=20261003-management" defer>
+<script src="cultivo-migration.js?v=20261003-photos" defer>
 </script>
-<script src="workspaces.js?v=20261003-management" defer>
+<script src="workspaces.js?v=20261003-photos" defer>
 </script>
-<script src="ui-sections.js?v=20261003-management" defer></script>
-<script src="dashboard-customizer.js?v=20261003-management" defer></script>
-<script src="app-update.js?v=20261003-management" defer></script>
-<script src="onboarding-tour.js?v=20261003-management" defer></script>
-<script src="agenda.js?v=20261003-management" defer></script>
-<script src="operations.js?v=20261003-management" defer></script>
-<script src="cultivation.js?v=20261003-management" defer>
+<script src="ui-sections.js?v=20261003-photos" defer></script>
+<script src="dashboard-customizer.js?v=20261003-photos" defer></script>
+<script src="app-update.js?v=20261003-photos" defer></script>
+<script src="onboarding-tour.js?v=20261003-photos" defer></script>
+<script src="agenda.js?v=20261003-photos" defer></script>
+<script src="journal-photos.js?v=20261003-photos" defer></script>
+<script src="operations.js?v=20261003-photos" defer></script>
+<script src="cultivation.js?v=20261003-photos" defer>
 </script>
-<script src="products.js?v=20261003-management" defer>
+<script src="products.js?v=20261003-photos" defer>
 </script>
-<script src="recipes.js?v=20261003-management" defer>
+<script src="recipes.js?v=20261003-photos" defer>
 </script>
-<script src="nutrition-calendar.js?v=20261003-management" defer></script>
-<script src="assistant.js?v=20261003-management" defer></script>
-<script src="voice-assistant.js?v=20261003-management" defer></script>
-<script src="energy.js?v=20261003-management" defer>
+<script src="nutrition-calendar.js?v=20261003-photos" defer></script>
+<script src="assistant.js?v=20261003-photos" defer></script>
+<script src="voice-assistant.js?v=20261003-photos" defer></script>
+<script src="energy.js?v=20261003-photos" defer>
 </script>
-<script src="environment-history.js?v=20261003-management" defer></script>
-<script src="auth.js?v=20261003-management" defer>
+<script src="environment-history.js?v=20261003-photos" defer></script>
+<script src="auth.js?v=20261003-photos" defer>
 </script>
-<script src="daily-models.js?v=20261003-management" defer></script><script src="daily.js?v=20261003-management" defer></script>
-<script src="today-models.js?v=20261003-management" defer></script>
-<script src="today.js?v=20261003-management" defer></script>
-<script src="app.js?v=20261003-management" defer>
+<script src="daily-models.js?v=20261003-photos" defer></script><script src="daily.js?v=20261003-photos" defer></script>
+<script src="today-models.js?v=20261003-photos" defer></script>
+<script src="today.js?v=20261003-photos" defer></script>
+<script src="app.js?v=20261003-photos" defer>
 </script>
 </body>
 </html>

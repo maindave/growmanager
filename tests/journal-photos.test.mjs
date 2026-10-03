@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import {randomUUID} from 'node:crypto';
+const status={},button={},form={elements:{cultivationId:{value:'crop'},title:{value:'Diagnóstico'},notes:{value:'Observación'},photos:{files:[{type:'image/jpeg',size:100,name:'hoja.jpg'}]}},querySelector:q=>q==='[role=status]'?status:button};
+const dialog={querySelector:q=>q==='form'?form:button,showModal(){this.open=true},close(){this.open=false}},elements={journalPhotosDialog:dialog,operationsMessage:{}};
+let created=0,uploaded=0,removed=0,saved=0,refreshFails=false;
+const context={document:{getElementById:id=>elements[id],addEventListener(){}},crypto:{randomUUID},GrowSupabase:{client:{storage:{from:()=>({upload:async()=>{uploaded++;return{}},remove:async()=>{removed++;return{}}})}}},CultivoRepository:{getCurrentWorkspace:()=>({id:'workspace',role:'owner'}),getAll:async s=>s==='cultivations'?[{id:'crop',name:'Madres'}]:[{id:'lot',cultivationId:'crop'}],createOperationLog:async value=>{created++;assert.equal(value.metadata.cultivationId,'crop');return{id:'log'}},cropAction:async(name,args)=>{saved++;assert.equal(name,'append_journal_photos');assert.match(args.p_photos[0].path,/^workspace\/crop\/log\//)},remove:async()=>{removed++}},Operations:{load:async()=>{if(refreshFails)throw Error('Refresh unavailable')}},GrowToday:{refreshCrop:async()=>{}}};
+context.globalThis=context;vm.runInNewContext(fs.readFileSync(new URL('../journal-photos.js',import.meta.url),'utf8'),context);
+await context.GrowPhotos.open('crop');await form.onsubmit({preventDefault(){},target:form,submitter:button});
+assert.equal(created,1);assert.equal(uploaded,1);assert.equal(saved,1);assert.equal(removed,0);
+refreshFails=true;await context.GrowPhotos.open('crop');await form.onsubmit({preventDefault(){},target:form,submitter:button});assert.equal(saved,2);assert.equal(removed,0,'A refresh failure must not delete saved photos');
+form.elements.photos.files=[{type:'text/plain',size:100,name:'invalid.txt'}];await context.GrowPhotos.open('crop');await form.onsubmit({preventDefault(){},target:form,submitter:button});assert.equal(created,2,'Invalid files must not create a record');
+assert.match(context.GrowPhotos.gallery({metadata:{photos:[{path:'a',name:'<img>'}]}}),/&lt;img&gt;/);
+console.log('Journal photos: crop link, upload, file validation and refresh recovery passed');
