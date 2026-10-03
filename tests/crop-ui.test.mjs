@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+const listeners={},root={innerHTML:'',addEventListener(type,fn){listeners[type]=fn}},dialog={innerHTML:'',showModal(){this.open=true}};
+let role='owner';
+const room={id:'r',name:'Madres',active:true,role:'vegetative'},crops=[{id:'c1',roomId:'r',name:'Madres',status:'active'},{id:'c2',roomId:'r',name:'Esquejes',status:'active'}];
+const context={document:{getElementById:id=>id==='cultivationRoot'?root:dialog,addEventListener(){}},CultivoModels:{LOT_STAGES:['vegetative'],LOT_STAGE_LABELS:{vegetative:'Vegetativo'}},CultivoRepository:{getCurrentWorkspace:()=>({id:'w',role}),getAll:async store=>({rooms:[room],cultivations:crops,lots:[],plants:[]}[store])}};
+context.globalThis=context;vm.runInNewContext(fs.readFileSync(new URL('../cultivation.js',import.meta.url),'utf8'),context);
+context.Cultivation.init();await context.Cultivation.load();
+assert.match(root.innerHTML,/data-crop-new="r"/,'An occupied room must still allow creating another crop');
+assert.match(root.innerHTML,/Esquejes/);
+await listeners.click({target:{closest:()=>({value:'',dataset:{cropNew:'r'},hasAttribute:()=>false})}});
+assert.equal(dialog.open,true);assert.match(dialog.innerHTML,/data-room="r"/);assert.match(dialog.innerHTML,/name="name"/);
+role='viewer';await context.Cultivation.load();assert.doesNotMatch(root.innerHTML,/data-crop-new/);
+console.log('Crop UI: multiple crops, create form and read-only permissions passed');

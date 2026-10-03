@@ -86,7 +86,7 @@
     const cultivation=data.cultivations.find(c=>c.id===lot.cultivationId);
     const tabs=[['today','Hoy'],['history','Historial'],['plan','Plan'],['plants','Plantas'],['data','Datos']];
     const upcoming=TodayModels.upcoming(data.events.filter(e=>e.lotId===lot.id||(!e.lotId&&e.cultivationId===lot.cultivationId)),Agenda.occurrences);
-    const history=records.filter(r=>r.lotId===lot.id||r.metadata?.lotId===lot.id||(!(r.lotId||r.metadata?.lotId)&&(r.cultivationId||r.metadata?.cultivationId)===lot.cultivationId)).slice(0,20);
+    const history=records.filter(r=>r.metadata?.destinationCultivationId===lot.cultivationId||r.lotId===lot.id||r.metadata?.lotId===lot.id||(!(r.lotId||r.metadata?.lotId)&&(r.cultivationId||r.metadata?.cultivationId)===lot.cultivationId)).slice(0,20);
     const lastWater=history.find(r=>r.kind==='irrigation');
     const emptyToday=`<p class="subtle">Sin tareas pendientes.</p>${lastWater?`<p class="tanda-summary"><strong>Último riego</strong> ${time(lastWater.occurredAt)}<br>${esc(lastWater.description||'')}</p>`:''}${device.online===true&&device.sensorValid?`<p class="tanda-summary"><strong>Ambiente del dispositivo</strong> ${esc($('temperature').textContent)} °C · ${esc($('humidity').textContent)} %</p>`:''}`;
     const content=tab==='today'?`<button class="primary-button" data-daily-type="observation" data-lot-id="${esc(lot.id)}">+ Registrar en este cultivo</button><h3>Próximo en este cultivo</h3>${upcoming.length?upcoming.map(eventRow).join(''):emptyToday}`

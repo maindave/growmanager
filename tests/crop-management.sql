@@ -1,0 +1,26 @@
+do $$ declare w uuid; u uuid; r uuid; r2 uuid; c uuid; c2 uuid; empty_c uuid; l uuid; p uuid; event_id uuid; n integer; begin
+ select id,owner_id into w,u from public.workspaces where id='4d83ef2b-ba7e-4018-ba2b-bdfa8601714c';
+ perform set_config('request.jwt.claim.sub',u::text,true);
+ insert into public.rooms(workspace_id,name,role) values(w,'QA temporal','vegetative') returning id into r;
+ insert into public.rooms(workspace_id,name,role) values(w,'QA exterior','outdoor') returning id into r2;
+ insert into public.cultivations(workspace_id,owner_id,room_id,name,start_date,current_stage,stage_started_on) values(w,u,r,'QA 1',current_date,'vegetative',current_date) returning id into c;
+ insert into public.cultivations(workspace_id,owner_id,room_id,name,start_date,current_stage,stage_started_on) values(w,u,r,'QA 2',current_date,'vegetative',current_date) returning id into c2;
+ select id into l from public.lots where cultivation_id=c;
+ perform public.add_crop_plants(l,3,'QA');
+ select id into p from public.plants where lot_id=l limit 1;
+ n=public.move_crop(c,r,c2,array[p]);
+ if n<>1 or (select count(*) from public.plants where lot_id=l)<>2 then raise exception 'Falló traslado selectivo'; end if;
+ n=public.move_crop(c,r,c2,null);
+ if n<>2 then raise exception 'Falló traslado de todas las plantas'; end if;
+ perform public.move_crop(c2,r2,null,null);
+ if (select room_id from public.cultivations where id=c2)<>r2 then raise exception 'Falló traslado de cultivo'; end if;
+ insert into public.cultivations(workspace_id,owner_id,room_id,name,start_date,current_stage,stage_started_on) values(w,u,r,'QA vacío',current_date,'vegetative',current_date) returning id into empty_c;
+ perform public.delete_empty_crop(empty_c);
+ if exists(select 1 from public.cultivations where id=empty_c) then raise exception 'Falló eliminación de cultivo vacío';end if;
+ event_id=public.save_agenda_event(w,null,'QA evento','other',now(),now()+interval '1 hour',c2,null,'QA','normal','completed','none',array[]::uuid[],array[]::uuid[]);
+ perform public.edit_completed_history(event_id,'QA actualizado','Nueva nota',now(),null,null,null);
+ if (select title from public.agenda_events where id=event_id)<>'QA actualizado' then raise exception 'Falló edición de historial';end if;
+ perform public.delete_completed_history(event_id);
+ if exists(select 1 from public.agenda_events where id=event_id) then raise exception 'Falló eliminación de historial';end if;
+ begin perform public.delete_empty_crop(c2);raise exception 'Se eliminó un cultivo con plantas';exception when raise_exception then if sqlerrm='Se eliminó un cultivo con plantas' then raise;end if;end;
+end $$;
