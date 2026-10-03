@@ -50,6 +50,10 @@
 <h1 id="brandName">Proyecto</h1>
 </div>
 </div>
+<label class="workspace-picker">Proyecto<select id="workspaceSelect" aria-label="Proyecto activo">
+</select>
+<small id="workspaceRole" hidden></small>
+</label>
 <nav class="main-nav" aria-label="Secciones">
 <p class="nav-separator">Tu cultivo</p>
 <button class="nav-item active" data-view="dashboard"><span data-ui-icon="home"></span>Hoy</button>
@@ -62,15 +66,12 @@
 <button class="nav-item" data-view="control"><span data-ui-icon="sliders"></span>Control</button>
 <p class="nav-separator">Proyecto</p>
 <button id="openProjectHubNav" class="nav-item" type="button"><span data-ui-icon="folder"></span>Mis proyectos</button>
-<button class="nav-item" data-view="team"><span data-ui-icon="users"></span>Proyectos y miembros</button><button class="nav-item" data-view="integrations">Configuración / Integraciones</button>
+<button class="nav-item" data-view="team"><span data-ui-icon="users"></span>Miembros</button>
 </nav>
 <div id="cloudAccount" class="cloud-account" hidden>
-<label class="workspace-picker">Proyecto<select id="workspaceSelect" aria-label="Proyecto activo">
-</select>
-<small id="workspaceRole">
-</small>
-</label>
-<button id="openProjectHub" class="secondary-button compact project-hub-button" type="button">Ver mis proyectos</button>
+
+
+<button class="text-button" data-view="integrations">Configuración</button>
 <span id="cloudSyncStatus" class="cloud-sync">Nube conectada</span>
 <small id="cloudEmail">
 </small>
@@ -494,7 +495,7 @@
 <button data-view="operations"><span data-ui-icon="history"></span><b>Bitácora</b><small>Todo lo realizado</small></button>
 <button data-view="integrations"><span data-ui-icon="sliders"></span><b>Configuración / Integraciones</b></button><button data-view="control"><span data-ui-icon="sliders"></span><b>Control y dispositivos</b><small>Ambiente y configuración avanzada</small></button>
 <button id="openProjectHubMobile" type="button"><span data-ui-icon="folder"></span><b>Mis proyectos</b><small>Cambiar, crear o explorar demo</small></button>
-<button data-view="team"><span data-ui-icon="users"></span><b>Proyectos y miembros</b><small>Accesos y administración</small></button>
+<button data-view="team"><span data-ui-icon="users"></span><b>Miembros</b><small>Accesos y administración</small></button>
 </div>
 <dialog id="quickRegisterDialog" class="app-dialog"><div class="dialog-form"><div class="dialog-heading"><div><h3>¿Qué querés hacer?</h3><p class="subtle">¿Qué hiciste? Elegí una tarea para registrarla.</p></div><button class="icon-button" value="cancel" type="button" aria-label="Cerrar">×</button></div><div class="quick-actions daily-type-grid"><button class="secondary-button" data-daily-type="irrigation">Riego</button><button class="secondary-button" data-daily-type="pruning">Poda</button><button class="secondary-button" data-daily-type="transplant">Trasplante</button><button class="secondary-button" data-daily-type="measurement">Medición</button><button class="secondary-button" data-daily-type="application">Aplicación</button><button class="secondary-button" data-daily-type="observation">Observación</button><button class="secondary-button" data-daily-type="incident">Incidente</button><button class="secondary-button" data-daily-type="stage_change">Cambio de etapa</button><button class="secondary-button" data-existing-action="event"><span data-ui-icon="calendar"></span><span><strong>Planificar un evento</strong><small>Abrir el calendario actual</small></span></button><button class="secondary-button" data-existing-action="assistant"><span data-ui-icon="spark"></span><span><strong>Escribir o dictar al asistente</strong><small>Revisar su propuesta antes de guardar</small></span></button></div><p id="registerRoleNote" class="field-help"></p></div></dialog>
 <dialog id="restartDeviceDialog" class="app-dialog"><div class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">Reinicio seguro</p><h3>¿Reiniciar el Wemos?</h3></div><button id="closeRestartDevice" class="icon-button" type="button">×</button></div><p class="dialog-copy">El dispositivo dejará de responder durante algunos segundos. La configuración guardada se conservará.</p><div class="form-actions split"><button id="cancelRestartDevice" class="secondary-button" type="button">Cancelar</button><button id="confirmRestartDevice" class="danger-button" type="button">Sí, reiniciar</button></div></div></dialog>

@@ -47,15 +47,15 @@
   function renderAttention() {
     const items=[];
     const overdue=TodayModels.overdue(data.events);
-    if(overdue.length)items.push({text:`${overdue.length} ${overdue.length===1?'evento pendiente con fecha pasada':'eventos pendientes con fecha pasada'}`,view:'agenda'});
+    if(overdue.length)items.push({tasks:overdue,text:`${overdue.length} ${overdue.length===1?'tarea vencida':'tareas vencidas'}`});
     const alerts=TodayModels.alerts(records);
     if(alerts.length)items.push({text:`${alerts.length} ${alerts.length===1?'alerta sin resolver':'alertas sin resolver'} en la bitácora`,view:'operations'});
     if(device.online===true && device.sensorValid===false)items.push({text:'El sensor ambiental no entrega una lectura actual',view:'hardware'});
     // No hardware response is not a crop alert for a user who has no device configured.
     if(device.online===false && device.wasConnected)items.push({text:'Se perdió la conexión con el dispositivo',view:'connection'});
     if(cloud==='error'||cloud==='cached')items.push({text:cloud==='cached'?'Mostrando datos guardados en este dispositivo':'No se pudieron actualizar algunos datos del proyecto',view:'dashboard'});
-    const node=$('todayAttention');node.hidden=!items.length;
-    node.innerHTML=items.length?`<div class="attention-heading">${icon('alert')}<strong>${items.length===1?'Algo requiere tu atención':`${items.length} cosas requieren atención`}</strong></div>${items.map(x=>`<button class="attention-row" data-view="${x.view}"><span>${esc(x.text)}</span><span aria-hidden="true">→</span></button>`).join('')}`:'';
+    const node=$('todayAttention'),expanded=Boolean(node.querySelector('.attention-tasks')?.open);node.hidden=!items.length;
+    node.innerHTML=items.length?`<div class="attention-heading">${icon('alert')}<strong>${overdue.length?`${overdue.length} ${overdue.length===1?'tarea vencida':'tareas vencidas'}`:'Avisos'}</strong></div>${items.map(x=>x.tasks?`<details class="attention-tasks" ${expanded?'open':''}><summary>Ver tareas pendientes</summary><div>${x.tasks.map(event=>`<button class="attention-row" data-today-event="${esc(event.id)}"><span><strong>${esc(event.title)}</strong><small>${esc(relation(event))} · ${time(event.endsAt||event.startsAt)}</small></span><span aria-hidden="true">→</span></button>`).join('')}</div></details>`:`<button class="attention-row" data-view="${x.view}"><span>${esc(x.text)}</span><span aria-hidden="true">→</span></button>`).join('')}`:'';
   }
   function renderRecent() {
     const recent=records.slice(0,3);
