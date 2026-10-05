@@ -17,6 +17,7 @@ try{
  assert.match(firmware,/environmentBootId=ESP.random\(\)/);
  const tls=await readFile(new URL('../firmware/Sketch_API_V1/CooperativeCloudTls.h',import.meta.url),'utf8');
  assert.doesNotMatch(firmware,/setInsecure|sendToGoogleSheets|timeClient\.update|environment-gateway/);
+ assert.match(firmware,/schedule_recurrent_function_us/);assert.match(firmware,/if\(cloudWorking\)runAutomations\(\)/);
  assert.match(tls,/BR_TLS12,BR_TLS12/);assert.match(tls,/br_x509_minimal_set_time/);
  assert.match(firmware,/server\.on\("\/api\/environment\/cloud", HTTP_POST/);
  const builder=firmware.slice(firmware.indexOf('String buildStatusJson'),firmware.indexOf('void handleApiStatus'));

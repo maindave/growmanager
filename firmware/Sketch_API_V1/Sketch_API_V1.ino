@@ -7,6 +7,7 @@
 #include <DHT.h>
 #include <time.h>
 #include <EEPROM.h>
+#include <Schedule.h>
 #include "EnvironmentalControl.h"
 #include "CooperativeCloudTls.h"
 
@@ -261,8 +262,15 @@ struct CloudPairing { uint32_t magic; char room[37]; char token[65]; };
 CloudPairing cloudPairing={};
 CooperativeCloudTls cloudTransport;
 GrowCloud::Backlog cloudBacklog;
-uint32_t cloudLastAttempt=0,cloudLastSuccess=0,cloudLastSample=0,cloudCapturedThrough=0;
+uint32_t cloudLastAttempt=0,cloudLastSuccess=0,cloudLastSample=0,cloudCapturedThrough=0,cloudEventAck=0,cloudEventCaptured=0;
 unsigned cloudFailures=0;
+struct CloudFault { uint32_t magic,reason,epc,step; } cloudFault={};
+extern "C" void custom_crash_callback(struct rst_info* info,uint32_t,uint32_t){
+ CloudFault record={0x47524631,info->reason,info->epc1,cloudTransport.lastStep};
+ ESP.rtcUserMemoryWrite(0,reinterpret_cast<uint32_t*>(&record),sizeof(record));
+}
+bool cloudWorking=false,cloudSchedulerReady=false;
+uint32_t environmentLastControlAt=0,environmentMaximumCloudGapMs=0;
 bool cloudAttempted=false,cloudHadSuccess=false,cloudBlocked=false,cloudWasActive=false;
 int cloudLastResult=0;
 static_assert(EEPROM_CLOUD+sizeof(CloudPairing)<=EEPROM_SIZE,"Cloud EEPROM overflow");
@@ -276,15 +284,17 @@ void loadCloudPairing() {
   for(unsigned i=0;i<64;i++)if(!isxdigit(cloudPairing.token[i])){memset(&cloudPairing,0,sizeof(cloudPairing));return;}
 }
 void clearCloudPairing() {
-  cloudTransport.cancel();cloudBacklog.clear();memset(&cloudPairing,0,sizeof(cloudPairing));
-  EEPROM.put(EEPROM_CLOUD,cloudPairing);EEPROM.commit();cloudAttempted=cloudHadSuccess=cloudBlocked=cloudWasActive=false;cloudFailures=0;cloudLastResult=0;cloudLastSample=0;
+  cloudTransport.cancel();cloudBacklog.clear();memset(&cloudFault,0,sizeof(cloudFault));ESP.rtcUserMemoryWrite(0,reinterpret_cast<uint32_t*>(&cloudFault),sizeof(cloudFault));memset(&cloudPairing,0,sizeof(cloudPairing));
+  EEPROM.put(EEPROM_CLOUD,cloudPairing);EEPROM.commit();cloudAttempted=cloudHadSuccess=cloudWasActive=false;cloudBlocked=!cloudSchedulerReady;cloudFailures=0;cloudLastResult=cloudSchedulerReady?0:-10;cloudLastSample=0;cloudEventAck=cloudEventCaptured=0;
 }
 String cloudStatusJson() {
   bool paired=cloudPairing.magic==0x47524331;
   String state=!paired?"unconfigured":cloudBlocked?"blocked":WiFi.status()!=WL_CONNECTED?"offline":cloudUtcEpoch()<1700000000?"waiting_clock":cloudTransport.active()?"publishing":cloudLastResult>=200&&cloudLastResult<300?"connected":cloudFailures?"retrying":"ready";
-  String json="{\"configured\":"+String(paired?"true":"false")+",\"state\":\""+state+"\",\"lastResult\":"+String(cloudLastResult)+",\"failures\":"+String(cloudFailures);
-  json+=",\"lastSuccessAgeSeconds\":"+(cloudHadSuccess?String((millis()-cloudLastSuccess)/1000):String("null"));
-  json+=",\"pendingReadings\":"+String(cloudBacklog.count)+",\"droppedReadings\":"+String(cloudBacklog.dropped)+",\"maximumStepMs\":"+String(cloudTransport.maximumStepMs)+"}";
+  String json=F("{\"configured\":")+String(paired?"true":"false")+",\"state\":\""+state+"\",\"lastResult\":"+String(cloudLastResult)+",\"failures\":"+String(cloudFailures);
+  json+=F(",\"lastSuccessAgeSeconds\":")+(cloudHadSuccess?String((millis()-cloudLastSuccess)/1000):String("null"));
+  json+=F(",\"pendingReadings\":")+String(cloudBacklog.count)+",\"droppedReadings\":"+String(cloudBacklog.dropped)+",\"maximumStepMs\":"+String(cloudTransport.maximumStepMs)+",\"maximumControlGapMs\":"+String(environmentMaximumCloudGapMs)+",\"resetReason\":\""+ESP.getResetReason()+"\"}";
+  json.remove(json.length()-1);
+  json+=F(",\"tlsError\":")+String(cloudTransport.lastError)+",\"tlsStep\":"+String(cloudTransport.lastStep)+",\"crashReason\":"+String(cloudFault.magic==0x47524631?cloudFault.reason:0)+",\"crashStep\":"+String(cloudFault.magic==0x47524631?cloudFault.step:0)+",\"heap\":"+String(ESP.getFreeHeap())+"}";
   return json;
 }
 void handleCloudStatus() { addCORS();server.send(200,"application/json",cloudStatusJson()); }
@@ -298,33 +308,33 @@ void handleCloudPairing() {
   EEPROM.put(EEPROM_CLOUD,cloudPairing);EEPROM.commit();handleCloudStatus();
 }
 String cloudReadingsJson() {
-  String json="[";
-  for(unsigned i=0;i<cloudBacklog.count;i++){const auto& r=cloudBacklog.readings[i];if(i)json+=",";json+="{\"epoch\":"+String(r.epoch)+",\"temperature\":"+String(r.temperature,2)+",\"humidity\":"+String(r.humidity,2)+"}";}
+  String json=F("[");
+  for(unsigned i=0;i<cloudBacklog.count&&i<8;i++){const auto& r=cloudBacklog.readings[i];if(i)json+=F(",");json+=F("{\"epoch\":")+String(r.epoch)+",\"temperature\":"+String(r.temperature,2)+",\"humidity\":"+String(r.humidity,2)+"}";}
   return json+"]";
 }
 void runCloudTelemetry() {
   uint32_t now=millis();
-  if(cloudPairing.magic!=0x47524331||String(cloudPairing.room)!=String(environmentRoomId))return;
+  if(!cloudSchedulerReady||cloudPairing.magic!=0x47524331||String(cloudPairing.room)!=String(environmentRoomId))return;
   bool validClock=cloudUtcEpoch()>=1700000000;
   if(validClock&&environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity)&&
     (cloudLastSample==0||GrowCloud::expired(now,cloudLastSample,GrowCloud::SampleInterval))){
     cloudLastSample=now;cloudBacklog.add(cloudUtcEpoch(),temperature,humidity);
   }
-  if(cloudTransport.active()) { cloudWasActive=true;cloudTransport.poll(); }
+  if(cloudTransport.active()) { cloudWasActive=true;cloudWorking=true;cloudTransport.poll();cloudWorking=false; }
   if(cloudWasActive&&!cloudTransport.active()){
     cloudWasActive=false;cloudLastResult=cloudTransport.result;
-    if(cloudLastResult>=200&&cloudLastResult<300){cloudHadSuccess=true;cloudLastSuccess=now;cloudFailures=0;cloudBacklog.acknowledge(cloudCapturedThrough);}
+    if(cloudLastResult>=200&&cloudLastResult<300){cloudHadSuccess=true;cloudLastSuccess=now;cloudFailures=0;cloudBacklog.acknowledge(cloudCapturedThrough);cloudEventAck=cloudEventCaptured;}
     else {cloudFailures++;if((cloudLastResult>=400&&cloudLastResult<500&&cloudLastResult!=408&&cloudLastResult!=429)||cloudLastResult==-9)cloudBlocked=true;}
   }
   if(cloudTransport.active()||cloudBlocked||!validClock||WiFi.status()!=WL_CONNECTED)return;
   if(cloudAttempted&&!GrowCloud::expired(now,cloudLastAttempt,GrowCloud::retryDelay(cloudFailures)))return;
   cloudAttempted=true;cloudLastAttempt=now;
-  String payload=buildStatusJson(64);
+  String payload=buildStatusJson(8,true);
   payload.remove(payload.length()-1);payload+=",\"pendingReadings\":"+cloudReadingsJson()+"}";
   String body="{\"p_room_id\":\""+String(cloudPairing.room)+"\",\"p_token\":\""+String(cloudPairing.token)+"\",\"p_sampled_at\":"+String(cloudUtcEpoch())+",\"p_payload\":"+payload+"}";
   // Epoch seconds are accepted by a dedicated wrapper; no clock-formatting buffer needed.
   String request="POST /rest/v1/rpc/ingest_environment_device HTTP/1.1\r\nHost: "+String(cloudHost)+"\r\napikey: "+String(cloudPublishableKey)+"\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: "+String(body.length())+"\r\n\r\n"+body;
-  cloudCapturedThrough=cloudBacklog.sequence;
+  cloudCapturedThrough=cloudBacklog.count?cloudBacklog.readings[(cloudBacklog.count<8?cloudBacklog.count:8)-1].sequence:0;
   if(cloudTransport.start(cloudHost,std::move(request),cloudUtcEpoch()))cloudWasActive=true;
 }
 
@@ -350,6 +360,9 @@ void loadEnvironmentConfig() {
   for(unsigned int i=0;i<strlen(environmentRoomId);i++) if(!isxdigit(environmentRoomId[i])&&environmentRoomId[i]!='-') {environmentRoomId[0]=0;environmentConfig.enabled=false;break;}
 }
 void runEnvironmentControl() {
+  uint32_t now=millis();
+  if(cloudWorking&&environmentLastControlAt&&now-environmentLastControlAt>environmentMaximumCloudGapMs)environmentMaximumCloudGapMs=now-environmentLastControlAt;
+  environmentLastControlAt=now;
   GrowEnvironment::Channel channels[4];
   for(int i=0;i<4;i++) {
     GrowEnvironment::Role role=GrowEnvironment::None;
@@ -362,30 +375,37 @@ void runEnvironmentControl() {
   environmentController.tick(millis(),environmentConfig,environmentSensorFresh(),temperature,humidity,tempMin,tempMax,channels);
   for(int i=0;i<4;i++) if(channels[i].on!=relayStates[i]) setRelayState(i+1,channels[i].on);
 }
-String environmentJsonWithEvents(uint8_t eventLimit) {
+String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   float value=GrowEnvironment::vpd(temperature,humidity);
   bool fresh=environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity);
-  String json="{\"enabled\":";
+  String json=F("{\"enabled\":");
   json+=environmentConfig.enabled?"true":"false";
-  json+=",\"roomId\":\""+String(environmentRoomId)+"\",\"bootId\":"+String(environmentBootId)+",\"uptimeMs\":"+String(millis());
-  json+=",\"stage\":"+String(environmentConfig.stage)+",\"vpdMin\":"+String(environmentConfig.vpdMin,2)+",\"vpdMax\":"+String(environmentConfig.vpdMax,2);
-  json+=",\"vpd\":"+(fresh?String(value,3):String("null"));
-  json+=",\"state\":\""+String(!fresh?"unknown":value<environmentConfig.vpdMin?"low":value>environmentConfig.vpdMax?"high":"optimal")+"\"";
-  json+=",\"criticalHot\":"+String(environmentConfig.criticalHot,1)+",\"criticalCold\":"+String(environmentConfig.criticalCold,1)+",\"criticalHumidity\":"+String(environmentConfig.criticalHumidity,1);
-  json+=",\"minimumSwitchSeconds\":"+String(environmentConfig.minimumSwitchMs/1000)+",\"responseSeconds\":"+String(environmentConfig.responseWindowMs/1000)+",\"responseDelta\":"+String(environmentConfig.responseDelta,1);
-  json+=",\"humidityResponseDelta\":"+String(environmentConfig.humidityResponseDelta,1);
-  json+=",\"exchangeOnSensorFailure\":"+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
-  json+=",\"cloud\":"+cloudStatusJson();
-  json+=",\"alarms\":"+String(environmentConfig.enabled?environmentController.alarms:0)+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
+  json+=F(",\"roomId\":\"")+String(environmentRoomId)+"\",\"bootId\":"+String(environmentBootId)+",\"uptimeMs\":"+String(millis());
+  json+=F(",\"stage\":")+String(environmentConfig.stage)+",\"vpdMin\":"+String(environmentConfig.vpdMin,2)+",\"vpdMax\":"+String(environmentConfig.vpdMax,2);
+  json+=F(",\"vpd\":")+(fresh?String(value,3):String("null"));
+  json+=F(",\"state\":\"")+String(!fresh?"unknown":value<environmentConfig.vpdMin?"low":value>environmentConfig.vpdMax?"high":"optimal")+"\"";
+  json+=F(",\"criticalHot\":")+String(environmentConfig.criticalHot,1)+",\"criticalCold\":"+String(environmentConfig.criticalCold,1)+",\"criticalHumidity\":"+String(environmentConfig.criticalHumidity,1);
+  json+=F(",\"minimumSwitchSeconds\":")+String(environmentConfig.minimumSwitchMs/1000)+",\"responseSeconds\":"+String(environmentConfig.responseWindowMs/1000)+",\"responseDelta\":"+String(environmentConfig.responseDelta,1);
+  json+=F(",\"humidityResponseDelta\":")+String(environmentConfig.humidityResponseDelta,1);
+  json+=F(",\"exchangeOnSensorFailure\":")+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
+  json+=F(",\"cloud\":")+cloudStatusJson();
+  json+=F(",\"alarms\":")+String(environmentConfig.enabled?environmentController.alarms:0)+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
   uint8_t count=environmentController.count<eventLimit?environmentController.count:eventLimit;
+  uint32_t first=environmentController.sequence-count+1;
+  if(recovering){
+    uint32_t oldest=environmentController.sequence-environmentController.count+1;
+    first=cloudEventAck+1>oldest?cloudEventAck+1:oldest;
+    uint32_t pending=environmentController.sequence>=first?environmentController.sequence-first+1:0;
+    count=pending<eventLimit?pending:eventLimit;cloudEventCaptured=count?first+count-1:cloudEventAck;
+  }
   for(unsigned int i=0;i<count;i++) {
-    const auto& event=environmentController.events[(environmentController.sequence-count+i)%GrowEnvironment::Controller::EventCapacity];
-    if(i) json+=",";
-    json+="{\"sequence\":"+String(event.sequence)+",\"uptimeMs\":"+String(event.at)+",\"alarms\":"+String(event.alarms)+",\"outputs\":"+String(event.outputs)+"}";
+    const auto& event=environmentController.events[(first+i-1)%GrowEnvironment::Controller::EventCapacity];
+    if(i) json+=F(",");
+    json+=F("{\"sequence\":")+String(event.sequence)+",\"uptimeMs\":"+String(event.at)+",\"alarms\":"+String(event.alarms)+",\"outputs\":"+String(event.outputs)+"}";
   }
   return json+"]}";
 }
-String environmentJson() { return environmentJsonWithEvents(16); }
+String environmentJson() { return environmentJsonWithEvents(16,false); }
 void handleEnvironment() { addCORS(); server.send(200,"application/json",environmentJson()); }
 void handleSetEnvironment() {
   GrowEnvironment::Config next=environmentConfig;
@@ -1398,26 +1418,26 @@ unsigned long dhtLastSuccessAgeSeconds() {
 
 void handleRoot() {
 
-  String json = "{";
+  String json = F("{");
 
-  json += "\"device\":\"";
+  json += F("\"device\":\"");
   json += deviceName;
 
-  json += "\",\"version\":\"";
+  json += F("\",\"version\":\"");
   json += firmwareVersion;
 
-  json += "\",\"endpoints\":[";
+  json += F("\",\"endpoints\":[");
 
-  json += "\"/api/status\",";
-  json += "\"/api/hardware\",";
-  json += "\"/api/functions\",";
-  json += "\"/api/config\",";
-  json += "\"/api/relays\",";
-  json += "\"/api/relay\",";
-  json += "\"/api/diagnostics\",";
-  json += "\"/api/restart\"";
+  json += F("\"/api/status\",");
+  json += F("\"/api/hardware\",");
+  json += F("\"/api/functions\",");
+  json += F("\"/api/config\",");
+  json += F("\"/api/relays\",");
+  json += F("\"/api/relay\",");
+  json += F("\"/api/diagnostics\",");
+  json += F("\"/api/restart\"");
 
-  json += "]}";
+  json += F("]}");
 
   addCORS();
 
@@ -1432,21 +1452,21 @@ void handleRoot() {
 // API STATUS
 // ======================================================
 
-String buildStatusJson(uint8_t eventLimit) {
+String buildStatusJson(uint8_t eventLimit,bool recovering) {
 
-  String json = "{";
+  String json = F("{");
 
-  json += "\"device\":\"";
+  json += F("\"device\":\"");
   json += deviceName;
 
-  json += "\",\"version\":\"";
+  json += F("\",\"version\":\"");
   json += firmwareVersion;
 
-  json += "\",\"online\":true,";
+  json += F("\",\"online\":true,");
 
   // DHT
 
-  json += "\"temperature\":";
+  json += F("\"temperature\":");
 
   if (dhtAvailable && dhtHasValidReading)
     json += String(
@@ -1454,9 +1474,9 @@ String buildStatusJson(uint8_t eventLimit) {
       1
     );
   else
-    json += "null";
+    json += F("null");
 
-  json += ",\"humidity\":";
+  json += F(",\"humidity\":");
 
   if (dhtAvailable && dhtHasValidReading)
     json += String(
@@ -1464,77 +1484,77 @@ String buildStatusJson(uint8_t eventLimit) {
       1
     );
   else
-    json += "null";
+    json += F("null");
 
-  json += ",\"dht\":{";
-  json += "\"state\":\"";
+  json += F(",\"dht\":{");
+  json += F("\"state\":\"");
   json += dhtStateName();
-  json += "\",\"fresh\":";
+  json += F("\",\"fresh\":");
   json += environmentSensorFresh() ? "true" : "false";
-  json += ",\"lastSuccessAgeSeconds\":";
+  json += F(",\"lastSuccessAgeSeconds\":");
   json += String(dhtLastSuccessAgeSeconds());
-  json += ",\"consecutiveFailures\":";
+  json += F(",\"consecutiveFailures\":");
   json += String(dhtConsecutiveFailures);
-  json += ",\"readCount\":";
+  json += F(",\"readCount\":");
   json += String(dhtReadCount);
-  json += ",\"successCount\":";
+  json += F(",\"successCount\":");
   json += String(dhtSuccessCount);
-  json += ",\"failureCount\":";
+  json += F(",\"failureCount\":");
   json += String(dhtFailureCount);
-  json += ",\"reinitializations\":";
+  json += F(",\"reinitializations\":");
   json += String(dhtReinitializations);
-  json += "}";
+  json += F("}");
 
   // Soil
 
-  json += ",\"environment\":" + environmentJsonWithEvents(eventLimit);
-  json += ",\"soil\":null";
-  json += ",\"soilEnabled\":false";
+  json += F(",\"environment\":") + environmentJsonWithEvents(eventLimit,recovering);
+  json += F(",\"soil\":null");
+  json += F(",\"soilEnabled\":false");
 
   // Relays
 
-  json += ",\"relays\":[";
+  json += F(",\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
-    json += "{";
+    json += F("{");
 
-    json += "\"id\":";
+    json += F("\"id\":");
     json += String(i + 1);
 
-    json += ",\"pin\":\"";
+    json += F(",\"pin\":\"");
     json += pinToString(
       relayPins[i]
     );
 
-    json += "\",\"function\":\"";
+    json += F("\",\"function\":\"");
     json += functionToString(
       relayFunctions[i]
     );
 
-    json += "\",\"mode\":\"";
+    json += F("\",\"mode\":\"");
     json += modeToString(
       relayModes[i]
     );
 
-    json += "\",\"state\":";
+    json += F("\",\"state\":");
 
     json +=
       relayStates[i]
         ? "true"
         : "false";
 
-    json += "}";
+    json += F("}");
 
     if (i < 3)
-      json += ",";
+      json += F(",");
   }
 
-  json += "]";
+  json += F("]");
 
   // Time
 
-  json += ",\"timeSynced\":";
+  json += F(",\"timeSynced\":");
 
   json +=
     timeSynced
@@ -1543,12 +1563,12 @@ String buildStatusJson(uint8_t eventLimit) {
 
   if (timeSynced) {
 
-    json += ",\"hour\":";
+    json += F(",\"hour\":");
     json += String(
       roomHours()
     );
 
-    json += ",\"minute\":";
+    json += F(",\"minute\":");
     json += String(
       roomMinutes()
     );
@@ -1556,28 +1576,28 @@ String buildStatusJson(uint8_t eventLimit) {
 
   // Network
 
-  json += ",\"ip\":\"";
+  json += F(",\"ip\":\"");
 
   json +=
     WiFi.localIP().toString();
 
-  json += "\"";
+  json += F("\"");
 
-  json += ",\"rssi\":";
+  json += F(",\"rssi\":");
   json += String(
     WiFi.RSSI()
   );
 
-  json += ",\"uptime\":";
+  json += F(",\"uptime\":");
   json += String(
     millis() / 1000
   );
 
-  json += "}";
+  json += F("}");
 
   return json;
 }
-void handleApiStatus() { addCORS(); server.send(200,"application/json",buildStatusJson(16)); }
+void handleApiStatus() { addCORS(); server.send(200,"application/json",buildStatusJson(16,false)); }
 
 // ======================================================
 // API RELAYS
@@ -1586,44 +1606,44 @@ void handleApiStatus() { addCORS(); server.send(200,"application/json",buildStat
 void handleApiRelays() {
 
   String json =
-    "{\"relays\":[";
+    F("{\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
-    json += "{";
+    json += F("{");
 
-    json += "\"id\":";
+    json += F("\"id\":");
     json += String(i + 1);
 
-    json += ",\"pin\":\"";
+    json += F(",\"pin\":\"");
     json += pinToString(
       relayPins[i]
     );
 
-    json += "\",\"function\":\"";
+    json += F("\",\"function\":\"");
     json += functionToString(
       relayFunctions[i]
     );
 
-    json += "\",\"mode\":\"";
+    json += F("\",\"mode\":\"");
     json += modeToString(
       relayModes[i]
     );
 
-    json += "\",\"state\":";
+    json += F("\",\"state\":");
 
     json +=
       relayStates[i]
         ? "true"
         : "false";
 
-    json += "}";
+    json += F("}");
 
     if (i < 3)
-      json += ",";
+      json += F(",");
   }
 
-  json += "]}";
+  json += F("]}");
 
   addCORS();
 
@@ -1745,7 +1765,7 @@ void handleApiSetRelay() {
   runEnvironmentControl();
 
   String json =
-    "{\"ok\":true,\"relay\":" +
+    F("{\"ok\":true,\"relay\":") +
     String(relayId) +
     ",\"state\":" +
     String(
@@ -1786,28 +1806,28 @@ void handleApiRestart() {
 // ======================================================
 
 void handleApiDiagnostics() {
-  String json = "{\"dht\":{";
-  json += "\"type\":\"DHT21\",\"pin\":\"";
+  String json = F("{\"dht\":{");
+  json += F("\"type\":\"DHT21\",\"pin\":\"");
   json += pinToString(pinDHT);
-  json += "\",\"state\":\"";
+  json += F("\",\"state\":\"");
   json += dhtStateName();
-  json += "\",\"fresh\":";
+  json += F("\",\"fresh\":");
   json += dhtReadingFresh ? "true" : "false";
-  json += ",\"available\":";
+  json += F(",\"available\":");
   json += dhtAvailable ? "true" : "false";
-  json += ",\"lastSuccessAgeSeconds\":";
+  json += F(",\"lastSuccessAgeSeconds\":");
   json += String(dhtLastSuccessAgeSeconds());
-  json += ",\"readCount\":";
+  json += F(",\"readCount\":");
   json += String(dhtReadCount);
-  json += ",\"successCount\":";
+  json += F(",\"successCount\":");
   json += String(dhtSuccessCount);
-  json += ",\"failureCount\":";
+  json += F(",\"failureCount\":");
   json += String(dhtFailureCount);
-  json += ",\"consecutiveFailures\":";
+  json += F(",\"consecutiveFailures\":");
   json += String(dhtConsecutiveFailures);
-  json += ",\"reinitializations\":";
+  json += F(",\"reinitializations\":");
   json += String(dhtReinitializations);
-  json += "}}";
+  json += F("}}");
   addCORS();
   server.send(200, "application/json", json);
 }
@@ -1819,49 +1839,49 @@ void handleApiDiagnostics() {
 void handleApiFunctions() {
 
   String json =
-    "{\"relays\":[";
+    F("{\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
-    json += "{";
+    json += F("{");
 
-    json += "\"id\":";
+    json += F("\"id\":");
     json += String(i + 1);
 
-    json += ",\"function\":\"";
+    json += F(",\"function\":\"");
     json += functionToString(
       relayFunctions[i]
     );
 
-    json += "\",\"mode\":\"";
+    json += F("\",\"mode\":\"");
     json += modeToString(
       relayModes[i]
     );
 
-    json += "\"}";
+    json += F("\"}");
 
     if (i < 3)
-      json += ",";
+      json += F(",");
   }
 
-  json += "],";
+  json += F("],");
 
-  json += "\"allowedFunctions\":[";
+  json += F("\"allowedFunctions\":[");
 
-  json += "\"none\",";
-  json += "\"light\",";
-  json += "\"ventilation\",";
-  json += "\"heater\",";
-  json += "\"pump\"";
+  json += F("\"none\",");
+  json += F("\"light\",");
+  json += F("\"ventilation\",");
+  json += F("\"heater\",");
+  json += F("\"pump\"");
 
-  json += "],";
+  json += F("],");
 
-  json += "\"allowedModes\":[";
-  json += "\"manual\",";
-  json += "\"auto\"";
-  json += "]";
+  json += F("\"allowedModes\":[");
+  json += F("\"manual\",");
+  json += F("\"auto\"");
+  json += F("]");
 
-  json += "}";
+  json += F("}");
 
   addCORS();
 
@@ -2035,24 +2055,24 @@ void handleApiSetFunctions() {
 
   runAutomations();
 
-  String json = "{";
+  String json = F("{");
 
-  json += "\"ok\":true,";
+  json += F("\"ok\":true,");
 
-  json += "\"relay\":";
+  json += F("\"relay\":");
   json += String(relayId);
 
-  json += ",\"function\":\"";
+  json += F(",\"function\":\"");
   json += functionToString(
     newFunction
   );
 
-  json += "\",\"mode\":\"";
+  json += F("\",\"mode\":\"");
   json += modeToString(
     newMode
   );
 
-  json += "\"}";
+  json += F("\"}");
 
   addCORS();
 
@@ -2069,75 +2089,75 @@ void handleApiSetFunctions() {
 
 void handleApiConfig() {
 
-  String json = "{";
+  String json = F("{");
 
-  json += "\"lightChannels\":[";
+  json += F("\"lightChannels\":[");
   for(int i=0;i<4;i++) {
-    if(i) json+=",";
-    json+="{\"relay\":"+String(i+1)+",\"independent\":"+(lightChannels[i].independent?String("true"):String("false"))+",\"hour\":"+String(lightChannels[i].hour)+",\"minute\":"+String(lightChannels[i].minute)+",\"duration\":"+String(lightChannels[i].duration)+"}";
+    if(i) json+=F(",");
+    json+=F("{\"relay\":")+String(i+1)+",\"independent\":"+(lightChannels[i].independent?String("true"):String("false"))+",\"hour\":"+String(lightChannels[i].hour)+",\"minute\":"+String(lightChannels[i].minute)+",\"duration\":"+String(lightChannels[i].duration)+"}";
   }
-  json+="],";
-  json += "\"lightStartHour\":";
+  json+=F("],");
+  json += F("\"lightStartHour\":");
   json += String(
     lightStartHour
   );
 
-  json += ",\"lightStartMinute\":";
+  json += F(",\"lightStartMinute\":");
   json += String(
     lightStartMinute
   );
 
-  json += ",\"lightDurationHours\":";
+  json += F(",\"lightDurationHours\":");
   json += String(
     lightDurationHours
   );
 
-  json += ",\"lightTransitionActive\":";
+  json += F(",\"lightTransitionActive\":");
   json += lightTransitionMode == LIGHT_TRANSITION_NONE ? "false" : "true";
 
-  json += ",\"lightTransitionMode\":\"";
-  if (lightTransitionMode == LIGHT_TRANSITION_HOLD_ON) json += "hold_on";
-  else if (lightTransitionMode == LIGHT_TRANSITION_WAIT_START) json += "wait_start";
-  else json += "none";
-  json += "\"";
+  json += F(",\"lightTransitionMode\":\"");
+  if (lightTransitionMode == LIGHT_TRANSITION_HOLD_ON) json += F("hold_on");
+  else if (lightTransitionMode == LIGHT_TRANSITION_WAIT_START) json += F("wait_start");
+  else json += F("none");
+  json += F("\"");
 
-  json += ",\"lightTransitionUntil\":";
+  json += F(",\"lightTransitionUntil\":");
   json += String(lightTransitionUntil);
 
-  json += ",\"tempMin\":";
+  json += F(",\"tempMin\":");
   json += String(
     tempMin,
     1
   );
 
-  json += ",\"tempMax\":";
+  json += F(",\"tempMax\":");
   json += String(
     tempMax,
     1
   );
 
-  json += ",\"ventilationIntervalMinutes\":";
+  json += F(",\"ventilationIntervalMinutes\":");
   json += String(
     ventilationInterval /
     60000UL
   );
 
-  json += ",\"ventilationDurationMinutes\":";
+  json += F(",\"ventilationDurationMinutes\":");
   json += String(
     ventilationDuration /
     60000UL
   );
 
-  json += ",\"ventilationEmergencyDurationMinutes\":";
+  json += F(",\"ventilationEmergencyDurationMinutes\":");
   json += String(ventilationEmergencyDuration / 60000UL);
 
-  json += ",\"ventilationMode\":\"";
-  if (ventilationMode == VENT_INTERVAL) json += "interval";
-  else if (ventilationMode == VENT_TEMPERATURE) json += "temperature";
-  else json += "combined";
-  json += "\"";
+  json += F(",\"ventilationMode\":\"");
+  if (ventilationMode == VENT_INTERVAL) json += F("interval");
+  else if (ventilationMode == VENT_TEMPERATURE) json += F("temperature");
+  else json += F("combined");
+  json += F("\"");
 
-  json += "}";
+  json += F("}");
 
   addCORS();
 
@@ -2313,63 +2333,63 @@ void handleApiSetConfig() {
 
 void handleApiHardware() {
 
-  String json = "{";
+  String json = F("{");
 
   json +=
-    "\"board\":\"Wemos D1 R1 ESP8266\",";
+    F("\"board\":\"Wemos D1 R1 ESP8266\",");
 
-  json += "\"dht\":{";
+  json += F("\"dht\":{");
 
-  json += "\"type\":\"DHT21\",";
-  json += "\"pin\":\"";
+  json += F("\"type\":\"DHT21\",");
+  json += F("\"pin\":\"");
   json += pinToString(pinDHT);
-  json += "\",";
-  json += "\"configurable\":true";
+  json += F("\",");
+  json += F("\"configurable\":true");
 
-  json += "},";
+  json += F("},");
 
-  json += "\"soil\":{";
+  json += F("\"soil\":{");
 
-  json += "\"type\":\"analog\",";
-  json += "\"pin\":\"A0\",";
-  json += "\"enabled\":false,";
-  json += "\"configurable\":false";
+  json += F("\"type\":\"analog\",");
+  json += F("\"pin\":\"A0\",");
+  json += F("\"enabled\":false,");
+  json += F("\"configurable\":false");
 
-  json += "},";
+  json += F("},");
 
-  json += "\"relays\":[";
+  json += F("\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
-    json += "{";
+    json += F("{");
 
-    json += "\"id\":";
+    json += F("\"id\":");
     json += String(i + 1);
 
-    json += ",\"pin\":\"";
+    json += F(",\"pin\":\"");
     json += pinToString(
       relayPins[i]
     );
 
-    json += "\"}";
+    json += F("\"}");
 
     if (i < 3)
-      json += ",";
+      json += F(",");
   }
 
-  json += "],";
+  json += F("],");
 
-  json += "\"allowedDigitalPins\":[";
+  json += F("\"allowedDigitalPins\":[");
 
-  json += "\"D1\",";
-  json += "\"D2\",";
-  json += "\"D5\",";
-  json += "\"D6\",";
-  json += "\"D7\"";
+  json += F("\"D1\",");
+  json += F("\"D2\",");
+  json += F("\"D5\",");
+  json += F("\"D6\",");
+  json += F("\"D7\"");
 
-  json += "]";
+  json += F("]");
 
-  json += "}";
+  json += F("}");
 
   addCORS();
 
@@ -2602,6 +2622,13 @@ void setup() {
   loadLightChannels();
   loadEnvironmentConfig();
   loadCloudPairing();
+  // BearSSL yields during certificate work. Keep existing output control serviced
+  // from CONT context; DHT reads remain outside this short callback.
+  cloudSchedulerReady=schedule_recurrent_function_us([](){if(cloudWorking)runAutomations();return true;},200000);
+  if(!cloudSchedulerReady){cloudBlocked=true;cloudLastResult=-10;}
+  ESP.rtcUserMemoryRead(0,reinterpret_cast<uint32_t*>(&cloudFault),sizeof(cloudFault));
+  String resetReason=ESP.getResetReason();
+  if(cloudPairing.magic==0x47524331&&(resetReason.indexOf("Watchdog")>=0||resetReason.indexOf("Exception")>=0||cloudFault.magic==0x47524631)){cloudBlocked=true;cloudLastResult=-11;}
 
   initializeHardware();
 
