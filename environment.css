@@ -1,0 +1,9 @@
+.today-environment .metrics-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+#environmentAlerts p{padding:.65rem;border-radius:8px;background:var(--warning-soft,#fff0d6);color:var(--text-primary,#573b12)}
+.environment-room-summary{padding:.6rem 0;font-size:.9rem;color:var(--text-secondary);border-top:1px solid var(--border-color,#ddd)}
+html[data-local-mode=true] [data-view="cultivation"],html[data-local-mode=true] [data-view="agenda"],html[data-local-mode=true] [data-view="operations"],html[data-local-mode=true] [data-view="recipes"],html[data-local-mode=true] [data-view="assistant"],html[data-local-mode=true] [data-view="team"],html[data-local-mode=true] .workspace-picker,html[data-local-mode=true] #cloudAccount,html[data-local-mode=true] #dashboardAgenda,html[data-local-mode=true] #dashboardCultivations{display:none!important}
+@media(max-width:420px){.today-environment .metrics-grid{gap:.4rem}.today-environment .metric-card{padding:.65rem}.today-environment .metric-icon{display:none}}
+
+html[data-local-mode=true] :is([data-dashboard-widget="agenda"],[data-dashboard-widget="cultivations"],[data-dashboard-widget="recent"],#openProjectHubNav,#voiceAssistantButton,[data-open-register],.mobile-project-bar){display:none!important}
+html[data-local-mode=true] .today-environment{grid-column:1;grid-row:auto}
+html[data-local-mode=true] .today-systems{grid-column:2;grid-row:auto}

@@ -2,7 +2,7 @@
   "name": "cultivo-flora-v25",
   "version": "2.5.18",
   "private": true,
-  "description": "Cultivo Flora V2.5: control local y gestión de cultivo",
+  "description": "Cultivo Flora V2.5: control local y gesti\u00f3n de cultivo",
   "scripts": {
     "dev": "node scripts/sync-web.mjs && python3 -m http.server 8081 --bind 127.0.0.1 --directory www",
     "web:sync": "node scripts/sync-web.mjs",
@@ -10,7 +10,8 @@
     "test:supabase:schema": "node tests/supabase-schema.test.mjs",
     "test:supabase:anon": "node tests/supabase-anon.test.mjs",
     "android:sync": "node scripts/sync-web.mjs && cap sync android",
-    "android:open": "cap open android"
+    "android:open": "cap open android",
+    "test:environment": "node tests/environment-models.test.mjs && node tests/environment-cloud.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

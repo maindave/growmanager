@@ -5,15 +5,17 @@
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
 #include <DHT.h>
-#include <NTPClient.h>
+#include <time.h>
 #include <EEPROM.h>
+#include "EnvironmentalControl.h"
+#include "CooperativeCloudTls.h"
 
 // ======================================================
 // ARDUINO CULTIVO V2.4
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.5-multi-light";
+const char* firmwareVersion = "2.6-environment-direct-cloud";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -24,19 +26,12 @@ const char* ssid = "Irupe";
 const char* password = "10203040";
 
 // ======================================================
-// GOOGLE SHEETS
-// ======================================================
-
-const char* googleScriptPath =
-  "/macros/s/AKfycbw1UZ6ZYhd1J3yHvl9Agxx2ZNXXPTMheEhp86yiE2EikOgadgoWA6gLie8bVMc5IrXQ/exec";
-
-const char* googleHost = "script.google.com";
-
-// ======================================================
 // EEPROM
 // ======================================================
 
-#define EEPROM_SIZE 256
+#define EEPROM_SIZE 1024
+#define EEPROM_CLOUD 384
+#define EEPROM_ENVIRONMENT 256
 
 // Hardware
 #define EEPROM_HW_MAGIC       40
@@ -133,7 +128,9 @@ enum RelayFunction : byte {
   FN_LIGHT = 1,
   FN_VENTILATION = 2,
   FN_HEATER = 3,
-  FN_PUMP = 4
+  FN_PUMP = 4,
+  FN_EXTRACTION = 5,
+  FN_INTAKE = 6
 };
 
 enum RelayMode : byte {
@@ -246,15 +243,6 @@ ESP8266WebServer server(80);
 // NTP
 // ======================================================
 
-WiFiUDP ntpUDP;
-
-NTPClient timeClient(
-  ntpUDP,
-  "pool.ntp.org",
-  -3 * 3600,
-  60000
-);
-
 bool timeSynced = false;
 
 // ======================================================
@@ -262,10 +250,184 @@ bool timeSynced = false;
 // ======================================================
 
 unsigned long lastWiFiAttempt = 0;
-unsigned long lastGoogleSend = 0;
 
-const unsigned long GOOGLE_INTERVAL =
-  10UL * 60UL * 1000UL;
+
+
+
+extern char environmentRoomId[37];
+const char* cloudHost = "rzkocbaztxasbnchgwwy.supabase.co";
+const char* cloudPublishableKey = "sb_publishable_xnMIKJ72WwniGvsKuUJ0xQ_HKiX8M0K";
+struct CloudPairing { uint32_t magic; char room[37]; char token[65]; };
+CloudPairing cloudPairing={};
+CooperativeCloudTls cloudTransport;
+GrowCloud::Backlog cloudBacklog;
+uint32_t cloudLastAttempt=0,cloudLastSuccess=0,cloudLastSample=0,cloudCapturedThrough=0;
+unsigned cloudFailures=0;
+bool cloudAttempted=false,cloudHadSuccess=false,cloudBlocked=false,cloudWasActive=false;
+int cloudLastResult=0;
+static_assert(EEPROM_CLOUD+sizeof(CloudPairing)<=EEPROM_SIZE,"Cloud EEPROM overflow");
+uint32_t cloudUtcEpoch() { time_t now=time(nullptr); return now>0?uint32_t(now):0; }
+uint32_t roomEpoch() { uint32_t utc=cloudUtcEpoch();return utc>=1700000000?utc-10800UL:0; }
+int roomHours() { return (roomEpoch()%86400UL)/3600; }
+int roomMinutes() { return (roomEpoch()%3600UL)/60; }
+void loadCloudPairing() {
+  EEPROM.get(EEPROM_CLOUD,cloudPairing);cloudPairing.room[36]=0;cloudPairing.token[64]=0;
+  if(cloudPairing.magic!=0x47524331||strlen(cloudPairing.room)!=36||strlen(cloudPairing.token)!=64){memset(&cloudPairing,0,sizeof(cloudPairing));return;}
+  for(unsigned i=0;i<64;i++)if(!isxdigit(cloudPairing.token[i])){memset(&cloudPairing,0,sizeof(cloudPairing));return;}
+}
+void clearCloudPairing() {
+  cloudTransport.cancel();cloudBacklog.clear();memset(&cloudPairing,0,sizeof(cloudPairing));
+  EEPROM.put(EEPROM_CLOUD,cloudPairing);EEPROM.commit();cloudAttempted=cloudHadSuccess=cloudBlocked=cloudWasActive=false;cloudFailures=0;cloudLastResult=0;cloudLastSample=0;
+}
+String cloudStatusJson() {
+  bool paired=cloudPairing.magic==0x47524331;
+  String state=!paired?"unconfigured":cloudBlocked?"blocked":WiFi.status()!=WL_CONNECTED?"offline":cloudUtcEpoch()<1700000000?"waiting_clock":cloudTransport.active()?"publishing":cloudLastResult>=200&&cloudLastResult<300?"connected":cloudFailures?"retrying":"ready";
+  String json="{\"configured\":"+String(paired?"true":"false")+",\"state\":\""+state+"\",\"lastResult\":"+String(cloudLastResult)+",\"failures\":"+String(cloudFailures);
+  json+=",\"lastSuccessAgeSeconds\":"+(cloudHadSuccess?String((millis()-cloudLastSuccess)/1000):String("null"));
+  json+=",\"pendingReadings\":"+String(cloudBacklog.count)+",\"droppedReadings\":"+String(cloudBacklog.dropped)+",\"maximumStepMs\":"+String(cloudTransport.maximumStepMs)+"}";
+  return json;
+}
+void handleCloudStatus() { addCORS();server.send(200,"application/json",cloudStatusJson()); }
+void handleCloudPairing() {
+  if(server.hasArg("enabled")&&server.arg("enabled")=="0"){clearCloudPairing();handleCloudStatus();return;}
+  String room=server.arg("roomId"),token=server.arg("token");
+  bool valid=room.length()==36&&room==String(environmentRoomId)&&token.length()==64;
+  for(unsigned i=0;i<token.length();i++)if(!isxdigit(token[i]))valid=false;
+  if(!valid){addCORS();server.send(400,"application/json","{\"error\":\"invalid_cloud_pairing\"}");return;}
+  clearCloudPairing();cloudPairing.magic=0x47524331;room.toCharArray(cloudPairing.room,sizeof(cloudPairing.room));token.toCharArray(cloudPairing.token,sizeof(cloudPairing.token));
+  EEPROM.put(EEPROM_CLOUD,cloudPairing);EEPROM.commit();handleCloudStatus();
+}
+String cloudReadingsJson() {
+  String json="[";
+  for(unsigned i=0;i<cloudBacklog.count;i++){const auto& r=cloudBacklog.readings[i];if(i)json+=",";json+="{\"epoch\":"+String(r.epoch)+",\"temperature\":"+String(r.temperature,2)+",\"humidity\":"+String(r.humidity,2)+"}";}
+  return json+"]";
+}
+void runCloudTelemetry() {
+  uint32_t now=millis();
+  if(cloudPairing.magic!=0x47524331||String(cloudPairing.room)!=String(environmentRoomId))return;
+  bool validClock=cloudUtcEpoch()>=1700000000;
+  if(validClock&&environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity)&&
+    (cloudLastSample==0||GrowCloud::expired(now,cloudLastSample,GrowCloud::SampleInterval))){
+    cloudLastSample=now;cloudBacklog.add(cloudUtcEpoch(),temperature,humidity);
+  }
+  if(cloudTransport.active()) { cloudWasActive=true;cloudTransport.poll(); }
+  if(cloudWasActive&&!cloudTransport.active()){
+    cloudWasActive=false;cloudLastResult=cloudTransport.result;
+    if(cloudLastResult>=200&&cloudLastResult<300){cloudHadSuccess=true;cloudLastSuccess=now;cloudFailures=0;cloudBacklog.acknowledge(cloudCapturedThrough);}
+    else {cloudFailures++;if((cloudLastResult>=400&&cloudLastResult<500&&cloudLastResult!=408&&cloudLastResult!=429)||cloudLastResult==-9)cloudBlocked=true;}
+  }
+  if(cloudTransport.active()||cloudBlocked||!validClock||WiFi.status()!=WL_CONNECTED)return;
+  if(cloudAttempted&&!GrowCloud::expired(now,cloudLastAttempt,GrowCloud::retryDelay(cloudFailures)))return;
+  cloudAttempted=true;cloudLastAttempt=now;
+  String payload=buildStatusJson(64);
+  payload.remove(payload.length()-1);payload+=",\"pendingReadings\":"+cloudReadingsJson()+"}";
+  String body="{\"p_room_id\":\""+String(cloudPairing.room)+"\",\"p_token\":\""+String(cloudPairing.token)+"\",\"p_sampled_at\":"+String(cloudUtcEpoch())+",\"p_payload\":"+payload+"}";
+  // Epoch seconds are accepted by a dedicated wrapper; no clock-formatting buffer needed.
+  String request="POST /rest/v1/rpc/ingest_environment_device HTTP/1.1\r\nHost: "+String(cloudHost)+"\r\napikey: "+String(cloudPublishableKey)+"\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: "+String(body.length())+"\r\n\r\n"+body;
+  cloudCapturedThrough=cloudBacklog.sequence;
+  if(cloudTransport.start(cloudHost,std::move(request),cloudUtcEpoch()))cloudWasActive=true;
+}
+
+GrowEnvironment::Config environmentConfig;
+GrowEnvironment::Controller environmentController;
+char environmentRoomId[37] = "";
+uint32_t environmentBootId = 0;
+static_assert(EEPROM_ENVIRONMENT + sizeof(GrowEnvironment::Config) + 37 <= EEPROM_CLOUD, "EEPROM environment overflow");
+
+bool environmentSensorFresh() {
+  return dhtReadingFresh && dhtHasValidReading && millis()-lastDHTSuccessAt <= 15000UL;
+}
+void saveEnvironmentConfig() {
+  EEPROM.put(EEPROM_ENVIRONMENT, environmentConfig);
+  for (unsigned int i=0;i<sizeof(environmentRoomId);i++) EEPROM.write(EEPROM_ENVIRONMENT+sizeof(environmentConfig)+i, environmentRoomId[i]);
+  EEPROM.commit();
+}
+void loadEnvironmentConfig() {
+  EEPROM.get(EEPROM_ENVIRONMENT, environmentConfig);
+  if (!GrowEnvironment::validConfig(environmentConfig)) { environmentConfig=GrowEnvironment::Config(); saveEnvironmentConfig(); }
+  for (unsigned int i=0;i<sizeof(environmentRoomId);i++) environmentRoomId[i]=EEPROM.read(EEPROM_ENVIRONMENT+sizeof(environmentConfig)+i);
+  environmentRoomId[36]=0;
+  for(unsigned int i=0;i<strlen(environmentRoomId);i++) if(!isxdigit(environmentRoomId[i])&&environmentRoomId[i]!='-') {environmentRoomId[0]=0;environmentConfig.enabled=false;break;}
+}
+void runEnvironmentControl() {
+  GrowEnvironment::Channel channels[4];
+  for(int i=0;i<4;i++) {
+    GrowEnvironment::Role role=GrowEnvironment::None;
+    if(relayFunctions[i]==FN_HEATER) role=GrowEnvironment::Heater;
+    if(relayFunctions[i]==FN_VENTILATION) role=GrowEnvironment::Circulation;
+    if(relayFunctions[i]==FN_EXTRACTION) role=GrowEnvironment::Extraction;
+    if(relayFunctions[i]==FN_INTAKE) role=GrowEnvironment::Intake;
+    channels[i]=GrowEnvironment::Channel(role,relayModes[i]==MODE_AUTO,relayStates[i]);
+  }
+  environmentController.tick(millis(),environmentConfig,environmentSensorFresh(),temperature,humidity,tempMin,tempMax,channels);
+  for(int i=0;i<4;i++) if(channels[i].on!=relayStates[i]) setRelayState(i+1,channels[i].on);
+}
+String environmentJsonWithEvents(uint8_t eventLimit) {
+  float value=GrowEnvironment::vpd(temperature,humidity);
+  bool fresh=environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity);
+  String json="{\"enabled\":";
+  json+=environmentConfig.enabled?"true":"false";
+  json+=",\"roomId\":\""+String(environmentRoomId)+"\",\"bootId\":"+String(environmentBootId)+",\"uptimeMs\":"+String(millis());
+  json+=",\"stage\":"+String(environmentConfig.stage)+",\"vpdMin\":"+String(environmentConfig.vpdMin,2)+",\"vpdMax\":"+String(environmentConfig.vpdMax,2);
+  json+=",\"vpd\":"+(fresh?String(value,3):String("null"));
+  json+=",\"state\":\""+String(!fresh?"unknown":value<environmentConfig.vpdMin?"low":value>environmentConfig.vpdMax?"high":"optimal")+"\"";
+  json+=",\"criticalHot\":"+String(environmentConfig.criticalHot,1)+",\"criticalCold\":"+String(environmentConfig.criticalCold,1)+",\"criticalHumidity\":"+String(environmentConfig.criticalHumidity,1);
+  json+=",\"minimumSwitchSeconds\":"+String(environmentConfig.minimumSwitchMs/1000)+",\"responseSeconds\":"+String(environmentConfig.responseWindowMs/1000)+",\"responseDelta\":"+String(environmentConfig.responseDelta,1);
+  json+=",\"humidityResponseDelta\":"+String(environmentConfig.humidityResponseDelta,1);
+  json+=",\"exchangeOnSensorFailure\":"+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
+  json+=",\"cloud\":"+cloudStatusJson();
+  json+=",\"alarms\":"+String(environmentConfig.enabled?environmentController.alarms:0)+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
+  uint8_t count=environmentController.count<eventLimit?environmentController.count:eventLimit;
+  for(unsigned int i=0;i<count;i++) {
+    const auto& event=environmentController.events[(environmentController.sequence-count+i)%GrowEnvironment::Controller::EventCapacity];
+    if(i) json+=",";
+    json+="{\"sequence\":"+String(event.sequence)+",\"uptimeMs\":"+String(event.at)+",\"alarms\":"+String(event.alarms)+",\"outputs\":"+String(event.outputs)+"}";
+  }
+  return json+"]}";
+}
+String environmentJson() { return environmentJsonWithEvents(16); }
+void handleEnvironment() { addCORS(); server.send(200,"application/json",environmentJson()); }
+void handleSetEnvironment() {
+  GrowEnvironment::Config next=environmentConfig;
+  const char* numericFields[]={"stage","vpdMin","vpdMax","criticalHot","criticalCold","criticalHumidity","minimumSwitchSeconds","responseSeconds","responseDelta","humidityResponseDelta"};
+  for(unsigned int i=0;i<sizeof(numericFields)/sizeof(numericFields[0]);i++) if(server.hasArg(numericFields[i])) {
+    String raw=server.arg(numericFields[i]); char* end=nullptr; float number=strtof(raw.c_str(),&end);
+    bool integerField=i==0||i==6||i==7;
+    if(raw.length()==0||end==raw.c_str()||*end!=0||!isfinite(number)||(integerField&&floorf(number)!=number)||(i==0&&(number<0||number>3))||(i==6&&(number<5||number>300))||(i==7&&(number<60||number>1800))) {
+      addCORS(); server.send(400,"application/json","{\"error\":\"invalid_environment_config\"}"); return;
+    }
+  }
+  if(server.hasArg("exchangeOnSensorFailure")&&server.arg("exchangeOnSensorFailure")!="0"&&server.arg("exchangeOnSensorFailure")!="1") {
+    addCORS(); server.send(400,"application/json","{\"error\":\"invalid_environment_config\"}"); return;
+  }
+
+  if(server.hasArg("enabled")) { if(server.arg("enabled")!="0"&&server.arg("enabled")!="1") { addCORS(); server.send(400,"application/json","{\"error\":\"invalid_environment_config\"}"); return; } next.enabled=server.arg("enabled")=="1"; }
+  if(server.hasArg("stage")) next.stage=server.arg("stage").toInt();
+  if(server.hasArg("vpdMin")) next.vpdMin=server.arg("vpdMin").toFloat();
+  if(server.hasArg("vpdMax")) next.vpdMax=server.arg("vpdMax").toFloat();
+  if(server.hasArg("criticalHot")) next.criticalHot=server.arg("criticalHot").toFloat();
+  if(server.hasArg("criticalCold")) next.criticalCold=server.arg("criticalCold").toFloat();
+  if(server.hasArg("criticalHumidity")) next.criticalHumidity=server.arg("criticalHumidity").toFloat();
+  if(server.hasArg("minimumSwitchSeconds")) next.minimumSwitchMs=server.arg("minimumSwitchSeconds").toInt()*1000UL;
+  if(server.hasArg("responseSeconds")) next.responseWindowMs=server.arg("responseSeconds").toInt()*1000UL;
+  if(server.hasArg("responseDelta")) next.responseDelta=server.arg("responseDelta").toFloat();
+  if(server.hasArg("exchangeOnSensorFailure")) next.exchangeOnSensorFailure=server.arg("exchangeOnSensorFailure")=="1";
+  if(server.hasArg("humidityResponseDelta")) next.humidityResponseDelta=server.arg("humidityResponseDelta").toFloat();
+  String room=server.hasArg("roomId")?server.arg("roomId"):String(environmentRoomId);
+  room.toLowerCase();
+  bool roomValid=room.length()==36;
+  for(unsigned int i=0;i<room.length();i++) if((i==8||i==13||i==18||i==23)?room[i]!='-':!isxdigit(room[i])) roomValid=false;
+  if(!GrowEnvironment::validConfig(next)||(next.enabled&&!roomValid)||next.criticalCold>=tempMin||next.criticalHot<=tempMax) {
+    addCORS(); server.send(400,"application/json","{\"error\":\"invalid_environment_config\"}"); return;
+  }
+  if(next.enabled&&!environmentConfig.enabled&&(!environmentSensorFresh()||!GrowEnvironment::validReading(temperature,humidity))) {
+    addCORS(); server.send(409,"application/json","{\"error\":\"environment_sensor_unavailable\"}"); return;
+  }
+  if(room!=String(environmentRoomId)) clearCloudPairing();
+  environmentConfig=next; room.toCharArray(environmentRoomId,sizeof(environmentRoomId)); saveEnvironmentConfig();
+  runEnvironmentControl(); handleEnvironment();
+}
+void handleAcknowledgeEnvironment() { environmentController.acknowledge(); runEnvironmentControl(); handleEnvironment(); }
 
 // ======================================================
 // PIN UTILITIES
@@ -337,6 +499,8 @@ String functionToString(RelayFunction fn) {
 
     case FN_PUMP:
       return "pump";
+    case FN_EXTRACTION: return "extraction";
+    case FN_INTAKE: return "intake";
 
     default:
       return "none";
@@ -357,6 +521,9 @@ RelayFunction stringToFunction(String value) {
 
   if (value == "heater")
     return FN_HEATER;
+
+  if (value == "extraction") return FN_EXTRACTION;
+  if (value == "intake") return FN_INTAKE;
 
   if (value == "pump")
     return FN_PUMP;
@@ -607,7 +774,7 @@ void loadFunctionConfig() {
         EEPROM_RELAY1_MODE + i
       );
 
-    if (fn > FN_PUMP)
+    if (fn > FN_INTAKE)
       fn = FN_NONE;
 
     if (mode > MODE_AUTO)
@@ -940,8 +1107,8 @@ bool lightShouldBeOn() {
     return false;
 
   int current =
-    timeClient.getHours() * 60 +
-    timeClient.getMinutes();
+    roomHours() * 60 +
+    roomMinutes();
 
   int start =
     lightStartHour * 60 +
@@ -992,14 +1159,14 @@ bool channelLightShouldBeOn(int i) {
   if(!lightChannels[i].independent) return lightShouldBeOn();
   if(!timeSynced) return false;
   if(lightChannels[i].duration==24) return true;
-  int now=timeClient.getHours()*60+timeClient.getMinutes();
+  int now=roomHours()*60+roomMinutes();
   int start=lightChannels[i].hour*60+lightChannels[i].minute;
   int end=(start+lightChannels[i].duration*60)%1440;
   return start<end ? now>=start&&now<end : now>=start||now<end;
 }
 void automaticLightControl() {
   if(!timeSynced) return;
-  if(lightTransitionMode!=LIGHT_TRANSITION_NONE&&lightTransitionUntil<=timeClient.getEpochTime()) {
+  if(lightTransitionMode!=LIGHT_TRANSITION_NONE&&lightTransitionUntil<=roomEpoch()) {
     lightTransitionMode=LIGHT_TRANSITION_NONE;lightTransitionUntil=0;saveControlConfig();
   }
   for(int i=0;i<4;i++) {
@@ -1117,9 +1284,10 @@ void runAutomations() {
 
   automaticLightControl();
 
-  automaticHeaterControl();
+  if (!environmentConfig.enabled) automaticHeaterControl();
 
   automaticVentilationControl();
+  runEnvironmentControl();
 }
 
 // ======================================================
@@ -1157,7 +1325,7 @@ void readDHT() {
 
   if (
     !isnan(newTemp) &&
-    !isnan(newHumidity)
+    !isnan(newHumidity) && GrowEnvironment::validReading(newTemp, newHumidity)
   ) {
 
     temperature =
@@ -1189,47 +1357,6 @@ void readDHT() {
 // ======================================================
 // GOOGLE SHEETS
 // ======================================================
-
-void sendToGoogleSheets() {
-
-  if (
-    WiFi.status() !=
-    WL_CONNECTED
-  )
-    return;
-
-  if (!dhtReadingFresh)
-    return;
-
-  WiFiClientSecure client;
-
-  client.setInsecure();
-
-  if (
-    !client.connect(
-      googleHost,
-      443
-    )
-  )
-    return;
-
-  String url =
-    String(googleScriptPath) +
-    "?temp=" +
-    String(temperature, 1) +
-    "&hum=" +
-    String(humidity, 1);
-
-  client.print(
-    String("GET ") +
-    url +
-    " HTTP/1.1\r\n" +
-    "Host: " +
-    googleHost +
-    "\r\n" +
-    "Connection: close\r\n\r\n"
-  );
-}
 
 // ======================================================
 // CORS
@@ -1305,7 +1432,7 @@ void handleRoot() {
 // API STATUS
 // ======================================================
 
-void handleApiStatus() {
+String buildStatusJson(uint8_t eventLimit) {
 
   String json = "{";
 
@@ -1343,7 +1470,7 @@ void handleApiStatus() {
   json += "\"state\":\"";
   json += dhtStateName();
   json += "\",\"fresh\":";
-  json += dhtReadingFresh ? "true" : "false";
+  json += environmentSensorFresh() ? "true" : "false";
   json += ",\"lastSuccessAgeSeconds\":";
   json += String(dhtLastSuccessAgeSeconds());
   json += ",\"consecutiveFailures\":";
@@ -1360,6 +1487,7 @@ void handleApiStatus() {
 
   // Soil
 
+  json += ",\"environment\":" + environmentJsonWithEvents(eventLimit);
   json += ",\"soil\":null";
   json += ",\"soilEnabled\":false";
 
@@ -1417,12 +1545,12 @@ void handleApiStatus() {
 
     json += ",\"hour\":";
     json += String(
-      timeClient.getHours()
+      roomHours()
     );
 
     json += ",\"minute\":";
     json += String(
-      timeClient.getMinutes()
+      roomMinutes()
     );
   }
 
@@ -1447,14 +1575,9 @@ void handleApiStatus() {
 
   json += "}";
 
-  addCORS();
-
-  server.send(
-    200,
-    "application/json",
-    json
-  );
+  return json;
 }
+void handleApiStatus() { addCORS(); server.send(200,"application/json",buildStatusJson(16)); }
 
 // ======================================================
 // API RELAYS
@@ -1614,10 +1737,12 @@ void handleApiSetRelay() {
     return;
   }
 
-  setRelayState(
-    relayId,
-    newState
-  );
+  if(newState && environmentConfig.enabled && relayFunctions[index]==FN_HEATER &&
+    (!environmentSensorFresh() || temperature>=environmentConfig.criticalHot || (environmentController.alarms&GrowEnvironment::NoResponse))) {
+    addCORS(); server.send(409,"application/json","{\"error\":\"environment_protection_active\"}"); return;
+  }
+  setRelayState(relayId,newState);
+  runEnvironmentControl();
 
   String json =
     "{\"ok\":true,\"relay\":" +
@@ -1813,7 +1938,7 @@ void handleApiSetFunctions() {
       functionArg == "light" ||
       functionArg == "ventilation" ||
       functionArg == "heater" ||
-      functionArg == "pump";
+      functionArg == "pump" || functionArg == "extraction" || functionArg == "intake";
 
     if (!validFunction) {
 
@@ -2034,6 +2159,13 @@ void handleApiConfig() {
 // ======================================================
 
 void handleApiSetConfig() {
+  float proposedMin=server.hasArg("tmin")?server.arg("tmin").toFloat():tempMin;
+  float proposedMax=server.hasArg("tmax")?server.arg("tmax").toFloat():tempMax;
+  if(!isfinite(proposedMin)||!isfinite(proposedMax)||proposedMin<0||proposedMax>50||proposedMax<=proposedMin||
+     (environmentConfig.enabled&&(proposedMin<=environmentConfig.criticalCold||proposedMax>=environmentConfig.criticalHot))) {
+    addCORS(); server.send(400,"application/json","{\"error\":\"invalid_temperature_range\"}"); return;
+  }
+
 
   if(server.hasArg("relay")) {
     int index=server.arg("relay").toInt()-1;
@@ -2126,7 +2258,7 @@ void handleApiSetConfig() {
   lightTransitionUntil = 0;
 
   if (extendedTransition && timeSynced && lightRelay >= 0 && relayModes[lightRelay] == MODE_AUTO) {
-    int currentMinute = timeClient.getHours() * 60 + timeClient.getMinutes();
+    int currentMinute = roomHours() * 60 + roomMinutes();
     int newStartMinute = lightStartHour * 60 + lightStartMinute;
     int newEndMinute = (newStartMinute + lightDurationHours * 60) % 1440;
     int targetMinute = lightWasOn ? newEndMinute : newStartMinute;
@@ -2135,7 +2267,7 @@ void handleApiSetConfig() {
     lightTransitionMode = lightWasOn
       ? LIGHT_TRANSITION_HOLD_ON
       : LIGHT_TRANSITION_WAIT_START;
-    lightTransitionUntil = timeClient.getEpochTime() + (unsigned long) minutesUntilTarget * 60UL;
+    lightTransitionUntil = roomEpoch() + (unsigned long) minutesUntilTarget * 60UL;
   }
   ventilationInterval = (unsigned long) intervalMinutes * 60000UL;
   ventilationDuration = (unsigned long) durationMinutes * 60000UL;
@@ -2375,6 +2507,8 @@ void connectWiFi() {
     password
   );
 
+  if (!environmentBootId) { environmentBootId=ESP.random(); if(!environmentBootId) environmentBootId=1; }
+
   unsigned long start =
     millis();
 
@@ -2385,6 +2519,8 @@ void connectWiFi() {
       15000
   ) {
 
+    readDHT();
+    runAutomations();
     delay(500);
     Serial.print(".");
   }
@@ -2464,6 +2600,8 @@ void setup() {
 
   loadControlConfig();
   loadLightChannels();
+  loadEnvironmentConfig();
+  loadCloudPairing();
 
   initializeHardware();
 
@@ -2473,34 +2611,20 @@ void setup() {
   // NTP
   // ----------------------------------------------------
 
-  timeClient.begin();
-
-  if (
-    WiFi.status() ==
-    WL_CONNECTED
-  ) {
-
-    timeSynced =
-      timeClient.forceUpdate();
-
-    if (timeSynced) {
-
-      Serial.println(
-        "Hora NTP sincronizada"
-      );
-    }
-
-    else {
-
-      Serial.println(
-        "NTP no disponible"
-      );
-    }
-  }
+  configTime(0,0,"pool.ntp.org");
 
   // ----------------------------------------------------
   // API
   // ----------------------------------------------------
+
+  server.on("/api/environment/cloud", HTTP_GET, handleCloudStatus);
+  server.on("/api/environment/cloud", HTTP_POST, handleCloudPairing);
+  server.on("/api/environment/cloud", HTTP_OPTIONS, handleOptions);
+  server.on("/api/environment", HTTP_GET, handleEnvironment);
+  server.on("/api/environment", HTTP_POST, handleSetEnvironment);
+  server.on("/api/environment", HTTP_OPTIONS, handleOptions);
+  server.on("/api/environment/acknowledge", HTTP_POST, handleAcknowledgeEnvironment);
+  server.on("/api/environment/acknowledge", HTTP_OPTIONS, handleOptions);
 
   server.on(
     "/",
@@ -2688,6 +2812,8 @@ void loop() {
     ESP.restart();
   }
 
+  readDHT();
+  runAutomations();
   server.handleClient();
 
   ArduinoOTA.handle();
@@ -2727,23 +2853,7 @@ void loop() {
     );
   }
 
-  // ----------------------------------------------------
-  // NTP
-  // ----------------------------------------------------
-
-  if (
-    WiFi.status() ==
-    WL_CONNECTED
-  ) {
-
-    if (
-      timeClient.update()
-    ) {
-
-      timeSynced =
-        true;
-    }
-  }
+  timeSynced = cloudUtcEpoch() >= 1700000000;
 
   // ----------------------------------------------------
   // SENSOR
@@ -2757,21 +2867,7 @@ void loop() {
 
   runAutomations();
 
-  // ----------------------------------------------------
-  // GOOGLE
-  // ----------------------------------------------------
-
-  if (
-    millis() -
-      lastGoogleSend >=
-      GOOGLE_INTERVAL
-  ) {
-
-    lastGoogleSend =
-      millis();
-
-    sendToGoogleSheets();
-  }
+  runCloudTelemetry();
 
   delay(20);
 }
