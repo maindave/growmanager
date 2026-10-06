@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.7",
-  "versionCode": 27,
+  "versionName": "2.6.8",
+  "versionCode": 28,
   "publishedAt": "2026-10-06T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Descarga de actualizaciones en el navegador externo de Android."
+  "releaseNotes": "Traslado del Wemos entre salas conservando el historial."
 }
