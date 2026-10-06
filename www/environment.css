@@ -29,3 +29,7 @@ html:not([data-connect="true"]) .today-layout>.today-environment[data-remote-ava
 html:not([data-connect="true"]) .today-layout>.today-recent{grid-row:3}
 html:not([data-connect="true"]) .today-layout>.today-crops{grid-row:2}
 @media(max-width:760px){html:not([data-connect="true"]) .today-layout>:is(.today-recent,.today-crops){grid-row:auto}}
+.today-layout .section-heading{min-height:36px;align-items:center}
+.today-environment #todayEnvironmentStatus{display:none}
+.today-environment .metrics-grid{margin-top:0;gap:10px}
+@media(min-width:920px){.content-shell{margin-block:0}.today-view>.page-heading{margin-top:0}}
