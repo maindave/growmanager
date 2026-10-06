@@ -11,7 +11,7 @@
 <title>GrowManager · Beta</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
 <link rel="stylesheet" href="style.css?v=20261003-controller">
-<link rel="stylesheet" href="ui-foundations.css?v=20261005-environment">
+<link rel="stylesheet" href="ui-foundations.css?v=20261005-room-overview">
 <link rel="stylesheet" href="environment.css">
 </head>
 <body>
@@ -110,18 +110,18 @@
 <section class="view active today-view" data-view-panel="dashboard">
 <div class="page-heading today-heading"><div><p id="dashboardProjectName" class="project-subtitle">Proyecto</p><h2>Hoy</h2><p id="todayDate" class="subtle"></p></div><button class="primary-button" type="button" data-open-register>+ Registrar</button></div>
 <button id="exitLocalMode" class="text-button" type="button" hidden>Salir del modo local</button>
-<button id="customizeDashboard" class="text-button" type="button">Personalizar Hoy</button>
+
 <div id="todayLoadMessage" class="message" role="status"></div>
 <section id="todayAttention" class="today-attention" aria-label="Requiere atención" hidden></section>
 <section id="appUpdatePanel" class="panel app-update-panel" hidden><div class="app-update-icon">↥</div><div><strong id="appUpdateTitle">Actualización disponible</strong><p id="appUpdateText">Hay una nueva versión de Growmanager.</p></div><button id="downloadAppUpdate" class="primary-button compact" type="button">Actualizar app</button></section><div id="appUpdateMessage" class="message"></div>
 <div class="today-layout">
 <section class="today-section today-next" data-dashboard-widget="agenda"><div class="section-heading"><h3>Próximo</h3><button class="text-button" data-view="agenda">Ver agenda →</button></div><div id="dashboardAgenda" class="today-list"><p class="field-help">Cargando próximos eventos…</p></div></section>
 <section class="today-section today-crops" data-dashboard-widget="cultivations"><div class="section-heading"><h3>Cultivos</h3><button class="text-button" data-view="cultivation">Ver todos →</button></div><div id="dashboardCultivations" class="today-crop-list"><p class="field-help">Cargando cultivos…</p></div></section>
-<section class="today-section today-environment" data-dashboard-widget="environment"><div class="section-heading"><h3>Ambiente</h3><button class="text-button" data-view="control">Ver dispositivo →</button></div><p id="todayEnvironmentStatus" class="subtle">Buscando el dispositivo local…</p><div class="metrics-grid">
+<section class="today-section today-environment" data-dashboard-widget="environment"><div class="section-heading"><h3>Ambiente</h3><select id="dashboardEnvironmentRoom" aria-label="Sala de las mediciones"></select></div><p id="todayEnvironmentStatus" class="subtle">Buscando el dispositivo local…</p><div class="metrics-grid">
 <button class="metric-card metric-history-button temperature" type="button" data-environment-metric="temperature" aria-label="Ver histórico de temperatura de las últimas 24 horas"><div class="metric-icon">°</div><div><span>Temperatura</span><strong id="temperature">—</strong><small>°C</small></div></button>
-<button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 24 horas"><div class="metric-icon">%</div><div><span>Humedad</span><strong id="humidity">—</strong><small>%</small></div></button><div class="metric-card"><div class="metric-icon">◇</div><div><span>VPD del aire</span><strong id="environmentVpd">—</strong><small>kPa</small></div></div></div><p id="environmentSummary" class="field-help" role="status">Esperando lectura ambiental.</p><div id="environmentAlerts" role="alert"></div><button class="text-button" type="button" id="openEnvironmentSettings">Configurar ambiente de la Sala →</button><p class="field-help">Tocá una lectura para ver las últimas 24 horas.</p></section>
+<button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 24 horas"><div class="metric-icon">%</div><div><span>Humedad</span><strong id="humidity">—</strong><small>%</small></div></button><div class="metric-card"><div class="metric-icon">◇</div><div><span>VPD del aire</span><strong id="environmentVpd">—</strong><small>kPa</small></div></div></div><p id="environmentSummary" class="field-help" role="status">Esperando lectura ambiental.</p><div id="environmentAlerts" role="alert"></div><p class="field-help">Tocá una lectura para ver las últimas 24 horas.</p></section>
 <section class="today-section today-recent" data-dashboard-widget="recent"><div class="section-heading"><h3>Actividad reciente</h3><button class="text-button" data-view="operations">Ver bitácora →</button></div><div id="todayRecent" class="today-list"><p class="field-help">Cargando actividad…</p></div></section>
-<section id="dashboardSystemsPanel" class="today-section today-systems" data-dashboard-widget="systems"><div class="section-heading"><h3>Sistemas</h3><button class="text-button" data-view="control">Ver control →</button></div><div id="dashboardRelays" class="dashboard-systems"></div></section>
+<section id="dashboardSystemsPanel" class="today-section today-systems" data-dashboard-widget="systems"><div class="section-heading"><h3>Dispositivos</h3><button class="text-button" data-view="control">Ver control →</button></div><div id="dashboardRelays" class="dashboard-systems"></div></section>
 </div>
 <details class="panel dashboard-collapse today-device-detail" data-dashboard-widget="telemetry"><summary><span><strong>Detalles del dispositivo y energía</strong><small>Conexión, diagnóstico y consumo estimado</small></span><span class="collapse-hint">Mostrar</span></summary><div class="collapse-body">
 <p id="deviceSummary" class="subtle">Esperando datos del dispositivo local.</p><div class="last-update"><span>Última actualización</span><strong id="lastUpdate">Nunca</strong><small id="offlineSince"></small></div><p class="field-help">Firmware <span id="firmwareVersion">—</span></p>
@@ -550,47 +550,47 @@
 </div>
 </dialog>
 <meta name="grow-public-base" content="./">
-<script src="supabase-config.js?v=20261005-environment"></script>
-<script src="vendor/supabase.js?v=20261005-environment"></script>
-<script src="supabase-client.js?v=20261005-environment"></script>
-<script src="cultivo-models.js?v=20261005-environment" defer>
+<script src="supabase-config.js?v=20261005-room-overview"></script>
+<script src="vendor/supabase.js?v=20261005-room-overview"></script>
+<script src="supabase-client.js?v=20261005-room-overview"></script>
+<script src="cultivo-models.js?v=20261005-room-overview" defer>
 </script>
-<script src="cultivo-db.js?v=20261005-environment" defer>
+<script src="cultivo-db.js?v=20261005-room-overview" defer>
 </script>
-<script src="cultivo-repository.js?v=20261005-environment" defer>
+<script src="cultivo-repository.js?v=20261005-room-overview" defer>
 </script>
-<script src="cultivo-migration.js?v=20261005-environment" defer>
+<script src="cultivo-migration.js?v=20261005-room-overview" defer>
 </script>
-<script src="workspaces.js?v=20261005-environment" defer>
+<script src="workspaces.js?v=20261005-room-overview" defer>
 </script>
-<script src="ui-sections.js?v=20261005-environment" defer></script>
-<script src="dashboard-customizer.js?v=20261005-environment" defer></script>
-<script src="app-update.js?v=20261005-environment" defer></script>
-<script src="onboarding-tour.js?v=20261005-environment" defer></script>
-<script src="agenda.js?v=20261005-environment" defer></script>
-<script src="journal-photos.js?v=20261005-environment" defer></script>
-<script src="operations.js?v=20261005-environment" defer></script>
-<script src="cultivation.js?v=20261005-environment" defer>
+<script src="ui-sections.js?v=20261005-room-overview" defer></script>
+<script src="dashboard-customizer.js?v=20261005-room-overview" defer></script>
+<script src="app-update.js?v=20261005-room-overview" defer></script>
+<script src="onboarding-tour.js?v=20261005-room-overview" defer></script>
+<script src="agenda.js?v=20261005-room-overview" defer></script>
+<script src="journal-photos.js?v=20261005-room-overview" defer></script>
+<script src="operations.js?v=20261005-room-overview" defer></script>
+<script src="cultivation.js?v=20261005-room-overview" defer>
 </script>
-<script src="products.js?v=20261005-environment" defer>
+<script src="products.js?v=20261005-room-overview" defer>
 </script>
-<script src="recipes.js?v=20261005-environment" defer>
+<script src="recipes.js?v=20261005-room-overview" defer>
 </script>
-<script src="nutrition-calendar.js?v=20261005-environment" defer></script>
-<script src="assistant.js?v=20261005-environment" defer></script>
-<script src="voice-assistant.js?v=20261005-environment" defer></script>
-<script src="energy.js?v=20261005-environment" defer>
+<script src="nutrition-calendar.js?v=20261005-room-overview" defer></script>
+<script src="assistant.js?v=20261005-room-overview" defer></script>
+<script src="voice-assistant.js?v=20261005-room-overview" defer></script>
+<script src="energy.js?v=20261005-room-overview" defer>
 </script>
 <script src="environment-models.js" defer></script>
 <script src="environment.js" defer></script>
-<script src="environment-history.js?v=20261005-environment" defer></script>
-<script src="auth.js?v=20261005-environment" defer>
+<script src="environment-history.js?v=20261005-room-overview" defer></script>
+<script src="auth.js?v=20261005-room-overview" defer>
 </script>
-<script src="daily-models.js?v=20261005-environment" defer></script><script src="daily.js?v=20261005-environment" defer></script>
-<script src="today-models.js?v=20261005-environment" defer></script>
-<script src="today.js?v=20261005-environment" defer></script>
+<script src="daily-models.js?v=20261005-room-overview" defer></script><script src="daily.js?v=20261005-room-overview" defer></script>
+<script src="today-models.js?v=20261005-room-overview" defer></script>
+<script src="today.js?v=20261005-room-overview" defer></script>
 <script src="controller-account.js?v=20261003-controller" defer></script>
-<script src="app.js?v=20261003-control-save" defer>
+<script src="app.js?v=20261005-room-overview" defer>
 </script>
 </body>
 </html>

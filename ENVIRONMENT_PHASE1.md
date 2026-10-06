@@ -84,3 +84,12 @@ Publicación verificada: versión web 2.6.0, versionCode 20 y APK firmado dispon
 Verificación física final de transporte: conexión TLS validada, respuesta HTTP 401 con token deliberadamente inválido, sin reinicios, paso criptográfico máximo de 1695 ms e intervalo de control máximo de 208 ms. Se retiró el vínculo de prueba. El registro de telemetría con el token de la Sala real sigue pendiente de identificar esa Sala; no está marcado como probado.
 
 La revisión automática rechazó crear una Sala técnica temporal, emitir credenciales y activar el control sin una Sala elegida. Esa prueba no se ejecutó. La alternativa es completar la vinculación sobre la Sala real seleccionada por el usuario.
+
+
+## Ajuste de Salas e Inicio · 2.6.1
+- Dimensiones persistentes de Sala: largo, ancho y alto en metros; volumen calculado, sin alterar VPD. Valores existentes desconocidos permanecen vacíos.
+- Configuración ambiental desde Cultivos, asociada a la Sala abierta; guardado conjunto de objetivos y publicación remota. Protección avanzada plegada.
+- Inicio de consulta, grilla adaptable con ambiente y dispositivos primero; selección de Sala y estados remotos con vigencia de la muestra. Se conservan los íconos.
+- Nuevos sensores y equipos podrán ampliar las grillas; no se incorporan funciones de CO₂, PPFD, AC o humedad. En pantallas pequeñas se permite desplazamiento para conservar legibilidad.
+- Vinculación real de Sala Flora completada: Wemos confirmó HTTP 204 y Supabase recibió temperatura/humedad el 5 de octubre de 2026 a las 20:56 ART. El control ambiental siguió desactivado.
+- Validación: pruebas de modelos y esquema, sintaxis JavaScript; formulario aislado de prueba sin escribir Salas reales: 2 × 3 × 2,5 = 15 m³ y cambio de largo a 4 = 30 m³.

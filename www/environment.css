@@ -7,3 +7,25 @@ html[data-local-mode=true] [data-view="cultivation"],html[data-local-mode=true] 
 html[data-local-mode=true] :is([data-dashboard-widget="agenda"],[data-dashboard-widget="cultivations"],[data-dashboard-widget="recent"],#openProjectHubNav,#voiceAssistantButton,[data-open-register],.mobile-project-bar){display:none!important}
 html[data-local-mode=true] .today-environment{grid-column:1;grid-row:auto}
 html[data-local-mode=true] .today-systems{grid-column:2;grid-row:auto}
+/* Compact, extensible overview: readings and equipment stay together at the top. */
+.today-layout{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px;align-items:start}
+.today-layout>.today-environment{grid-column:1;grid-row:1}
+.today-layout>.today-systems{grid-column:2;grid-row:1}
+.today-layout>.today-next{grid-column:1;grid-row:2}
+.today-layout>.today-crops{grid-column:2;grid-row:2}
+.today-layout>.today-recent{grid-column:1/-1;grid-row:3}
+.today-systems .dashboard-systems{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.today-layout .section-heading{margin-bottom:10px}
+.today-layout .dashboard-system{min-height:64px;padding:9px}
+.today-layout :is(.today-event,.today-lot,.today-record){padding:10px 12px;min-height:60px}
+.today-recent .today-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+#dashboardEnvironmentRoom{max-width:55%;width:auto;padding:6px 10px;font-size:.85rem}
+.dimension-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.room-dimensions{border:1px solid var(--border);border-radius:10px;padding:12px}
+#environmentForm{padding:20px}#environmentForm>details{margin:12px 0}#environmentForm .form-actions{flex-wrap:wrap}
+@media(min-width:920px){.today-heading{margin-bottom:12px}.today-view>.page-heading h2{font-size:1.8rem}.today-view .today-layout{gap:16px 24px}.content-shell{padding-bottom:20px}}
+@media(max-width:760px){.today-layout{grid-template-columns:1fr;gap:18px}.today-layout>.today-section{grid-column:1;grid-row:auto}.today-environment{order:0}.today-systems{order:1}.today-next{order:2}.today-crops{order:3}.today-recent{order:4}.today-systems .dashboard-systems{grid-template-columns:repeat(2,minmax(0,1fr))}.today-systems .dashboard-system{grid-template-columns:30px minmax(0,1fr);gap:6px}.today-systems .dashboard-system>span:last-child{display:none}.today-systems .dashboard-system-icon{width:30px;height:30px}.today-systems .dashboard-system-copy strong{font-size:.85rem}.dimension-grid{gap:6px}}
+html:not([data-connect="true"]) .today-layout>.today-environment[data-remote-available="true"],html:not([data-connect="true"]) .today-layout>.today-systems[data-remote-available="true"]{display:block!important}
+html:not([data-connect="true"]) .today-layout>.today-recent{grid-row:3}
+html:not([data-connect="true"]) .today-layout>.today-crops{grid-row:2}
+@media(max-width:760px){html:not([data-connect="true"]) .today-layout>:is(.today-recent,.today-crops){grid-row:auto}}
