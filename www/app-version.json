@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.11",
-  "versionCode": 31,
+  "versionName": "2.6.12",
+  "versionCode": 32,
   "publishedAt": "2026-10-06T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Alineación de iconos y textos en el menú inferior."
+  "releaseNotes": "Corrección del botón de actualización en Android."
 }
