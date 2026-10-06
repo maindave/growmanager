@@ -55,3 +55,5 @@ html[data-theme="light"] .semantic-icon.flowering{background:#f0e2f6;color:#8747
 .environment-sample-hit{fill:transparent;stroke:none}.environment-sample-hit:hover{fill:var(--text);opacity:.65}
 
 #environmentHistoryDialog .dialog-form{gap:10px;padding:18px}#environmentHistoryDialog .dialog-heading :is(h3,p){margin:0}#environmentHistoryDialog .environment-history-period{margin:0}#environmentHistoryDialog .environment-stats div{padding:8px 10px}#environmentHistoryDialog .environment-legend{margin:0}#environmentHistoryDialog #environmentHistoryActions{margin:0}
+
+.environment-journal-detail{margin-top:8px}.environment-journal-detail summary{font-size:.8rem;color:var(--text-muted);cursor:pointer}.environment-journal-detail p{font-size:.8rem;margin:8px 0}.environment-journal-detail>div{padding:4px 0 4px 12px;border-left:2px solid var(--border)}

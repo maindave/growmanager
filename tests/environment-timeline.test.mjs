@@ -7,3 +7,11 @@ event.snapshot.event.testing=2;assert.equal(m.eventDetails(event,previous).actio
 event.bootId=2;assert.equal(m.eventDetails(event,previous).actions.length,0,'A reboot is a baseline, not an inferred activation');
 event.bootId=1;event.sequence=4;assert.equal(m.eventDetails(event,previous).gap,true);
 console.log('Historical VPD targets, action origin and incomplete event sequences: passed');
+const make=(sequence,time,outputs=0,alarms=0,bootId=1,roomId='flora')=>({sequence,occurredAt:`2026-10-06T${time}:00Z`,outputs,alarms,bootId,roomId,snapshot:{event:{temperature:25,humidity:60,state:1,vpdMin:.8,vpdMax:1.2,automatic:2,roles:1<<3}}});
+let grouped=m.summarize([make(1,'08:50'),make(2,'08:59',2),make(3,'09:01')],Date.parse('2026-10-06T10:00Z'));
+assert.equal(grouped.hours.length,2);assert.equal(grouped.hours[0].devices.get(2).minutes,1);assert.equal(grouped.hours[1].devices.get(2).minutes,1);
+grouped=m.summarize([make(1,'08:00'),make(2,'08:01',0,1),make(3,'08:05',2,1),make(4,'08:10',0,0)],Date.parse('2026-10-06T10:00Z'));
+assert.equal(grouped.incidents.length,1,'Repeated alarms form one incident');assert.equal(grouped.incidents[0].resolvedAt,'2026-10-06T08:10:00Z');
+grouped=m.summarize([make(1,'08:00'),make(2,'08:01',2),make(4,'08:10')],Date.parse('2026-10-06T10:00Z'));assert.equal(grouped.hours[0].devices.get(2).minutes,0,'Missing sequence never implies continuous running');assert(grouped.hours[0].incomplete);
+grouped=m.summarize([make(1,'08:00'),make(2,'08:01',2),make(1,'08:10',0,0,2),make(1,'08:02',0,0,1,'vege')],Date.parse('2026-10-06T10:00Z'));assert.equal(grouped.hours.length,2);assert.equal(grouped.hours.find(h=>h.roomId==='flora').devices.get(2).minutes,0,'Restart never invents an OFF pair');
+console.log('Hourly relay durations, room isolation, gaps and alarm incident grouping: passed');
