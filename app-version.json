@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.5",
-  "versionCode": 25,
+  "versionName": "2.6.6",
+  "versionCode": 26,
   "publishedAt": "2026-10-06T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Bitácora ambiental resumida por Sala y hora, detalle desplegable e incidentes agrupados."
+  "releaseNotes": "Cultivos planificados, fechas por cepa, carga por grupos y gestión/traslado múltiple de plantas."
 }

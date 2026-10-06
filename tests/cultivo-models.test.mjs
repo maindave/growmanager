@@ -35,3 +35,13 @@ assert.equal(M.validateCultivation({name:'Madres',startDate:'2026-01-01',cultiva
 assert.equal(M.validateCultivation({name:'Flora',startDate:'2026-09-01',plannedEndDate:'2026-08-01',cultivationMode:'cycle',currentStage:'flowering'}).valid,false);
 
 console.log('cultivo-models: pruebas correctas');
+
+const model=globalThis.CultivoModels;
+let flowering=model.floweringDates('2026-10-05',[{variety:'Orange Blossom',floweringWeeks:9},{variety:'White Gorilla',floweringWeeks:8}]);
+assert.equal(flowering.end,'2026-12-07');assert.equal(flowering.dates[1].end,'2026-11-30');
+assert.equal(model.floweringDates('2026-10-05',[{floweringWeeks:9},{floweringWeeks:null}]).end,null);
+assert.equal(model.floweringDates('2026-12-28',[{floweringWeeks:1}]).end,'2027-01-04');
+assert.equal(model.validateCultivation({name:'Plan',startDate:'2026-10-05'}).value.status,'planned');
+const grouped=model.plantGroups([{id:'a',groupId:'g',variety:'OB',origin:'clone',floweringWeeks:9},{id:'b',groupId:'g',variety:'OB',origin:'clone',floweringWeeks:9},{id:'c',groupId:'g',variety:'OB',origin:'clone',floweringWeeks:8}]);
+assert.equal(grouped.length,2);assert.equal(grouped[0].plants.length,2);
+console.log('Planned default, strain flowering dates, unknown durations and group separation: passed');

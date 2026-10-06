@@ -57,3 +57,9 @@ html[data-theme="light"] .semantic-icon.flowering{background:#f0e2f6;color:#8747
 #environmentHistoryDialog .dialog-form{gap:10px;padding:18px}#environmentHistoryDialog .dialog-heading :is(h3,p){margin:0}#environmentHistoryDialog .environment-history-period{margin:0}#environmentHistoryDialog .environment-stats div{padding:8px 10px}#environmentHistoryDialog .environment-legend{margin:0}#environmentHistoryDialog #environmentHistoryActions{margin:0}
 
 .environment-journal-detail{margin-top:8px}.environment-journal-detail summary{font-size:.8rem;color:var(--text-muted);cursor:pointer}.environment-journal-detail p{font-size:.8rem;margin:8px 0}.environment-journal-detail>div{padding:4px 0 4px 12px;border-left:2px solid var(--border)}
+
+.plant-batch-row{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin:12px 0}.plant-selection-group{padding:10px 0;border-bottom:1px solid var(--border)}.plant-selection-group input[type=number]{width:100px}.crop-plant-groups>div{margin:10px 0}.crop-plant-groups small{display:block;color:var(--text-muted)}@media(max-width:700px){.plant-batch-row{grid-template-columns:repeat(2,minmax(0,1fr))}.plant-batch-row label:first-child{grid-column:1/-1}}
+
+.plant-batch-row label{min-width:0}.plant-batch-row :is(input,select){min-width:0;width:100%}.crop-plant-groups summary{cursor:pointer}.plant-selection-group summary{cursor:pointer;font-size:.85rem}
+
+.app-dialog.plant-management-dialog{width:min(900px,calc(100vw - 24px));max-width:900px}.plant-batch-row{grid-template-columns:2fr 1.3fr .8fr 1fr auto}@media(max-width:700px){.plant-batch-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
