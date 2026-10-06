@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.8",
-  "versionCode": 28,
+  "versionName": "2.6.9",
+  "versionCode": 29,
   "publishedAt": "2026-10-06T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Traslado del Wemos entre salas conservando el historial."
+  "releaseNotes": "Activación ambiental por sala con confirmación desde el tilde."
 }

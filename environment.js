@@ -23,7 +23,7 @@ function render(){
  if(status?.relays)globalThis.GrowDevice?.renderRemoteRelays?.(status.relays,report.fresh);
  $('environmentAlerts').innerHTML=alerts.map(text=>`<p>${esc(text)}</p>`).join('');
  document.querySelectorAll('[data-room-environment]').forEach(node=>{const id=node.dataset.roomEnvironment,l=isLocal&&local.environment?.roomId===id,r=remote.find(x=>x.room_id===id),s=l?local:r?.payload,a=l?localAt:r?Date.parse(r.sampled_at):0,v=M().interpret(s,a,Date.now(),l?15:120);node.innerHTML=s?`<strong>Ambiente · ${l?'Local':'Remoto'}</strong> ${M().valid(s.temperature,s.humidity)?`${esc(s.temperature)} °C · ${esc(s.humidity)} %`:'Sin lectura'} · VPD ${v.value===null?'—':v.value.toFixed(2)+' kPa'} · ${esc(labels[v.state])}${M().alarms(v.alarms).length?`<br>${esc(M().alarms(v.alarms).join(' '))}`:''}`:'Ambiente sin controlador vinculado.'});
- if($('environmentRemoteMessage')&&isLocal&&env.cloud){const c=env.cloud,names={unconfigured:'Sin vincular',offline:'Sin Wi-Fi',waiting_clock:'Esperando hora válida',publishing:'Publicando',connected:'Datos enviados',retrying:'Reintentando',blocked:'Publicación detenida: revisá el vínculo o el diagnóstico',ready:'Lista para publicar'};$('environmentRemoteMessage').textContent=`${names[c.state]||c.state}${c.lastSuccessAgeSeconds!=null?` · Último envío hace ${c.lastSuccessAgeSeconds} s`:''} · ${c.pendingReadings||0} muestras pendientes${c.droppedReadings?` · ${c.droppedReadings} muestras antiguas descartadas`:''}${c.lastResult<0?` · Diagnóstico ${c.lastResult}`:''}`;}
+ if($('environmentRemoteMessage')&&isLocal&&$('environmentRoom')?.value===local.environment?.roomId&&local.environment?.cloud){const c=local.environment.cloud,names={unconfigured:'Sin vincular',offline:'Sin Wi-Fi',waiting_clock:'Esperando hora válida',publishing:'Publicando',connected:'Datos enviados',retrying:'Reintentando',blocked:'Publicación detenida: revisá el vínculo o el diagnóstico',ready:'Lista para publicar'};$('environmentRemoteMessage').textContent=`${names[c.state]||c.state}${c.lastSuccessAgeSeconds!=null?` · Último envío hace ${c.lastSuccessAgeSeconds} s`:''} · ${c.pendingReadings||0} muestras pendientes${c.droppedReadings?` · ${c.droppedReadings} muestras antiguas descartadas`:''}${c.lastResult<0?` · Diagnóstico ${c.lastResult}`:''}`;}
  if($('environmentEvents')){
   const list=isLocal?(local.environment?.events||[]).slice().reverse().map(e=>({alarms:e.alarms,outputs:e.outputs,time:`Hace ${Math.max(0,Math.round(((Number(local.environment?.uptimeMs)||Number(local.uptime)*1000)-e.uptimeMs)/1000))} s`})):remoteEvents.filter(e=>e.room_id===($('environmentRoom')?.value||selected)).map(e=>({...e,time:new Date(e.occurred_at).toLocaleString('es-AR')}));
   $('environmentEvents').innerHTML=list.slice(0,16).map(e=>`<p><strong>${esc(e.time)}</strong> · ${esc(M().alarms(e.alarms).join(' ')||'Sin alertas activas')} · Salidas ordenadas: ${[1,2,3,4].filter(id=>e.outputs&(1<<(id-1))).join(', ')||'ninguna'}</p>`).join('')||'<p>Sin eventos disponibles.</p>';
@@ -46,38 +46,63 @@ function historyContext(){const id=$('dashboardEnvironmentRoom').value||local?.e
 function open(requestedRoom=null,technical=false){
  const roomId=requestedRoom||local?.environment?.roomId||$('dashboardEnvironmentRoom').value,room=rooms.find(r=>r.id===roomId),same=local?.environment?.roomId===roomId;
  const status=same?local:remote.find(r=>r.room_id===roomId)?.payload,e=currentFields(status);e.roomId=roomId;
- const available=Boolean(local?.environment)&&Date.now()-localAt<15000&&(['owner','editor'].includes(workspace()?.role)||(!workspace()&&same&&document.documentElement.dataset.localMode==='true'))&&(!local.environment.roomId||same);
- const transferable=Boolean(local?.environment?.roomId)&&Date.now()-localAt<15000&&['owner','editor'].includes(workspace()?.role)&&!same&&rooms.some(r=>r.id===local.environment.roomId);
+ const available=Boolean(local?.environment)&&Date.now()-localAt<15000&&(['owner','editor'].includes(workspace()?.role)||(!workspace()&&same&&document.documentElement.dataset.localMode==='true'));
+
  const dialog=$('environmentSettingsDialog');
  if(!technical){dialog.innerHTML=`<div class="dialog-form"><div class="dialog-heading"><h3>${esc(room?.name||'Ambiente de la Sala')}</h3><button type="button" data-environment-close class="icon-button" aria-label="Cerrar">×</button></div><p>${room?.lengthM?`${esc(room.lengthM)} × ${esc(room.widthM)} × ${esc(room.heightM)} m · ${(room.lengthM*room.widthM*room.heightM).toLocaleString('es-AR',{maximumFractionDigits:2})} m³`:'Cargá las dimensiones desde Editar sala.'}</p><p>${status?`${esc(status.temperature??'—')} °C · ${esc(status.humidity??'—')} % · VPD ${M().vpd(status.temperature,status.humidity)?.toFixed(2)||'—'} kPa`:'Esta Sala todavía no tiene un medidor vinculado.'}</p><p>Objetivo: ${e.vpdMin}–${e.vpdMax} kPa · ${M().stages.find(s=>s.id===e.stage)?.label||'Sin etapa'}</p><p class="field-help">${status?'Medidor asociado a esta Sala. Consulta remota incluida.':'Asigná el medidor desde Control.'}</p><button type="button" data-environment-technical class="secondary-button">Ir a Control</button></div>`;
  dialog.querySelector('[data-environment-close]').onclick=()=>dialog.close();dialog.querySelector('[data-environment-technical]').onclick=async()=>{dialog.close();await GrowNavigation.showView('control');open(roomId,true)};dialog.showModal();return;}
  const fields=[['vpdMin','VPD mínimo (kPa)',.1,4,.1],['vpdMax','VPD máximo (kPa)',.1,4,.1]],advanced=[['criticalHot','Temperatura crítica alta (°C)',0,60,.5],['criticalCold','Temperatura crítica baja (°C)',-20,50,.5],['criticalHumidity','Humedad crítica (%)',70,100,1],['minimumSwitchSeconds','Tiempo entre cambios (s)',5,300,1],['responseSeconds','Plazo de respuesta (s)',60,1800,1],['responseDelta','Respuesta térmica mínima (°C)',.1,3,.1],['humidityResponseDelta','Descenso mínimo de humedad (%)',.5,10,.5]];
  const inputs=items=>items.map(([name,label,min,max,step])=>`<label>${label}<input name="${name}" type="number" min="${min}" max="${max}" step="${step}" value="${e[name]}" required ${available?'':'readonly'}></label>`).join('');
- dialog.innerHTML=`<form id="environmentForm" class="dialog-form"><div class="dialog-heading"><h3>Ambiente y protección</h3><button type="button" data-environment-close class="icon-button" aria-label="Cerrar">×</button></div><label>Sala<select id="environmentRoom" name="roomId">${rooms.map(r=>`<option value="${esc(r.id)}" ${r.id===roomId?'selected':''}>${esc(r.name)}</option>`).join('')||`<option value="${esc(roomId||'')}">Sala vinculada</option>`}</select></label><section class="environment-connection"><h4>Conexión y diagnóstico</h4><p>${same?esc(local.device||'Wemos'):status?'Medidor remoto vinculado':'Sin medidor en esta Sala'}</p><p id="environmentRemoteMessage" class="field-help">${status?'Consulta remota incluida.':'Al guardar el vínculo se habilita la publicación remota.'}</p><p class="field-help">${available?'Conexión local disponible.':transferable?'Wemos conectado en la red local. Trasladá su vínculo para editar esta Sala.':'Para cambiar el controlador necesitás estar en su red Wi-Fi. La consulta remota sigue disponible.'}</p></section>${transferable?'<button type="button" id="moveEnvironmentDevice" class="secondary-button">Trasladar este Wemos a '+esc(room?.name||'esta Sala')+'</button><p class="field-help">Actualmente vinculado a '+esc(rooms.find(r=>r.id===local.environment.roomId)?.name||'otra Sala')+'. El historial permanece en cada Sala.</p>':''}<div class="form-grid two"><label>Etapa ambiental<select name="stage" ${available?'':'disabled'}>${M().stages.map(s=>`<option value="${s.id}" ${s.id===e.stage?'selected':''}>${s.label}</option>`).join('')}</select></label>${inputs(fields)}</div><label class="check-field"><input name="enabled" type="checkbox" ${e.enabled?'checked':''} ${available?'':'disabled'}> Activar control ambiental supervisado en el Wemos</label><details><summary>Protección avanzada</summary><div class="form-grid two">${inputs(advanced)}</div><label class="check-field"><input name="exchangeOnSensorFailure" type="checkbox" ${e.exchangeOnSensorFailure?'checked':''} ${available?'':'disabled'}> Mantener extracción/intracción al perder el sensor</label><button id="ackEnvironment" type="button" class="secondary-button" ${available?'':'disabled'}>Rearmar supervisión</button></details><p id="environmentFormMessage" class="field-help" role="status">${available?'Objetivos y protección se guardan en el Wemos.':'Consulta disponible; edición local requerida.'}</p><div class="form-actions"><button type="submit" class="primary-button" ${available?'':'disabled'}>Guardar</button><button type="button" class="text-button" data-environment-log>Ver eventos en Bitácora →</button></div></form>`;
- const transferFrom=local?.environment?.roomId;let transferToken=null;
- $('moveEnvironmentDevice')?.addEventListener('click',async()=>{
- const from=transferFrom,button=$('moveEnvironmentDevice');
- if(!confirm('¿Trasladar el Wemos a '+(room?.name||'esta Sala')+'? El control supervisado quedará desactivado hasta que revises los equipos y lo actives.'))return;
- button.disabled=true;provisioning=true;
- try{
- if(!transferToken){
- await GrowDevice.post('/api/environment',{roomId:from,enabled:'0'});
- await GrowDevice.refresh();
- const {data,error}=await client().rpc('transfer_environment_device',{p_from_room:from,p_to_room:roomId,p_device_key:GrowDevice.address()});
- if(error)throw error;transferToken=data;
+ dialog.innerHTML=`<form id="environmentForm" class="dialog-form"><div class="dialog-heading"><h3>Ambiente y protección</h3><button type="button" data-environment-close class="icon-button" aria-label="Cerrar">×</button></div><label>Sala<select id="environmentRoom" name="roomId">${rooms.map(r=>`<option value="${esc(r.id)}" ${r.id===roomId?'selected':''}>${esc(r.name)}</option>`).join('')||`<option value="${esc(roomId||'')}">Sala vinculada</option>`}</select></label><section class="environment-connection"><h4>Conexión y diagnóstico</h4><p>${same?esc(local.device||'Wemos'):available?'Wemos disponible para esta Sala':status?'Medidor remoto vinculado':'Sin medidor en esta Sala'}</p><p id="environmentRemoteMessage" class="field-help">${status?'Consulta remota incluida.':'Al guardar el vínculo se habilita la publicación remota.'}</p><p class="field-help">${available?'Conexión local disponible.':'Para cambiar el controlador necesitás estar en su red Wi-Fi. La consulta remota sigue disponible.'}</p></section><div class="form-grid two"><label>Etapa ambiental<select name="stage" ${available?'':'disabled'}>${M().stages.map(s=>`<option value="${s.id}" ${s.id===e.stage?'selected':''}>${s.label}</option>`).join('')}</select></label>${inputs(fields)}</div><label class="check-field"><input name="enabled" type="checkbox" ${same&&e.enabled?'checked':''} ${available?'':'disabled'}> Activar control ambiental supervisado en el Wemos</label><details><summary>Protección avanzada</summary><div class="form-grid two">${inputs(advanced)}</div><label class="check-field"><input name="exchangeOnSensorFailure" type="checkbox" ${e.exchangeOnSensorFailure?'checked':''} ${available?'':'disabled'}> Mantener extracción/intracción al perder el sensor</label><button id="ackEnvironment" type="button" class="secondary-button" ${available?'':'disabled'}>Rearmar supervisión</button></details><p id="environmentFormMessage" class="field-help" role="status">${available?'Objetivos y protección se guardan en el Wemos.':'Consulta disponible; edición local requerida.'}</p><div class="form-actions"><button type="submit" class="primary-button" ${available?'':'disabled'}>Guardar</button><button type="button" class="text-button" data-environment-log>Ver eventos en Bitácora →</button></div></form>`;
+ let confirmedFrom=null,pendingTransfer=null;
+ const enabledInput=dialog.querySelector('[name=enabled]');
+ function confirmRoomChange(){
+ const from=local?.environment?.roomId;
+ if(!from||from===roomId)return true;
+ if(confirmedFrom===from)return true;
+ const sourceName=rooms.find(r=>r.id===from)?.name||'otra Sala';
+ const warning=local.environment.enabled?'El control ambiental está activo en '+sourceName+'.':'El Wemos está asignado a '+sourceName+'.';
+ if(!confirm(warning+' ¿Querés activarlo en '+(room?.name||'esta Sala')+' y dejarlo desactivado en '+sourceName+' al guardar?'))return false;
+ confirmedFrom=from;return true;
  }
- const profile=M().stages.find(s=>s.id===e.stage);
- await GrowDevice.post('/api/environment',{roomId,enabled:'0',stage:String(e.stage),vpdMin:String(profile?.min??e.vpdMin),vpdMax:String(profile?.max??e.vpdMax)});
- await GrowDevice.postForm('/api/environment/cloud',{roomId,token:transferToken});
- await GrowDevice.refresh();await refreshRemote();open(roomId,true);
- $('environmentFormMessage').textContent='Wemos trasladado. Revisá los equipos y activá el control supervisado cuando corresponda.';
- }catch(error){await GrowDevice.refresh().catch(()=>{});$('environmentFormMessage').textContent='No se completó el traslado: '+error.message+'. El control supervisado se mantiene desactivado.';button.disabled=false}finally{provisioning=false}
- });
+ enabledInput.onchange=()=>{if(enabledInput.checked&&!confirmRoomChange())enabledInput.checked=false};
  dialog.querySelector('[data-environment-close]').onclick=()=>dialog.close();$('environmentRoom').onchange=()=>open($('environmentRoom').value,true);
  dialog.querySelector('[name=stage]').onchange=ev=>{const profile=M().stages.find(s=>s.id===Number(ev.target.value));dialog.querySelector('[name=vpdMin]').value=profile.min;dialog.querySelector('[name=vpdMax]').value=profile.max};
  dialog.querySelector('[data-environment-log]').onclick=async()=>{dialog.close();$('operationFilter').value='environment';await GrowNavigation.showView('operations')};
  $('ackEnvironment').onclick=async()=>{try{await GrowDevice.post('/api/environment/acknowledge');await GrowDevice.refresh();$('environmentFormMessage').textContent='Supervisión rearmada.'}catch(error){$('environmentFormMessage').textContent=error.message}};
- $('environmentForm').onsubmit=async ev=>{ev.preventDefault();const form=ev.currentTarget,b=ev.submitter;b.disabled=true;const values=Object.fromEntries(new FormData(form));values.enabled=form.elements.enabled.checked?'1':'0';values.exchangeOnSensorFailure=form.elements.exchangeOnSensorFailure.checked?'1':'0';try{if(!values.roomId)throw new Error('Seleccioná una Sala.');if(Number(values.vpdMax)<=Number(values.vpdMin))throw new Error('El VPD máximo debe superar al mínimo.');if(local.environment.roomId&&local.environment.roomId!==values.roomId)throw new Error('Este medidor pertenece a otra Sala.');await GrowDevice.post('/api/environment',values);await GrowDevice.refresh();if(!local.environment.cloud?.configured){const{data,error}=await client().rpc('provision_environment_device',{p_room_id:values.roomId,p_device_key:GrowDevice.address()});if(error)throw error;await GrowDevice.postForm('/api/environment/cloud',{roomId:values.roomId,token:data});await GrowDevice.refresh()}$('environmentFormMessage').textContent='Ambiente guardado. Consulta remota habilitada.'}catch(error){$('environmentFormMessage').textContent='No se completó el guardado: '+error.message}finally{b.disabled=false}};
+ $('environmentForm').onsubmit=async ev=>{
+ ev.preventDefault();const form=ev.currentTarget,b=ev.submitter;
+ const values=Object.fromEntries(new FormData(form));values.enabled=form.elements.enabled.checked?'1':'0';values.exchangeOnSensorFailure=form.elements.exchangeOnSensorFailure.checked?'1':'0';
+ let saving=false;
+ try{
+ if(!values.roomId)throw new Error('Seleccioná una Sala.');
+ if(Number(values.vpdMax)<=Number(values.vpdMin))throw new Error('El VPD máximo debe superar al mínimo.');
+ const from=local?.environment?.roomId,switching=Boolean(from&&from!==values.roomId)||Boolean(pendingTransfer);
+ if(switching&&values.enabled!=='1'){ $('environmentFormMessage').textContent='Control desactivado en esta Sala. El Wemos sigue asignado a '+(rooms.find(r=>r.id===from)?.name||'su Sala actual')+'.';return }
+ if(switching&&!pendingTransfer&&!confirmRoomChange())return;
+ b.disabled=true;provisioning=true;saving=true;
+ if(switching&&!pendingTransfer){
+ await GrowDevice.post('/api/environment',{roomId:from,enabled:'0'});
+ const {data,error}=await client().rpc('transfer_environment_device',{p_from_room:from,p_to_room:values.roomId,p_device_key:GrowDevice.address()});
+ if(error)throw error;pendingTransfer={token:data,roomId:values.roomId};
+ }
+ await GrowDevice.post('/api/environment',values);
+ if(pendingTransfer){
+ await GrowDevice.postForm('/api/environment/cloud',{roomId:values.roomId,token:pendingTransfer.token});
+ pendingTransfer=null;
+ }else{
+ await GrowDevice.refresh();
+ if(!local.environment.cloud?.configured){
+ const {data,error}=await client().rpc('provision_environment_device',{p_room_id:values.roomId,p_device_key:GrowDevice.address()});
+ if(error)throw error;await GrowDevice.postForm('/api/environment/cloud',{roomId:values.roomId,token:data});
+ }
+ }
+ await GrowDevice.refresh();await refreshRemote();
+ $('environmentFormMessage').textContent=values.enabled==='1'?'Control ambiental activo en '+(room?.name||'esta Sala')+'.':'Control ambiental desactivado.';
+ }catch(error){$('environmentFormMessage').textContent='No se completó el guardado: '+error.message}
+ finally{if(saving){b.disabled=false;provisioning=false}}
+ };
+
  if(!dialog.open)dialog.showModal();render();
 }
 function init(){const dialog=document.createElement('dialog');dialog.id='environmentSettingsDialog';dialog.className='app-dialog';document.body.append(dialog);$('openEnvironmentControl').onclick=()=>open(null,true);$('dashboardEnvironmentRoom').onchange=()=>{$('dashboardEnvironmentRoom').dataset.chosen='1';render()};document.addEventListener('click',event=>{const button=event.target.closest('[data-open-room-environment]');if(button)open(button.dataset.openRoomEnvironment)});setInterval(()=>{render();if(!document.hidden)refreshRemote()},60000);setInterval(render,5000);addEventListener('grow-workspace-changed',()=>{epoch++;delete $('dashboardEnvironmentRoom').dataset.chosen;rooms=[];crops=[];remote=[];remoteEvents=[];loadRooms()});addEventListener('grow-rooms-rendered',()=>loadRooms())}

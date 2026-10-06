@@ -1,4 +1,4 @@
-const CACHE='growmanager-v2.6.8-room-transfer';
+const CACHE='growmanager-v2.6.9-room-checkbox';
 const LOCAL_ASSETS=['./','index.html','style.css','ui-foundations.css','environment.css','environment-models.js','environment.js','app.js','auth.js','controller-account.js','energy.js','environment-history.js','environment-timeline-models.js','supabase-config.js','supabase-client.js','vendor/supabase.js','cultivo-models.js','cultivo-db.js','cultivo-repository.js','cultivo-migration.js','cultivation.js','products.js','recipes.js','nutrition-calendar.js','workspaces.js','ui-sections.js','onboarding-tour.js','agenda.js','operations.js','assistant.js','voice-assistant.js','today-models.js','today.js','daily-models.js','daily.js','dashboard-customizer.js','journal-photos.js','app-update.js','manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(LOCAL_ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
