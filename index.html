@@ -11,7 +11,7 @@
 <title>GrowManager · Beta</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
 <link rel="stylesheet" href="style.css?v=20261003-controller">
-<link rel="stylesheet" href="ui-foundations.css?v=20261006-history-relays">
+<link rel="stylesheet" href="ui-foundations.css?v=20261006-agenda-default">
 <link rel="stylesheet" href="environment.css">
 </head>
 <body>
@@ -149,7 +149,7 @@
 <div class="agenda-secondary"><button class="text-button active" type="button" data-agenda-face="events" hidden>Volver a Agenda</button><button class="text-button" type="button" data-agenda-face="nutrition">Nutrición →</button></div>
 <div class="agenda-book">
 <section class="agenda-face active" data-agenda-face-panel="events">
-<nav class="context-tabs" aria-label="Período de agenda"><button data-agenda-period="day">Día</button><button data-agenda-period="week">Semana</button><button class="active" data-agenda-period="month">Mes</button></nav><details class="panel agenda-toolbar agenda-filter-details"><summary>Filtros</summary><div class="agenda-filters"><label>Cultivo<select id="agendaRelation"><option value="all">Todos</option></select></label><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></details><div id="agendaPeriodList" hidden></div>
+<div class="agenda-view-controls"><nav class="context-tabs" aria-label="Período de agenda"><button type="button" data-agenda-period="day" aria-pressed="false">Día</button><button type="button" class="active" data-agenda-period="week" aria-pressed="true">Semana</button><button type="button" data-agenda-period="month" aria-pressed="false">Mes</button></nav><label class="agenda-default-view">Vista al abrir<select id="agendaDefaultView"><option value="day">Día</option><option value="week" selected>Semana</option><option value="month">Mes</option></select></label></div><details class="panel agenda-toolbar agenda-filter-details"><summary>Filtros</summary><div class="agenda-filters"><label>Cultivo<select id="agendaRelation"><option value="all">Todos</option></select></label><label>Vista<select id="agendaScope"><option value="all">Todos</option><option value="mine">Asignadas a mí</option></select></label><label>Estado<select id="agendaState"><option value="active">Activos</option><option value="archived">Archivados</option></select></label></div></details><div id="agendaPeriodList" hidden></div>
 <section id="agendaNotifications" class="panel agenda-notifications" hidden><div><strong id="agendaNotificationCount">0 asignaciones nuevas</strong><p id="agendaNotificationText"></p></div><button id="readAgendaNotifications" class="secondary-button compact" type="button">Marcar leídas</button></section>
 
 <details class="panel agenda-upcoming"><summary><span><span class="eyebrow">EVENTOS</span><strong id="agendaListTitle">Próximos eventos</strong></span><span class="collapse-hint">Mostrar</span></summary><div id="agendaList" class="agenda-list collapse-body"></div></details>
@@ -550,48 +550,48 @@
 </div>
 </dialog>
 <meta name="grow-public-base" content="./">
-<script src="supabase-config.js?v=20261006-history-relays"></script>
-<script src="vendor/supabase.js?v=20261006-history-relays"></script>
-<script src="supabase-client.js?v=20261006-history-relays"></script>
-<script src="cultivo-models.js?v=20261006-history-relays" defer>
+<script src="supabase-config.js?v=20261006-agenda-default"></script>
+<script src="vendor/supabase.js?v=20261006-agenda-default"></script>
+<script src="supabase-client.js?v=20261006-agenda-default"></script>
+<script src="cultivo-models.js?v=20261006-agenda-default" defer>
 </script>
-<script src="cultivo-db.js?v=20261006-history-relays" defer>
+<script src="cultivo-db.js?v=20261006-agenda-default" defer>
 </script>
-<script src="cultivo-repository.js?v=20261006-history-relays" defer>
+<script src="cultivo-repository.js?v=20261006-agenda-default" defer>
 </script>
-<script src="cultivo-migration.js?v=20261006-history-relays" defer>
+<script src="cultivo-migration.js?v=20261006-agenda-default" defer>
 </script>
-<script src="workspaces.js?v=20261006-history-relays" defer>
+<script src="workspaces.js?v=20261006-agenda-default" defer>
 </script>
-<script src="ui-sections.js?v=20261006-history-relays" defer></script>
-<script src="dashboard-customizer.js?v=20261006-history-relays" defer></script>
-<script src="app-update.js?v=20261006-history-relays" defer></script>
-<script src="onboarding-tour.js?v=20261006-history-relays" defer></script>
-<script src="agenda.js?v=20261006-history-relays" defer></script>
-<script src="journal-photos.js?v=20261006-history-relays" defer></script>
-<script src="operations.js?v=20261006-history-relays" defer></script>
-<script src="cultivation.js?v=20261006-history-relays" defer>
+<script src="ui-sections.js?v=20261006-agenda-default" defer></script>
+<script src="dashboard-customizer.js?v=20261006-agenda-default" defer></script>
+<script src="app-update.js?v=20261006-agenda-default" defer></script>
+<script src="onboarding-tour.js?v=20261006-agenda-default" defer></script>
+<script src="agenda.js?v=20261006-agenda-default" defer></script>
+<script src="journal-photos.js?v=20261006-agenda-default" defer></script>
+<script src="operations.js?v=20261006-agenda-default" defer></script>
+<script src="cultivation.js?v=20261006-agenda-default" defer>
 </script>
-<script src="products.js?v=20261006-history-relays" defer>
+<script src="products.js?v=20261006-agenda-default" defer>
 </script>
-<script src="recipes.js?v=20261006-history-relays" defer>
+<script src="recipes.js?v=20261006-agenda-default" defer>
 </script>
-<script src="nutrition-calendar.js?v=20261006-history-relays" defer></script>
-<script src="assistant.js?v=20261006-history-relays" defer></script>
-<script src="voice-assistant.js?v=20261006-history-relays" defer></script>
-<script src="energy.js?v=20261006-history-relays" defer>
+<script src="nutrition-calendar.js?v=20261006-agenda-default" defer></script>
+<script src="assistant.js?v=20261006-agenda-default" defer></script>
+<script src="voice-assistant.js?v=20261006-agenda-default" defer></script>
+<script src="energy.js?v=20261006-agenda-default" defer>
 </script>
 <script src="environment-models.js" defer></script>
 <script src="environment.js" defer></script>
 <script src="environment-timeline-models.js" defer></script>
-<script src="environment-history.js?v=20261006-history-relays" defer></script>
-<script src="auth.js?v=20261006-history-relays" defer>
+<script src="environment-history.js?v=20261006-agenda-default" defer></script>
+<script src="auth.js?v=20261006-agenda-default" defer>
 </script>
-<script src="daily-models.js?v=20261006-history-relays" defer></script><script src="daily.js?v=20261006-history-relays" defer></script>
-<script src="today-models.js?v=20261006-history-relays" defer></script>
-<script src="today.js?v=20261006-history-relays" defer></script>
+<script src="daily-models.js?v=20261006-agenda-default" defer></script><script src="daily.js?v=20261006-agenda-default" defer></script>
+<script src="today-models.js?v=20261006-agenda-default" defer></script>
+<script src="today.js?v=20261006-agenda-default" defer></script>
 <script src="controller-account.js?v=20261003-controller" defer></script>
-<script src="app.js?v=20261006-history-relays" defer>
+<script src="app.js?v=20261006-agenda-default" defer>
 </script>
 </body>
 </html>
