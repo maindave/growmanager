@@ -49,3 +49,9 @@ html[data-theme="light"] .semantic-icon.flowering{background:#f0e2f6;color:#8747
 #openEnvironmentControl{margin-bottom:16px}
 .today-environment .metric-history-button::after{content:'Ver 48 h →'}
 .today-environment .metrics-grid{grid-template-columns:repeat(auto-fit,minmax(105px,1fr))}
+
+#environmentHistoryDialog{width:min(940px,calc(100vw - 24px));max-width:940px}#environmentHistoryDialog .environment-chart{padding:8px;min-height:0}#environmentHistoryDialog .environment-chart svg{height:auto;min-height:0;width:100%}#environmentHistoryDialog .environment-axis{font-size:12px}#environmentHistoryDialog :is(.environment-temp-path,.environment-humidity-path){stroke-width:1.6;vector-effect:non-scaling-stroke}.environment-actuation{stroke:var(--text);stroke-width:1.5;fill:var(--surface)}.environment-actuation.is-on{fill:var(--text)}#environmentHistoryActions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:.85rem;color:var(--text-muted)}.environment-history-period{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin:0 0 12px}.environment-history-period select{width:auto;max-width:85%;margin:0}#environmentHistoryDialog .environment-legend{font-size:.8rem;margin-top:8px}#environmentHistoryDialog .field-help{font-size:.8rem;margin:8px 0 0}
+
+.environment-sample-hit{fill:transparent;stroke:none}.environment-sample-hit:hover{fill:var(--text);opacity:.65}
+
+#environmentHistoryDialog .dialog-form{gap:10px;padding:18px}#environmentHistoryDialog .dialog-heading :is(h3,p){margin:0}#environmentHistoryDialog .environment-history-period{margin:0}#environmentHistoryDialog .environment-stats div{padding:8px 10px}#environmentHistoryDialog .environment-legend{margin:0}#environmentHistoryDialog #environmentHistoryActions{margin:0}

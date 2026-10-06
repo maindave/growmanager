@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.3",
-  "versionCode": 23,
+  "versionName": "2.6.4",
+  "versionCode": 24,
   "publishedAt": "2026-10-06T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Agenda semanal por defecto y preferencia personal de vista inicial."
+  "releaseNotes": "Histórico ambiental compacto con gráfico ampliado, períodos y marcas ON/OFF; Plan de nutrición."
 }
