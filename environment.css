@@ -33,3 +33,19 @@ html:not([data-connect="true"]) .today-layout>.today-crops{grid-row:2}
 .today-environment #todayEnvironmentStatus{display:none}
 .today-environment .metrics-grid{margin-top:0;gap:10px}
 @media(min-width:920px){.content-shell{margin-block:0}.today-view>.page-heading{margin-top:0}}
+/* State and crop-phase accents retain the existing device symbols. */
+.semantic-icon.flowering{background:#3e2947;color:#ddb0ed}
+html[data-theme="light"] .semantic-icon.flowering{background:#f0e2f6;color:#874798}
+.today-systems .dashboard-system.is-on .dashboard-system-icon{color:var(--system-color);background:color-mix(in srgb,var(--system-color) 20%,var(--surface));box-shadow:0 0 14px color-mix(in srgb,var(--system-color) 20%,transparent)}
+.today-layout .section-heading{min-height:44px}
+.today-environment :is(#environmentSummary,#environmentAlerts,.field-help){margin-inline:0;padding-inline:0;text-align:left}
+#environmentSummary{display:block;margin-top:10px;line-height:1.5}
+.environment-connection{padding:12px;border:1px solid var(--border);border-radius:10px;margin:12px 0}
+.environment-connection h4{margin:0 0 8px}
+.environment-target-band{fill:#6bbe8a;opacity:.16}
+.environment-action{padding:10px 0;border-top:1px solid var(--border)}
+.environment-action p{margin:6px 0}.environment-action small{color:var(--text-muted)}
+#environmentHistoryActions{margin-top:20px}
+#openEnvironmentControl{margin-bottom:16px}
+.today-environment .metric-history-button::after{content:'Ver 48 h →'}
+.today-environment .metrics-grid{grid-template-columns:repeat(auto-fit,minmax(105px,1fr))}

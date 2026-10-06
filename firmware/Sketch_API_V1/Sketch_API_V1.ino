@@ -1,3 +1,4 @@
+#include "RelayTestPolicy.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <WiFiClientSecure.h>
@@ -16,7 +17,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6-environment-direct-cloud";
+const char* firmwareVersion = "2.6.2-environment-history-test";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -108,6 +109,8 @@ bool soilEnabled = false;
 
 #define RELAY_ON HIGH
 #define RELAY_OFF LOW
+
+GrowRelay::Test relayTests[4];
 
 bool relayStates[4] = {
   false,
@@ -370,9 +373,10 @@ void runEnvironmentControl() {
     if(relayFunctions[i]==FN_VENTILATION) role=GrowEnvironment::Circulation;
     if(relayFunctions[i]==FN_EXTRACTION) role=GrowEnvironment::Extraction;
     if(relayFunctions[i]==FN_INTAKE) role=GrowEnvironment::Intake;
-    channels[i]=GrowEnvironment::Channel(role,relayModes[i]==MODE_AUTO,relayStates[i]);
+    channels[i]=GrowEnvironment::Channel(role,relayModes[i]==MODE_AUTO&&!relayTests[i].active,relayStates[i]);
   }
-  environmentController.tick(millis(),environmentConfig,environmentSensorFresh(),temperature,humidity,tempMin,tempMax,channels);
+  uint8_t testing=0;for(int i=0;i<4;i++)if(relayTests[i].active)testing|=1<<i;
+  environmentController.tick(millis(),environmentConfig,environmentSensorFresh(),temperature,humidity,tempMin,tempMax,channels,testing);
   for(int i=0;i<4;i++) if(channels[i].on!=relayStates[i]) setRelayState(i+1,channels[i].on);
 }
 String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
@@ -389,7 +393,7 @@ String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   json+=F(",\"humidityResponseDelta\":")+String(environmentConfig.humidityResponseDelta,1);
   json+=F(",\"exchangeOnSensorFailure\":")+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
   json+=F(",\"cloud\":")+cloudStatusJson();
-  json+=F(",\"alarms\":")+String(environmentConfig.enabled?environmentController.alarms:0)+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
+  json+=F(",\"alarms\":")+String(environmentController.alarms)+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
   uint8_t count=environmentController.count<eventLimit?environmentController.count:eventLimit;
   uint32_t first=environmentController.sequence-count+1;
   if(recovering){
@@ -401,7 +405,11 @@ String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   for(unsigned int i=0;i<count;i++) {
     const auto& event=environmentController.events[(first+i-1)%GrowEnvironment::Controller::EventCapacity];
     if(i) json+=F(",");
-    json+=F("{\"sequence\":")+String(event.sequence)+",\"uptimeMs\":"+String(event.at)+",\"alarms\":"+String(event.alarms)+",\"outputs\":"+String(event.outputs)+"}";
+    json+=F("{\"sequence\":")+String(event.sequence)+",\"uptimeMs\":"+String(event.at)+",\"alarms\":"+String(event.alarms)+",\"outputs\":"+String(event.outputs);
+    json+=F(",\"temperature\":")+(isfinite(event.temperature)?String(event.temperature,2):String("null"));
+    json+=F(",\"humidity\":")+(isfinite(event.humidity)?String(event.humidity,2):String("null"));
+    json+=F(",\"vpdMin\":")+String(event.minimum,2)+F(",\"vpdMax\":")+String(event.maximum,2);
+    json+=F(",\"automatic\":")+String(event.automatic)+F(",\"testing\":")+String(event.testing)+F(",\"state\":")+String(event.state)+F(",\"roles\":")+String(event.roles)+F(",\"enabled\":")+String(event.enabled?"true":"false")+"}";
   }
   return json+"]}";
 }
@@ -446,6 +454,18 @@ void handleSetEnvironment() {
   if(room!=String(environmentRoomId)) clearCloudPairing();
   environmentConfig=next; room.toCharArray(environmentRoomId,sizeof(environmentRoomId)); saveEnvironmentConfig();
   runEnvironmentControl(); handleEnvironment();
+}
+void handleRelayTest() {
+  int id=server.arg("id").toInt();String state=server.arg("state");
+  if(id<1||id>4||(state!="on"&&state!="off"&&state!="cancel")){addCORS();server.send(400,"application/json","{\"error\":\"invalid_test\"}");return;}
+  int i=id-1;int seconds=server.hasArg("seconds")?server.arg("seconds").toInt():10;
+  if(seconds<1||seconds>30){addCORS();server.send(400,"application/json","{\"error\":\"invalid_test_duration\"}");return;}
+  if(state=="cancel"){if(relayTests[i].active)setRelayState(id,relayTests[i].stop());runAutomations();addCORS();server.send(200,"application/json","{\"ok\":true}");return;}
+  bool on=state=="on";
+  if(on&&relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot||(environmentController.alarms&GrowEnvironment::NoResponse))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
+  if(!on&&environmentConfig.enabled&&(relayFunctions[i]==FN_EXTRACTION||relayFunctions[i]==FN_INTAKE)&&(temperature>=environmentConfig.criticalHot||(!environmentSensorFresh()&&environmentConfig.exchangeOnSensorFailure))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
+  relayTests[i].begin(millis(),on,relayStates[i],seconds);setRelayState(id,on);runEnvironmentControl();
+  addCORS();server.send(200,"application/json","{\"ok\":true,\"seconds\":"+String(seconds)+"}");
 }
 void handleAcknowledgeEnvironment() { environmentController.acknowledge(); runEnvironmentControl(); handleEnvironment(); }
 
@@ -1190,7 +1210,7 @@ void automaticLightControl() {
     lightTransitionMode=LIGHT_TRANSITION_NONE;lightTransitionUntil=0;saveControlConfig();
   }
   for(int i=0;i<4;i++) {
-    if(relayFunctions[i]!=FN_LIGHT||relayModes[i]!=MODE_AUTO) continue;
+    if(relayFunctions[i]!=FN_LIGHT||relayModes[i]!=MODE_AUTO||relayTests[i].active) continue;
     bool on=channelLightShouldBeOn(i);
     if(!lightChannels[i].independent&&lightTransitionMode!=LIGHT_TRANSITION_NONE) on=lightTransitionMode==LIGHT_TRANSITION_HOLD_ON;
     setRelayState(i+1,on);
@@ -1217,6 +1237,7 @@ void automaticHeaterControl() {
   )
     return;
 
+  if(relayTests[relay].active)return;
   if (!dhtReadingFresh) {
     setRelayState(relay + 1, false);
     return;
@@ -1249,7 +1270,7 @@ void automaticHeaterControl() {
 
 void automaticVentilationControl() {
   int relay = findRelayByFunction(FN_VENTILATION);
-  if (relay < 0 || relayModes[relay] != MODE_AUTO) return;
+  if (relay < 0 || relayModes[relay] != MODE_AUTO || relayTests[relay].active) return;
 
   unsigned long now = millis();
   bool temperatureEnabled = ventilationMode == VENT_TEMPERATURE || ventilationMode == VENT_COMBINED;
@@ -1301,6 +1322,10 @@ void automaticVentilationControl() {
 // ======================================================
 
 void runAutomations() {
+  for(int i=0;i<4;i++){
+    if(relayTests[i].active&&relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot)){relayTests[i].state=false;setRelayState(i+1,false);}
+    if(relayTests[i].expired(millis())){bool previous=relayTests[i].stop();if(relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot))previous=false;setRelayState(i+1,previous);}
+  }
 
   automaticLightControl();
 
@@ -1544,6 +1569,7 @@ String buildStatusJson(uint8_t eventLimit,bool recovering) {
         ? "true"
         : "false";
 
+    json += F(",\"testing\":")+String(relayTests[i].active?"true":"false");
     json += F("}");
 
     if (i < 3)
@@ -1637,6 +1663,7 @@ void handleApiRelays() {
         ? "true"
         : "false";
 
+    json += F(",\"testing\":")+String(relayTests[i].active?"true":"false");
     json += F("}");
 
     if (i < 3)
@@ -1761,6 +1788,7 @@ void handleApiSetRelay() {
     (!environmentSensorFresh() || temperature>=environmentConfig.criticalHot || (environmentController.alarms&GrowEnvironment::NoResponse))) {
     addCORS(); server.send(409,"application/json","{\"error\":\"environment_protection_active\"}"); return;
   }
+  relayTests[index].active=false;
   setRelayState(relayId,newState);
   runEnvironmentControl();
 
@@ -2037,6 +2065,7 @@ void handleApiSetFunctions() {
       );
   }
 
+  relayTests[index].active=false;
   relayFunctions[index] =
     newFunction;
 
@@ -2644,6 +2673,8 @@ void setup() {
   // API
   // ----------------------------------------------------
 
+  server.on("/api/relay/test", HTTP_POST, handleRelayTest);
+  server.on("/api/relay/test", HTTP_OPTIONS, handleOptions);
   server.on("/api/environment/cloud", HTTP_GET, handleCloudStatus);
   server.on("/api/environment/cloud", HTTP_POST, handleCloudPairing);
   server.on("/api/environment/cloud", HTTP_OPTIONS, handleOptions);

@@ -28,14 +28,14 @@ inline bool validConfig(const Config& c) {
 inline bool validReading(float t,float h) { return isfinite(t)&&isfinite(h)&&t>=-20&&t<=80&&h>0&&h<=100; }
 inline float vpd(float t,float h) { return validReading(t,h)?0.6108f*expf(17.27f*t/(t+237.3f))*(1-h/100):NAN; }
 struct Channel { Role role; bool automatic, on; Channel(Role r=None,bool a=false,bool o=false):role(r),automatic(a),on(o){} };
-struct Event { uint32_t sequence, at; uint16_t alarms; uint8_t outputs; Event(uint32_t s=0,uint32_t t=0,uint16_t a=0,uint8_t o=0):sequence(s),at(t),alarms(a),outputs(o){} };
+struct Event { uint32_t sequence, at; uint16_t alarms; uint8_t outputs, automatic=0, testing=0, state=3; float temperature=NAN, humidity=NAN, minimum=0, maximum=0; uint16_t roles=0; bool enabled=false; Event(uint32_t s=0,uint32_t t=0,uint16_t a=0,uint8_t o=0):sequence(s),at(t),alarms(a),outputs(o){} };
 class Controller {
   uint32_t changed[4]={}, started[4]={};
   bool initialized[4]={}, watching[4]={};
   float baseline[4]={};
   bool humidityWatch[4]={};
   uint8_t failed=0, lastOutputs=0;
-  uint16_t lastAlarms=0;
+  uint16_t lastRoles=0,lastAlarms=0; uint8_t lastState=255,lastAutomatic=255,lastTesting=255; float lastMin=0,lastMax=0; bool lastEnabled=false;
   bool recorded=false;
 public:
   uint16_t alarms=0;
@@ -44,8 +44,16 @@ public:
   uint32_t sequence=0;
   uint8_t count=0;
   void acknowledge() { failed=0; for(int i=0;i<4;i++) watching[i]=false; }
-  void tick(uint32_t now, const Config& c, bool fresh, float t,float h,float low,float high,Channel (&ch)[4]) {
-    if(!c.enabled) return;
+  void record(uint32_t now,const Config& c,bool valid,float t,float h,Channel (&ch)[4],uint8_t outputs,uint8_t testing){
+    float value=vpd(t,h); uint8_t state=!valid?3:value<c.vpdMin?0:value>c.vpdMax?2:1,automatic=0; uint16_t roles=0;
+    for(int i=0;i<4;i++){if(ch[i].automatic)automatic|=1<<i;roles|=uint16_t(ch[i].role)<<(i*3);}
+    if(!recorded||alarms!=lastAlarms||outputs!=lastOutputs||state!=lastState||automatic!=lastAutomatic||testing!=lastTesting||roles!=lastRoles||c.vpdMin!=lastMin||c.vpdMax!=lastMax||c.enabled!=lastEnabled){
+      recorded=true;lastAlarms=alarms;lastOutputs=outputs;lastState=state;lastAutomatic=automatic;lastTesting=testing;lastRoles=roles;lastMin=c.vpdMin;lastMax=c.vpdMax;lastEnabled=c.enabled;
+      Event& e=events[sequence%EventCapacity];e=Event(sequence+1,now,alarms,outputs);e.automatic=automatic;e.testing=testing;e.state=state;e.temperature=valid?t:NAN;e.humidity=valid?h:NAN;e.minimum=c.vpdMin;e.maximum=c.vpdMax;e.roles=roles;e.enabled=c.enabled;
+      sequence++;if(count<EventCapacity)count++;
+    }
+  }
+  void tick(uint32_t now, const Config& c, bool fresh, float t,float h,float low,float high,Channel (&ch)[4],uint8_t testing=0) {
     bool valid=fresh&&validReading(t,h);
     alarms=valid?0:SensorInvalid;
     if(valid) {
@@ -53,6 +61,7 @@ public:
       if(t<=c.criticalCold) alarms|=TooCold;
       if(h>=c.criticalHumidity) alarms|=HumidityCritical;
     }
+    if(!c.enabled){uint8_t outputs=0;for(int i=0;i<4;i++)if(ch[i].on)outputs|=1<<i;record(now,c,valid,t,h,ch,outputs,testing);return;}
     const float deficit=vpd(t,h);
     // Heating is temperature driven. VPD alone cannot justify drying a hot room.
     bool exchange=valid&&(t>high||(t>=low&&deficit<c.vpdMin&&h>70));
@@ -91,10 +100,7 @@ public:
     if(failed) alarms|=NoResponse;
     // A heater with an ineffective response is stopped in this same tick.
     for(int i=0;i<4;i++) if(ch[i].role==Heater&&(failed&(1<<i))) { ch[i].on=false; outputs&=~(1<<i); }
-    if(!recorded||alarms!=lastAlarms||outputs!=lastOutputs) {
-      recorded=true; lastAlarms=alarms; lastOutputs=outputs;
-      events[sequence%EventCapacity]={sequence+1,now,alarms,outputs}; sequence++; if(count<EventCapacity) count++;
-    }
+    record(now,c,valid,t,h,ch,outputs,testing);
   }
 };
 }

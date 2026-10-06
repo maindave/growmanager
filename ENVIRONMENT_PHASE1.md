@@ -93,3 +93,14 @@ La revisión automática rechazó crear una Sala técnica temporal, emitir crede
 - Nuevos sensores y equipos podrán ampliar las grillas; no se incorporan funciones de CO₂, PPFD, AC o humedad. En pantallas pequeñas se permite desplazamiento para conservar legibilidad.
 - Vinculación real de Sala Flora completada: Wemos confirmó HTTP 204 y Supabase recibió temperatura/humedad el 5 de octubre de 2026 a las 20:56 ART. El control ambiental siguió desactivado.
 - Validación: pruebas de modelos y esquema, sintaxis JavaScript; formulario aislado de prueba sin escribir Salas reales: 2 × 3 × 2,5 = 15 m³ y cambio de largo a 4 = 30 m³.
+
+
+## Relés, historial y simplificación · 2.6.2
+- Corregido el estado del botón manual después de ON/OFF; prueba temporal de 10 segundos en automático, con vencimiento local y retorno al modo previo.
+- VPD, temperatura y humedad consultables durante 48 horas. Objetivos históricos y actuaciones registradas con origen automático/manual/prueba; no se inventan actuaciones anteriores a este registro ni confirmaciones físicas del equipo.
+- Histórico remoto de muestras cada cinco minutos y eventos con contexto; consulta por miembros y filtros de Sala y Ambiente en Bitácora. El búfer sin Internet del Wemos sigue siendo acotado: no se promete almacenar 48 horas completas offline.
+- Cultivos muestra ambiente y dimensiones. Los ajustes técnicos están en Control; consulta remota automática, diagnóstico visible y activación supervisada explícita.
+- Floración y vegetativo diferenciados; equipos encendidos destacados; alineación del resumen ambiental y conservación de formularios al regresar a la pestaña.
+- Firmware 2.6.2-environment-history-test instalado por OTA conservando Sala Flora, funciones y modos. Control supervisado permanece desactivado. Relé 3 actualmente asignado a calefacción.
+- Verificación física: ventilación ON, OFF y vencimiento de prueba conservando automático. Publicación real HTTP 204, cero fallos y eventos con contexto recibidos después de aplicar migraciones 039 y 040.
+- Verificación de interfaz aislada: ciclo manual ON/OFF, pruebas en automático, formulario conservado y filtro de Sala sin mezclar eventos. Pruebas nativas de control, temporizador y modelos de historial.

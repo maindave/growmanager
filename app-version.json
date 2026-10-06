@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.1",
-  "versionCode": 21,
-  "publishedAt": "2026-10-05T00:00:00-03:00",
+  "versionName": "2.6.2",
+  "versionCode": 22,
+  "publishedAt": "2026-10-06T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Salas con dimensiones y medidor asociado; inicio compacto con ambiente y dispositivos locales o remotos."
+  "releaseNotes": "Relés manuales y prueba temporal; VPD e intervenciones de 48 h; eventos ambientales en Bitácora; formularios conservados al cambiar de pestaña."
 }

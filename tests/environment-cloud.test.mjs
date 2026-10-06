@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 import assert from 'node:assert/strict';
 const dir=await mkdtemp(join(tmpdir(),'grow-native-tests-'));
 try{
- for(const name of ['environment-control','environment-cloud']){
+ for(const name of ['environment-control','environment-cloud','relay-test']){
   const source=fileURLToPath(new URL(`./${name}.test.cpp`,import.meta.url)),binary=join(dir,name);
   execFileSync(process.env.CXX||'c++',['-std=c++11','-Wall','-Wextra','-Werror',source,'-o',binary]);
   process.stdout.write(execFileSync(binary));

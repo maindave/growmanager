@@ -5,6 +5,7 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const paths = {
     home:'m3 10 9-7 9 7v10H3Z M9 20v-7h6v7',
+    flower:'M12 8c-5-8-9-2-5 2-8 0-5 8 0 5-1 8 8 8 6 0 8 3 10-5 3-5 4-7-2-10-4-2Z M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z',
     leaf:'M20 4C9 2 3 7 5 15c7 5 16-1 15-11Z M4 21 15 10',
     plus:'M12 5v14 M5 12h14', calendar:'M5 5h14v16H5Z M8 3v4 M16 3v4 M5 10h14',
     menu:'M5 6h14 M5 12h14 M5 18h14', spark:'m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z',
@@ -41,7 +42,7 @@
     const upcoming=TodayModels.upcoming(data.events,Agenda.occurrences);
     $('dashboardAgenda').innerHTML=upcoming.length?upcoming.map(eventRow).join(''):'<div class="today-empty"><strong>No hay próximos eventos pendientes</strong><p>Consultá el calendario para ver tu planificación.</p><button class="text-button" data-view="agenda">Abrir agenda →</button></div>';
     const active=data.lots.filter(l=>l.active);
-    $('dashboardCultivations').innerHTML=active.length?active.map(l=>`<button class="today-lot" data-open-lot="${esc(l.id)}"><span class="semantic-icon plant">${icon('leaf')}</span><span class="today-lot-copy"><strong>${esc(l.name)}</strong><span>${esc(stage(l))} · ${NutritionCalendar.profileKey(l)==='mothers'?'Continuo':esc(TodayModels.lotAge(l))}</span>${phase(l)}</span><span aria-hidden="true">→</span></button>`).join(''):'<div class="today-empty"><strong>Tus cultivos aparecerán acá</strong><p>Creá una sala y agregá su cultivo.</p><button class="text-button" data-view="cultivation">Ver cultivos →</button></div>';
+    $('dashboardCultivations').innerHTML=active.length?active.map(l=>`<button class="today-lot" data-open-lot="${esc(l.id)}"><span class="semantic-icon ${l.stage==='flowering'?'flowering':'plant'}">${icon(l.stage==='flowering'?'flower':'leaf')}</span><span class="today-lot-copy"><strong>${esc(l.name)}</strong><span>${esc(stage(l))} · ${NutritionCalendar.profileKey(l)==='mothers'?'Continuo':esc(TodayModels.lotAge(l))}</span>${phase(l)}</span><span aria-hidden="true">→</span></button>`).join(''):'<div class="today-empty"><strong>Tus cultivos aparecerán acá</strong><p>Creá una sala y agregá su cultivo.</p><button class="text-button" data-view="cultivation">Ver cultivos →</button></div>';
     renderAttention(); if(selectedLot)renderLot();
   }
   function renderAttention() {
