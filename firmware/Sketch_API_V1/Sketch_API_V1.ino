@@ -2,6 +2,7 @@
 #error "This controller requires esp8266:esp8266:d1 (Wemos D1 R1)."
 #endif
 #include "RelayTestPolicy.h"
+#include "RelaySafetyPolicy.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <WiFiClientSecure.h>
@@ -20,7 +21,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.4-d1-r1-relay-diagnostics";
+const char* firmwareVersion = "2.6.5-local-safety";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -114,6 +115,9 @@ bool soilEnabled = false;
 #define RELAY_OFF LOW
 
 GrowRelay::Test relayTests[4];
+GrowRelay::Safety relaySafety[4];
+const uint32_t heaterMaximumOnMs=15UL*60UL*1000UL;
+const uint32_t manualLightMaximumOnMs=60UL*60UL*1000UL;
 
 bool relayStates[4] = {
   false,
@@ -379,7 +383,10 @@ void runEnvironmentControl() {
     channels[i]=GrowEnvironment::Channel(role,relayModes[i]==MODE_AUTO&&!relayTests[i].active,relayStates[i]);
   }
   uint8_t testing=0;for(int i=0;i<4;i++)if(relayTests[i].active)testing|=1<<i;
-  environmentController.tick(millis(),environmentConfig,environmentSensorFresh(),temperature,humidity,tempMin,tempMax,channels,testing);
+  uint8_t safetyMask=0;for(int i=0;i<4;i++)if(relaySafety[i].reason!=GrowRelay::Safety::Ready)safetyMask|=1<<i;
+  for(int i=0;i<4;i++)if(safetyMask&(1<<i)){channels[i].automatic=false;channels[i].on=false;}
+  environmentController.tick(millis(),environmentConfig,environmentSensorFresh(),temperature,humidity,tempMin,tempMax,channels,testing,safetyMask);
+  for(int i=0;i<4;i++)if(safetyMask&(1<<i))channels[i].on=false;
   for(int i=0;i<4;i++) if(channels[i].on!=relayStates[i]) setRelayState(i+1,channels[i].on);
 }
 String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
@@ -395,6 +402,9 @@ String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   json+=F(",\"minimumSwitchSeconds\":")+String(environmentConfig.minimumSwitchMs/1000)+",\"responseSeconds\":"+String(environmentConfig.responseWindowMs/1000)+",\"responseDelta\":"+String(environmentConfig.responseDelta,1);
   json+=F(",\"humidityResponseDelta\":")+String(environmentConfig.humidityResponseDelta,1);
   json+=F(",\"exchangeOnSensorFailure\":")+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
+  json+=F(",\"safety\":[");for(int i=0;i<4;i++){if(i)json+=",";json+=String((int)relaySafety[i].reason);}json+="]";
+  json+=F(",\"heaterMaximumOnSeconds\":")+String(heaterMaximumOnMs/1000);
+  json+=F(",\"manualLightMaximumOnSeconds\":")+String(manualLightMaximumOnMs/1000);
   json+=F(",\"cloud\":")+cloudStatusJson();
   json+=F(",\"alarms\":")+String(environmentController.alarms)+F(",\"failedOutputs\":")+String(environmentController.failedOutputs())+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
   uint8_t count=environmentController.count<eventLimit?environmentController.count:eventLimit;
@@ -467,10 +477,15 @@ void handleRelayTest() {
   bool on=state=="on";
   if(on&&relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot||(environmentController.alarms&GrowEnvironment::NoResponse))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
   if(!on&&environmentConfig.enabled&&(relayFunctions[i]==FN_EXTRACTION||relayFunctions[i]==FN_INTAKE)&&(temperature>=environmentConfig.criticalHot||(!environmentSensorFresh()&&environmentConfig.exchangeOnSensorFailure))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
-  relayTests[i].begin(millis(),on,relayStates[i],seconds);setRelayState(id,on);runEnvironmentControl();
+  bool previous=relayStates[i];if(!setRelayState(id,on)){addCORS();server.send(409,"application/json","{\"error\":\"safety_lock_requires_review\"}");return;}relayTests[i].begin(millis(),on,previous,seconds);runEnvironmentControl();
   addCORS();server.send(200,"application/json","{\"ok\":true,\"seconds\":"+String(seconds)+"}");
 }
-void handleAcknowledgeEnvironment() { environmentController.acknowledge(); runEnvironmentControl(); handleEnvironment(); }
+void handleAcknowledgeEnvironment() {
+  if(!environmentSensorFresh()||!GrowEnvironment::validReading(temperature,humidity)||temperature>=environmentConfig.criticalHot){addCORS();server.send(409,"application/json","{\"error\":\"unsafe_to_rearm\"}");return;}
+  environmentController.acknowledge();
+  for(int i=0;i<4;i++)relaySafety[i].acknowledge(true);
+  runEnvironmentControl();handleEnvironment();
+}
 
 // ======================================================
 // PIN UTILITIES
@@ -1043,6 +1058,7 @@ void initializeHardware() {
 
     pinMode(relayPins[i], OUTPUT);
     relayStates[i] = false;
+    relaySafety[i].boot(relayFunctions[i]==FN_HEATER);
 
     Serial.print("Relay ");
     Serial.print(i + 1);
@@ -1104,6 +1120,13 @@ bool setRelayState(
   int index =
     relayNumber - 1;
 
+  bool heater=relayFunctions[index]==FN_HEATER;
+  bool safe=environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity)&&temperature<environmentConfig.criticalHot&&!(environmentController.failedOutputs()&(1<<index));
+  if(heater&&relaySafety[index].on&&temperature>=environmentConfig.criticalHot)relaySafety[index].reason=GrowRelay::Safety::Overtemperature;
+  uint32_t limit=heater?heaterMaximumOnMs:(relayFunctions[index]==FN_LIGHT&&relayModes[index]!=MODE_AUTO?manualLightMaximumOnMs:0);
+  bool accepted=relaySafety[index].request(millis(),state,heater,safe,limit);
+  bool requested=state;
+  state=accepted;
   digitalWrite(
     relayPins[index],
     state
@@ -1114,7 +1137,7 @@ bool setRelayState(
   relayStates[index] =
     state;
 
-  return true;
+  return state==requested;
 }
 
 // ======================================================
@@ -1204,7 +1227,7 @@ bool channelLightShouldBeOn(int i) {
   return start<end ? now>=start&&now<end : now>=start||now<end;
 }
 void automaticLightControl() {
-  if(!timeSynced) return;
+  if(!timeSynced){for(int i=0;i<4;i++)if(relayFunctions[i]==FN_LIGHT&&relayModes[i]==MODE_AUTO&&!relayTests[i].active)setRelayState(i+1,false);return;}
   if(lightTransitionMode!=LIGHT_TRANSITION_NONE&&lightTransitionUntil<=roomEpoch()) {
     lightTransitionMode=LIGHT_TRANSITION_NONE;lightTransitionUntil=0;saveControlConfig();
   }
@@ -1321,6 +1344,8 @@ void automaticVentilationControl() {
 // ======================================================
 
 void runAutomations() {
+  // Enforce protection before every control cycle, including manual operation.
+  for(int i=0;i<4;i++)if(relayStates[i])setRelayState(i+1,true);
   for(int i=0;i<4;i++){
     if(relayTests[i].active&&relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot)){relayTests[i].state=false;setRelayState(i+1,false);}
     if(relayTests[i].expired(millis())){bool previous=relayTests[i].stop();if(relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot))previous=false;setRelayState(i+1,previous);}
@@ -1783,12 +1808,12 @@ void handleApiSetRelay() {
     return;
   }
 
-  if(newState && environmentConfig.enabled && relayFunctions[index]==FN_HEATER &&
+  if(newState && relayFunctions[index]==FN_HEATER &&
     (!environmentSensorFresh() || temperature>=environmentConfig.criticalHot || (environmentController.alarms&GrowEnvironment::NoResponse))) {
     addCORS(); server.send(409,"application/json","{\"error\":\"environment_protection_active\"}"); return;
   }
   relayTests[index].active=false;
-  setRelayState(relayId,newState);
+  if(!setRelayState(relayId,newState)){addCORS();server.send(409,"application/json","{\"error\":\"safety_lock_requires_review\"}");return;}
   runEnvironmentControl();
 
   String json =
@@ -2065,6 +2090,7 @@ void handleApiSetFunctions() {
   }
 
   relayTests[index].active=false;
+  bool roleChanged=relayFunctions[index]!=newFunction;
   relayFunctions[index] =
     newFunction;
 
@@ -2079,6 +2105,7 @@ void handleApiSetFunctions() {
     false
   );
 
+  if(roleChanged)relaySafety[index].boot(newFunction==FN_HEATER);
   saveFunctionConfig();
 
   runAutomations();

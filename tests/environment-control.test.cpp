@@ -37,5 +37,5 @@ int main(){
   disabledCtl.tick(100000,paused,true,20,60,23,27,disabledHeater);disabledCtl.tick(300000,c,true,20,60,23,27,disabledHeater);assert(!(disabledCtl.alarms&NoResponse));
   Config bad=c; bad.criticalHot=NAN; assert(!validConfig(bad)); bad=c; bad.vpdMax=bad.vpdMin; assert(!validConfig(bad));
   Controller off; Channel manual[4]; manual[0]={Heater,false,true}; Config disabled;
-  off.tick(0,disabled,false,0,0,23,27,manual); assert(manual[0].on); puts("Environmental control: passed");
+  off.tick(0,disabled,false,0,0,23,27,manual); assert(manual[0].on); Controller locked;Channel stopped[4];locked.tick(0,disabled,true,25,60,23,27,stopped,0,1);assert(locked.alarms&SafetyLock);assert(locked.events[0].outputs==0);locked.tick(1000,disabled,true,25,60,23,27,stopped,0,1);assert(locked.sequence==1);locked.tick(2000,disabled,true,25,60,23,27,stopped);assert(!(locked.alarms&SafetyLock));assert(locked.sequence==2);puts("Environmental control: passed");
 }

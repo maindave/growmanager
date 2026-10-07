@@ -4,7 +4,7 @@
 
 namespace GrowEnvironment {
 enum Role { None, Circulation, Extraction, Intake, Heater };
-enum Alarm : uint16_t { SensorInvalid=1, TooHot=2, TooCold=4, HumidityCritical=8, NoResponse=16 };
+enum Alarm : uint16_t { SensorInvalid=1, TooHot=2, TooCold=4, HumidityCritical=8, NoResponse=16, SafetyLock=32 };
 struct Config {
   uint32_t magic=0x47524f31;
   bool enabled=false;
@@ -56,9 +56,10 @@ public:
       sequence++;if(count<EventCapacity)count++;
     }
   }
-  void tick(uint32_t now, const Config& c, bool fresh, float t,float h,float low,float high,Channel (&ch)[4],uint8_t testing=0) {
+  void tick(uint32_t now, const Config& c, bool fresh, float t,float h,float low,float high,Channel (&ch)[4],uint8_t testing=0,uint8_t safetyMask=0) {
     bool valid=fresh&&validReading(t,h);
     alarms=valid?0:SensorInvalid;
+    if(safetyMask)alarms|=SafetyLock;
     if(valid) {
       if(t>=c.criticalHot) alarms|=TooHot;
       if(t<=c.criticalCold) alarms|=TooCold;
