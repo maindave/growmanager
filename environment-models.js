@@ -8,8 +8,8 @@ function interpret(status,at=Date.now(),now=Date.now(),maximumAge=15){
  const value=fresh?vpd(status.temperature,status.humidity):null,min=env.vpdMin,max=env.vpdMax,target=finite(min)&&finite(max)&&max>min;
  return{value,age,fresh,state:value===null?'unknown':!target?'unconfigured':value<min?'low':value>max?'high':'optimal',alarms:Number(env.alarms)||0};
 }
-const alarmLabels=Object.freeze({1:'Sensor sin lectura válida: calefacción protegida.',2:'Temperatura crítica alta.',4:'Temperatura crítica baja.',8:'Humedad crítica alta.',16:'El ambiente no respondió como se esperaba. Revisá los equipos; la calefacción sin respuesta queda detenida.'});
+const alarmLabels=Object.freeze({1:'Sensor sin lectura válida: calefacción protegida.',2:'Temperatura crítica alta.',4:'Temperatura crítica baja.',8:'Humedad crítica alta.',16:'No se detectó la respuesta ambiental esperada. Revisá los equipos; esto no confirma una falla eléctrica.'});
 function stageForCultivation(stage){return ['germination','clone','rooting'].includes(stage)?0:['vegetative','mother'].includes(stage)?1:stage==='flowering'?2:3}
-function alarms(mask){return Object.entries(alarmLabels).filter(([bit])=>mask&Number(bit)).map(([,text])=>text)}
+function alarms(mask,status){return Object.entries(alarmLabels).filter(([bit])=>mask&Number(bit)).map(([bit,text])=>{if(Number(bit)!==16||!status?.environment?.failedOutputs)return text;const failed=(status.relays||[]).filter(r=>status.environment.failedOutputs&(1<<(Number(r.id)-1)));const names={heater:'Calefacción',extraction:'Extracción',intake:'Intracción',ventilation:'Ventilación'};return 'Respuesta ambiental insuficiente: '+failed.map(r=>names[r.function]||'Relé '+r.id).join(', ')+'. Revisá los equipos.'+(failed.some(r=>r.function==='heater')?' Calefacción detenida por protección.':'')})}
 globalThis.EnvironmentModels=Object.freeze({stages,valid,vpd,interpret,alarms,stageForCultivation});
 })();

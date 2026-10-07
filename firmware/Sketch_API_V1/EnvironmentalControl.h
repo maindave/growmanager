@@ -34,6 +34,8 @@ class Controller {
   bool initialized[4]={}, watching[4]={};
   float baseline[4]={};
   bool humidityWatch[4]={};
+  Role observedRole[4]={};
+  float watchedTarget[4]={};
   uint8_t failed=0, lastOutputs=0;
   uint16_t lastRoles=0,lastAlarms=0; uint8_t lastState=255,lastAutomatic=255,lastTesting=255; float lastMin=0,lastMax=0; bool lastEnabled=false;
   bool recorded=false;
@@ -43,6 +45,7 @@ public:
   Event events[EventCapacity];
   uint32_t sequence=0;
   uint8_t count=0;
+  uint8_t failedOutputs() const { return failed; }
   void acknowledge() { failed=0; for(int i=0;i<4;i++) watching[i]=false; }
   void record(uint32_t now,const Config& c,bool valid,float t,float h,Channel (&ch)[4],uint8_t outputs,uint8_t testing){
     float value=vpd(t,h); uint8_t state=!valid?3:value<c.vpdMin?0:value>c.vpdMax?2:1,automatic=0; uint16_t roles=0;
@@ -61,7 +64,7 @@ public:
       if(t<=c.criticalCold) alarms|=TooCold;
       if(h>=c.criticalHumidity) alarms|=HumidityCritical;
     }
-    if(!c.enabled){uint8_t outputs=0;for(int i=0;i<4;i++)if(ch[i].on)outputs|=1<<i;record(now,c,valid,t,h,ch,outputs,testing);return;}
+    if(!c.enabled){for(int i=0;i<4;i++)watching[i]=false;uint8_t outputs=0;for(int i=0;i<4;i++)if(ch[i].on)outputs|=1<<i;record(now,c,valid,t,h,ch,outputs,testing);return;}
     const float deficit=vpd(t,h);
     // Heating is temperature driven. VPD alone cannot justify drying a hot room.
     bool exchange=valid&&(t>high||(t>=low&&deficit<c.vpdMin&&h>70));
@@ -70,6 +73,7 @@ public:
     uint8_t outputs=0;
     for(int i=0;i<4;i++) {
       Channel& out=ch[i];
+      if(observedRole[i]!=out.role){watching[i]=false;failed&=~(1<<i);observedRole[i]=out.role;}
       if(out.role==None) { if(out.on) outputs|=1<<i; continue; }
       bool wanted=out.on, force=false;
       if(out.automatic) {
@@ -84,15 +88,18 @@ public:
         out.on=wanted; changed[i]=now; initialized[i]=true;
       }
       const bool exchangeRole=out.role==Extraction||out.role==Intake;
-      const bool supervise=valid&&out.on&&(out.role==Heater||((exchangeRole||out.role==Circulation)&&t>high)||(exchangeRole&&deficit<c.vpdMin&&h>70));
-      if(!valid) watching[i]=false;
+      const bool supervise=valid&&out.on&&out.automatic&&!(testing&(1<<i))&&(out.role==Heater||(exchangeRole&&t>high)||(exchangeRole&&deficit<c.vpdMin&&h>70));
+      const bool humidityGoal=exchangeRole&&t<=high;
+      const float target=humidityGoal?c.vpdMin:out.role==Heater?low+1:high;
+      if(watching[i]&&(humidityWatch[i]!=humidityGoal||watchedTarget[i]!=target))watching[i]=false;
+      if(!supervise) watching[i]=false;
       else if(watching[i]&&uint32_t(now-started[i])>=c.responseWindowMs) {
         float effect=humidityWatch[i]?baseline[i]-h:out.role==Heater?t-baseline[i]:baseline[i]-t;
         bool resolved=humidityWatch[i]?vpd(t,h)>=c.vpdMin:out.role==Heater?t>=low+1:t<=high;
         if(!resolved&&effect<(humidityWatch[i]?c.humidityResponseDelta:c.responseDelta)) failed|=1<<i;
         watching[i]=false;
       } else if(supervise&&!watching[i]) {
-        watching[i]=true; started[i]=now; humidityWatch[i]=exchangeRole&&t<=high;
+        watching[i]=true; started[i]=now; humidityWatch[i]=humidityGoal;watchedTarget[i]=target;
         baseline[i]=humidityWatch[i]?h:t;
       }
       if(out.on) outputs|=1<<i;

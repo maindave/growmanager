@@ -13,3 +13,7 @@ assert.equal(M.alarms(18).length,2);
 assert.equal(M.stageForCultivation('rooting'),0);assert.equal(M.stageForCultivation('mother'),1);assert.equal(M.stageForCultivation('flowering'),2);
 assert.equal(M.interpret(base,at,at+60000,120).state,'high');
 console.log('Environmental presentation: passed');
+
+assert.match(M.alarms(16,{environment:{failedOutputs:2},relays:[{id:2,function:'extraction'}]})[0],/Extracción/);
+assert.doesNotMatch(M.alarms(16,{environment:{failedOutputs:2},relays:[{id:2,function:'extraction'}]})[0],/Calefacción detenida/);
+assert.match(M.alarms(16,{environment:{failedOutputs:4},relays:[{id:3,function:'heater'}]})[0],/Calefacción detenida/);

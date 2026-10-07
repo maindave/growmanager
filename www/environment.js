@@ -18,7 +18,7 @@ function render(){
  const age=at?Math.max(0,Math.round((now-at)/1000)):null;
  $('environmentSummary').textContent=status?`${room?.name||(env.roomId?'Sala vinculada':'Sala sin vincular')} · ${useLocal?'Local':`Remoto · muestra de hace ${age} s`} · ${labels[report.state]}${env.vpdMin!=null?` · Objetivo ${env.vpdMin}–${env.vpdMax} kPa`:''}${env.enabled?'':' · Control supervisado desactivado'}`:'Sin conexión local ni telemetría remota disponible.';
  {$('temperature').textContent=status&&M().valid(status.temperature,status.humidity)?status.temperature.toFixed(1):'—';$('humidity').textContent=status&&M().valid(status.temperature,status.humidity)?status.humidity.toFixed(1):'—'}
- const alerts=M().alarms(report.alarms);if(status&&!report.fresh)alerts.unshift('La lectura está desactualizada. No permite evaluar el estado ambiental actual.');
+ const alerts=M().alarms(report.alarms,status);if(status&&!report.fresh)alerts.unshift('La lectura está desactualizada. No permite evaluar el estado ambiental actual.');
  if(!useLocal&&!status)globalThis.GrowDevice?.renderRemoteRelays?.([],false);
  if(status?.relays)globalThis.GrowDevice?.renderRemoteRelays?.(status.relays,report.fresh);
  $('environmentAlerts').innerHTML=alerts.map(text=>`<p>${esc(text)}</p>`).join('');

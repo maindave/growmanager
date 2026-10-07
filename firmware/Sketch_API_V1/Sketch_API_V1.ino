@@ -17,7 +17,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.2-environment-history-test";
+const char* firmwareVersion = "2.6.3-response-supervision";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -393,7 +393,7 @@ String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   json+=F(",\"humidityResponseDelta\":")+String(environmentConfig.humidityResponseDelta,1);
   json+=F(",\"exchangeOnSensorFailure\":")+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
   json+=F(",\"cloud\":")+cloudStatusJson();
-  json+=F(",\"alarms\":")+String(environmentController.alarms)+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
+  json+=F(",\"alarms\":")+String(environmentController.alarms)+F(",\"failedOutputs\":")+String(environmentController.failedOutputs())+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
   uint8_t count=environmentController.count<eventLimit?environmentController.count:eventLimit;
   uint32_t first=environmentController.sequence-count+1;
   if(recovering){
