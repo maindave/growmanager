@@ -1,3 +1,6 @@
+#if !defined(ARDUINO_ESP8266_WEMOS_D1R1)
+#error "This controller requires esp8266:esp8266:d1 (Wemos D1 R1)."
+#endif
 #include "RelayTestPolicy.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -17,7 +20,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.3-response-supervision";
+const char* firmwareVersion = "2.6.4-d1-r1-relay-diagnostics";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -1031,11 +1034,6 @@ void initializeHardware() {
 
   for (int i = 0; i < 4; i++) {
 
-    pinMode(
-      relayPins[i],
-      OUTPUT
-    );
-
     // Seguridad al iniciar
 
     digitalWrite(
@@ -1043,6 +1041,7 @@ void initializeHardware() {
       RELAY_OFF
     );
 
+    pinMode(relayPins[i], OUTPUT);
     relayStates[i] = false;
 
     Serial.print("Relay ");
@@ -2400,7 +2399,8 @@ void handleApiHardware() {
       relayPins[i]
     );
 
-    json += F("\"}");
+    json += F("\",\"gpio\":")+String(relayPins[i])+F(",\"outputHigh\":")+String(digitalRead(relayPins[i])==HIGH?"true":"false");
+    json += F("}");
 
     if (i < 3)
       json += F(",");
