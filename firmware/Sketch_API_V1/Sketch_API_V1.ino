@@ -17,11 +17,11 @@
 #include "CooperativeCloudTls.h"
 
 // ======================================================
-// ARDUINO CULTIVO V2.4
+// GROWMANAGER — WEMOS D1 R1
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.8-incubator";
+const char* firmwareVersion = "2.6.9-no-startup-latch";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -102,10 +102,6 @@ int relayPins[4] = {
 
 #define DHTTYPE DHT21
 DHT* dht = nullptr;
-
-#define SOIL_PIN A0
-
-bool soilEnabled = false;
 
 // ======================================================
 // RELAY LOGIC
@@ -263,9 +259,6 @@ bool timeSynced = false;
 // ======================================================
 
 unsigned long lastWiFiAttempt = 0;
-
-
-
 
 extern char environmentRoomId[37];
 const char* cloudHost = "rzkocbaztxasbnchgwwy.supabase.co";
@@ -1043,14 +1036,6 @@ void loadControlConfig() {
 
 void initializeHardware() {
 
-  Serial.println();
-  Serial.println("===== HARDWARE =====");
-
-  Serial.print("DHT21: ");
-  Serial.println(
-    pinToString(pinDHT)
-  );
-
   for (int i = 0; i < 4; i++) {
 
     // Seguridad al iniciar
@@ -1062,34 +1047,9 @@ void initializeHardware() {
 
     pinMode(relayPins[i], OUTPUT);
     relayStates[i] = false;
-    relaySafety[i].boot(relayFunctions[i]==FN_HEATER);
+    relaySafety[i].reset();
 
-    Serial.print("Relay ");
-    Serial.print(i + 1);
-    Serial.print(": ");
-
-    Serial.print(
-      pinToString(relayPins[i])
-    );
-
-    Serial.print(" / ");
-
-    Serial.print(
-      functionToString(
-        relayFunctions[i]
-      )
-    );
-
-    Serial.print(" / ");
-
-    Serial.println(
-      modeToString(
-        relayModes[i]
-      )
-    );
   }
-
-  Serial.println("====================");
 
   if (dht != nullptr) {
 
@@ -1426,10 +1386,6 @@ void readDHT() {
     }
   }
 }
-
-// ======================================================
-// GOOGLE SHEETS
-// ======================================================
 
 // ======================================================
 // CORS
@@ -2111,7 +2067,7 @@ void handleApiSetFunctions() {
     false
   );
 
-  if(roleChanged)relaySafety[index].boot(newFunction==FN_HEATER);
+  if(roleChanged)relaySafety[index].reset();
   saveFunctionConfig();
 
   runAutomations();
@@ -2246,7 +2202,6 @@ void handleApiSetConfig() {
      (environmentConfig.enabled&&(proposedMin<=environmentConfig.criticalCold||proposedMax>=environmentConfig.criticalHot))) {
     addCORS(); server.send(400,"application/json","{\"error\":\"invalid_temperature_range\"}"); return;
   }
-
 
   if(server.hasArg("relay")) {
     int index=server.arg("relay").toInt()-1;
@@ -2562,14 +2517,6 @@ void handleOptions() {
 
 void connectWiFi() {
 
-  Serial.println();
-
-  Serial.print(
-    "Conectando a "
-  );
-
-  Serial.println(ssid);
-
   WiFi.mode(
     WIFI_STA
   );
@@ -2598,45 +2545,9 @@ void connectWiFi() {
     readDHT();
     runAutomations();
     delay(500);
-    Serial.print(".");
+
   }
 
-  if (
-    WiFi.status() ==
-    WL_CONNECTED
-  ) {
-
-    Serial.println();
-
-    Serial.println(
-      "WiFi conectado"
-    );
-
-    Serial.print(
-      "IP: "
-    );
-
-    Serial.println(
-      WiFi.localIP()
-    );
-
-    Serial.print(
-      "RSSI: "
-    );
-
-    Serial.println(
-      WiFi.RSSI()
-    );
-  }
-
-  else {
-
-    Serial.println();
-
-    Serial.println(
-      "WiFi no disponible"
-    );
-  }
 }
 
 // ======================================================
@@ -2645,26 +2556,7 @@ void connectWiFi() {
 
 void setup() {
 
-  Serial.begin(115200);
-
   delay(200);
-
-  Serial.println();
-  Serial.println(
-    "=================================="
-  );
-
-  Serial.println(
-    "Arduino Cultivo V2.4"
-  );
-
-  Serial.println(
-    "Functions + Auto / Manual"
-  );
-
-  Serial.println(
-    "=================================="
-  );
 
   EEPROM.begin(
     EEPROM_SIZE
@@ -2835,10 +2727,6 @@ void setup() {
 
   server.begin();
 
-  Serial.println(
-    "API HTTP iniciada"
-  );
-
   // ----------------------------------------------------
   // mDNS
   // ----------------------------------------------------
@@ -2860,13 +2748,6 @@ void setup() {
         80
       );
 
-      Serial.println(
-        "mDNS iniciado"
-      );
-
-      Serial.println(
-        "http://armario-cultivo.local"
-      );
     }
   }
 
@@ -2880,13 +2761,6 @@ void setup() {
 
   ArduinoOTA.begin();
 
-  Serial.println(
-    "OTA iniciado"
-  );
-
-  Serial.println(
-    "Sistema listo"
-  );
 }
 
 // ======================================================
@@ -2927,10 +2801,6 @@ void loop() {
 
     lastWiFiAttempt =
       millis();
-
-    Serial.println(
-      "Intentando reconectar WiFi..."
-    );
 
     WiFi.disconnect();
 

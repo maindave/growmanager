@@ -3,9 +3,9 @@
 namespace GrowRelay {
 // All deadlines use elapsed monotonic time, independent of Internet and wall clock.
 struct Safety {
- enum Reason : uint8_t { Ready=0, StartupReview=1, SensorFault=2, Overtemperature=3, RuntimeLimit=4 };
+ enum Reason : uint8_t { Ready=0, SensorFault=2, Overtemperature=3, RuntimeLimit=4 };
  bool on=false; uint32_t started=0; Reason reason=Ready;
- void boot(bool heater){on=false;reason=heater?StartupReview:Ready;}
+ void reset(){on=false;started=0;reason=Ready;}
  bool request(uint32_t now,bool requested,bool heater,bool safe,uint32_t limit){
   if(on && reason==Ready && heater && !safe) reason=SensorFault;
   if(on && reason==Ready && limit && uint32_t(now-started)>=limit) reason=RuntimeLimit;

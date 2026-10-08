@@ -20,7 +20,7 @@ Se requiere observar el módulo y comprobar su polaridad real antes de habilitar
 
 ## Protección local 2.6.5
 
-Compilar únicamente para `esp8266:esp8266:d1` (D1 R1). La calefacción arranca apagada y bloqueada hasta revisar y rearmar desde Ambiente y protección. Sensor inválido, temperatura crítica o 15 minutos continuos detienen y bloquean la calefacción también en manual y con supervisión desactivada. La luz manual queda limitada a una hora; la luz automática necesita reloj válido y respeta su horario (incluida una configuración explícita de 24 horas). Repetir ON no renueva el límite.
+Compilar únicamente para `esp8266:esp8266:d1` (D1 R1). La calefacción arranca apagada; solo puede activarse con lectura válida y condiciones seguras. Sensor inválido, temperatura crítica o 15 minutos continuos detienen y bloquean la calefacción también en manual y con supervisión desactivada. La luz manual queda limitada a una hora; la luz automática necesita reloj válido y respeta su horario (incluida una configuración explícita de 24 horas). Repetir ON no renueva el límite.
 
 Estas protecciones actúan sobre órdenes de salida, no confirman el estado físico de la carga. No garantizan apagado con el controlador sin alimentación, relé soldado o entrada flotante. Antes de volver a la Sala, validar con una lámpara de prueba el apagado al retirar alimentación del Wemos manteniendo alimentado el módulo. La calefacción necesita protección térmica independiente. No reconectar equipos de riesgo hasta completar esa comprobación.
 
@@ -35,3 +35,6 @@ UART se desactiva antes de configurar los relés porque D1 utiliza GPIO1/TX. Las
 
 ## Incubadora (2.6.8)
 Función `incubator` con valor EEPROM 7; preserva los valores existentes 0–6. Se guarda y recupera en modo manual. No participa del control térmico/VPD ni tiene automatización propia definida. La API anuncia funciones compatibles para evitar que versiones anteriores reciban funciones desconocidas. La instalación OTA reinicia el controlador; coordinarla cuando la Sala pueda tolerar la interrupción.
+
+## Limpieza 2.6.9
+Eliminada la regla StartupReview, sin opción para habilitarla. El reinicio ya no exige rearme por sí mismo. Se conservan corte térmico, sensor válido, límites de tiempo y rearme ante fallas reales. Eliminadas las variables de suelo sin uso y las impresiones UART que no se utilizaban con GPIO1 asignado al relé. Los campos JSON de suelo en false se mantienen únicamente por compatibilidad con clientes existentes.

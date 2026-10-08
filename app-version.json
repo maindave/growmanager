@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.18",
-  "versionCode": 38,
+  "versionName": "2.6.19",
+  "versionCode": 39,
   "publishedAt": "2026-10-08T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Nueva función Incubadora para relés, con control manual y detección de firmware compatible."
+  "releaseNotes": "Eliminada la revisión obligatoria de calefacción tras arranque; se mantienen protecciones ante fallas reales."
 }
