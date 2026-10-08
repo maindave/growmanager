@@ -11,4 +11,5 @@ int main(){
  s.boot(false);assert(s.request(0,true,false,false,0));assert(s.request(4000000000u,true,false,false,0));
  s.boot(false);assert(s.request(0,true,false,true,3600000));assert(!s.request(3600000,true,false,true,3600000));
  s.boot(true);assert(!s.request(0,true,true,true,900000));
+ s.acknowledge(true);s.request(0,true,true,true,100);s.reason=Safety::Overtemperature;assert(!s.request(101,true,true,false,100));assert(s.reason==Safety::Overtemperature);
 }

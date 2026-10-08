@@ -7,8 +7,8 @@ struct Safety {
  bool on=false; uint32_t started=0; Reason reason=Ready;
  void boot(bool heater){on=false;reason=heater?StartupReview:Ready;}
  bool request(uint32_t now,bool requested,bool heater,bool safe,uint32_t limit){
-  if(on && heater && !safe) reason=SensorFault;
-  if(on && limit && uint32_t(now-started)>=limit) reason=RuntimeLimit;
+  if(on && reason==Ready && heater && !safe) reason=SensorFault;
+  if(on && reason==Ready && limit && uint32_t(now-started)>=limit) reason=RuntimeLimit;
   if(!requested || reason!=Ready || (heater&&!safe)){on=false;return false;}
   if(!on)started=now;
   on=true;return true;

@@ -29,3 +29,6 @@ El servidor revisa cada minuto y agrupa pérdidas de telemetría superiores a ci
 ## Cableado COM + NO (firmware 2.6.6)
 
 El módulo probado usa entradas activas en LOW: ON = LOW; OFF = HIGH. Las cargas deben estar verificadas en COM + NO. Esta polaridad reemplaza la adaptación anterior al cableado NC. No mezclar firmware y cableado de las dos variantes. Verificar físicamente la carga al desconectar únicamente el controlador manteniendo alimentado el módulo; los niveles GPIO no prueban el estado de los contactos ni garantizan protección con el controlador sin alimentación.
+
+## Revisión 2.6.7
+UART se desactiva antes de configurar los relés porque D1 utiliza GPIO1/TX. Las actualizaciones del mapa de pines se guardan en EEPROM y se aplican al reiniciar, sin cambiar el mapa activo durante operación. Esto no elimina los pulsos ROM previos al firmware ni garantiza el estado de entradas con el controlador sin alimentación; sigue siendo necesaria la validación física del circuito.

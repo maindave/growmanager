@@ -21,7 +21,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.6-no-active-low";
+const char* firmwareVersion = "2.6.7-relay-consistency";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -2522,16 +2522,10 @@ void handleApiSetHardware() {
     return;
   }
 
-  pinDHT =
-    newDHT;
-
-  for (int i = 0; i < 4; i++) {
-
-    relayPins[i] =
-      newRelays[i];
-  }
-
-  saveHardwareConfig();
+  // Persist the next map without moving live outputs. It applies at restart.
+  EEPROM.put(EEPROM_PIN_DHT,newDHT);
+  for(int i=0;i<4;i++)EEPROM.put(EEPROM_PIN_RELAY1+i*4,newRelays[i]);
+  int magic=HW_MAGIC_VALUE;EEPROM.put(EEPROM_HW_MAGIC,magic);EEPROM.commit();
 
   addCORS();
 
@@ -2687,6 +2681,8 @@ void setup() {
   String resetReason=ESP.getResetReason();
   if(cloudPairing.magic==0x47524331&&(resetReason.indexOf("Watchdog")>=0||resetReason.indexOf("Exception")>=0||cloudFault.magic==0x47524631)){cloudBlocked=true;cloudLastResult=-11;}
 
+  // GPIO1 is relay D1: disable UART before assigning relay outputs.
+  Serial.end();
   initializeHardware();
 
   connectWiFi();
