@@ -26,6 +26,7 @@
     return events.filter(actionable).flatMap(e=>occurrences(e,now,end))
       .sort((a,b)=>a.occurrenceStart-b.occurrenceStart).slice(0,4);
   }
-  function alerts(rows) { return rows.filter(r=>r.severity && r.severity!=='info' && !r.resolvedAt && !r.archivedAt); }
-  globalThis.TodayModels = Object.freeze({dayKey,lotAge,actionable,overdue,upcoming,alerts});
+  function alerts(rows) { return rows.filter(r=>r.severity && r.severity!=='info' && !r.resolvedAt && !r.archivedAt && !r.reviewedAt); }
+  function alertGroups(rows){const groups=new Map();for(const row of alerts(rows)){const key=JSON.stringify([row.category||row.kind,row.title,row.roomId||row.metadata?.roomId||row.cultivationId||row.metadata?.cultivationId||'',row.source||'log']);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);}return [...groups.values()];}
+  globalThis.TodayModels = Object.freeze({dayKey,lotAge,actionable,overdue,upcoming,alerts,alertGroups});
 })();

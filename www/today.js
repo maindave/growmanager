@@ -50,13 +50,13 @@
     const overdue=TodayModels.overdue(data.events);
     if(overdue.length)items.push({tasks:overdue,text:`${overdue.length} ${overdue.length===1?'tarea vencida':'tareas vencidas'}`});
     const alerts=TodayModels.alerts(records);
-    if(alerts.length)items.push({text:`${alerts.length} ${alerts.length===1?'alerta sin resolver':'alertas sin resolver'} en la bitácora`,view:'operations'});
+    if(alerts.length)items.push({text:`${alerts.length} ${alerts.length===1?'aviso por revisar':'avisos por revisar'} · Ver qué pasó y qué hacer`,view:'operations',alerts:true});
     if(device.online===true && device.sensorValid===false)items.push({text:'El sensor ambiental no entrega una lectura actual',view:'hardware'});
     // No hardware response is not a crop alert for a user who has no device configured.
     if(device.online===false && device.wasConnected)items.push({text:'Se perdió la conexión con el dispositivo',view:'connection'});
     if(cloud==='error'||cloud==='cached')items.push({text:cloud==='cached'?'Mostrando datos guardados en este dispositivo':'No se pudieron actualizar algunos datos del proyecto',view:'dashboard'});
     const node=$('todayAttention'),expanded=Boolean(node.querySelector('.attention-tasks')?.open);node.hidden=!items.length;
-    node.innerHTML=items.length?`<div class="attention-heading">${icon('alert')}<strong>${overdue.length?`${overdue.length} ${overdue.length===1?'tarea vencida':'tareas vencidas'}`:'Avisos'}</strong></div>${items.map(x=>x.tasks?`<details class="attention-tasks" ${expanded?'open':''}><summary>Ver tareas pendientes</summary><div>${x.tasks.map(event=>`<button class="attention-row" data-today-event="${esc(event.id)}"><span><strong>${esc(event.title)}</strong><small>${esc(relation(event))} · ${time(event.endsAt||event.startsAt)}</small></span><span aria-hidden="true">→</span></button>`).join('')}</div></details>`:`<button class="attention-row" data-view="${x.view}"><span>${esc(x.text)}</span><span aria-hidden="true">→</span></button>`).join('')}`:'';
+    node.innerHTML=items.length?`<div class="attention-heading">${icon('alert')}<strong>${overdue.length?`${overdue.length} ${overdue.length===1?'tarea vencida':'tareas vencidas'}`:'Avisos'}</strong></div>${items.map(x=>x.tasks?`<details class="attention-tasks" ${expanded?'open':''}><summary>Ver tareas pendientes</summary><div>${x.tasks.map(event=>`<button class="attention-row" data-today-event="${esc(event.id)}"><span><strong>${esc(event.title)}</strong><small>${esc(relation(event))} · ${time(event.endsAt||event.startsAt)}</small></span><span aria-hidden="true">→</span></button>`).join('')}</div></details>`:`<button class="attention-row" ${x.alerts?'data-open-alerts':`data-view="${x.view}"`}><span>${esc(x.text)}</span><span aria-hidden="true">→</span></button>`).join('')}`:'';
   }
   function renderRecent() {
     const recent=records.slice(0,3);
@@ -124,9 +124,10 @@
     document.querySelectorAll('[data-ui-icon]').forEach(n=>n.innerHTML=icon(n.dataset.uiIcon));
     $('todayDate').textContent=new Intl.DateTimeFormat('es-AR',{weekday:'long',day:'numeric',month:'long'}).format(new Date());
     document.addEventListener('click',async event=>{
-      const b=event.target.closest('[data-open-lot],[data-today-event],[data-lot-tab],[data-lot-link],[data-open-register],[data-existing-action]');
+      const b=event.target.closest('[data-open-alerts],[data-open-lot],[data-today-event],[data-lot-tab],[data-lot-link],[data-open-register],[data-existing-action]');
       if(!b)return;
       try {
+        if(b.hasAttribute('data-open-alerts')){await GrowNavigation.showView('operations');await Operations.openAlerts();}
         if(b.hasAttribute('data-open-register'))showRegister();
         if(b.dataset.existingAction)await existingAction(b.dataset.existingAction);
         if(b.dataset.openLot)await openLot(b.dataset.openLot);

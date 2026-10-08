@@ -9,3 +9,7 @@ assert.equal(M.overdue([base,{...base,status:'completed'},{...base,status:'cance
 assert.equal(M.alerts([{severity:'info'},{severity:'warning'},{severity:'error',resolvedAt:'today'},{severity:'error',archivedAt:'today'}]).length,1);
 assert.equal(M.upcoming([{...base,status:'completed'},{...base,status:'cancelled'},base],e=>[{...e,occurrenceStart:now}],now).length,1);
 console.log('Today presentation models: passed');
+
+assert.equal(TodayModels.alerts([{severity:"warning",reviewedAt:"2026-10-08",resolvedAt:null}]).length,0);
+
+assert.equal(M.alertGroups([{severity:'warning',title:'Conexión',roomId:'a'},{severity:'warning',title:'Conexión',roomId:'a'},{severity:'warning',title:'Conexión',roomId:'b'}]).length,2);

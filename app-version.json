@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.16",
-  "versionCode": 36,
+  "versionName": "2.6.17",
+  "versionCode": 37,
   "publishedAt": "2026-10-08T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Diagnóstico claro de bloqueos de seguridad. Firmware D1 R1 revisado para contactos NO."
+  "releaseNotes": "Avisos por revisar: acceso directo, repeticiones agrupadas, explicación y revisión sin borrar historial."
 }
