@@ -21,7 +21,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.7-relay-consistency";
+const char* firmwareVersion = "2.6.8-incubator";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -142,7 +142,8 @@ enum RelayFunction : byte {
   FN_HEATER = 3,
   FN_PUMP = 4,
   FN_EXTRACTION = 5,
-  FN_INTAKE = 6
+  FN_INTAKE = 6,
+  FN_INCUBATOR = 7
 };
 
 enum RelayMode : byte {
@@ -560,6 +561,7 @@ String functionToString(RelayFunction fn) {
       return "pump";
     case FN_EXTRACTION: return "extraction";
     case FN_INTAKE: return "intake";
+    case FN_INCUBATOR: return "incubator";
 
     default:
       return "none";
@@ -583,6 +585,7 @@ RelayFunction stringToFunction(String value) {
 
   if (value == "extraction") return FN_EXTRACTION;
   if (value == "intake") return FN_INTAKE;
+  if (value == "incubator") return FN_INCUBATOR;
 
   if (value == "pump")
     return FN_PUMP;
@@ -833,10 +836,10 @@ void loadFunctionConfig() {
         EEPROM_RELAY1_MODE + i
       );
 
-    if (fn > FN_INTAKE)
+    if (fn > FN_INCUBATOR)
       fn = FN_NONE;
 
-    if (mode > MODE_AUTO)
+    if (mode > MODE_AUTO || fn == FN_INCUBATOR)
       mode = MODE_MANUAL;
 
     relayFunctions[i] =
@@ -1657,7 +1660,7 @@ void handleApiStatus() { addCORS(); server.send(200,"application/json",buildStat
 void handleApiRelays() {
 
   String json =
-    F("{\"relays\":[");
+    F("{\"supportedFunctions\":[\"none\",\"light\",\"ventilation\",\"heater\",\"pump\",\"extraction\",\"intake\",\"incubator\"],\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
@@ -1892,7 +1895,7 @@ void handleApiDiagnostics() {
 void handleApiFunctions() {
 
   String json =
-    F("{\"relays\":[");
+    F("{\"supportedFunctions\":[\"none\",\"light\",\"ventilation\",\"heater\",\"pump\",\"extraction\",\"intake\",\"incubator\"],\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
@@ -2011,7 +2014,7 @@ void handleApiSetFunctions() {
       functionArg == "light" ||
       functionArg == "ventilation" ||
       functionArg == "heater" ||
-      functionArg == "pump" || functionArg == "extraction" || functionArg == "intake";
+      functionArg == "pump" || functionArg == "extraction" || functionArg == "intake" || functionArg == "incubator";
 
     if (!validFunction) {
 
@@ -2090,6 +2093,8 @@ void handleApiSetFunctions() {
       );
   }
 
+  // Incubator has no automatic strategy defined yet.
+  if(newFunction==FN_INCUBATOR)newMode=MODE_MANUAL;
   relayTests[index].active=false;
   bool roleChanged=relayFunctions[index]!=newFunction;
   relayFunctions[index] =

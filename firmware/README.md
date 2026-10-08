@@ -32,3 +32,6 @@ El módulo probado usa entradas activas en LOW: ON = LOW; OFF = HIGH. Las cargas
 
 ## Revisión 2.6.7
 UART se desactiva antes de configurar los relés porque D1 utiliza GPIO1/TX. Las actualizaciones del mapa de pines se guardan en EEPROM y se aplican al reiniciar, sin cambiar el mapa activo durante operación. Esto no elimina los pulsos ROM previos al firmware ni garantiza el estado de entradas con el controlador sin alimentación; sigue siendo necesaria la validación física del circuito.
+
+## Incubadora (2.6.8)
+Función `incubator` con valor EEPROM 7; preserva los valores existentes 0–6. Se guarda y recupera en modo manual. No participa del control térmico/VPD ni tiene automatización propia definida. La API anuncia funciones compatibles para evitar que versiones anteriores reciban funciones desconocidas. La instalación OTA reinicia el controlador; coordinarla cuando la Sala pueda tolerar la interrupción.
