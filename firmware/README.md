@@ -25,3 +25,7 @@ Compilar únicamente para `esp8266:esp8266:d1` (D1 R1). La calefacción arranca 
 Estas protecciones actúan sobre órdenes de salida, no confirman el estado físico de la carga. No garantizan apagado con el controlador sin alimentación, relé soldado o entrada flotante. Antes de volver a la Sala, validar con una lámpara de prueba el apagado al retirar alimentación del Wemos manteniendo alimentado el módulo. La calefacción necesita protección térmica independiente. No reconectar equipos de riesgo hasta completar esa comprobación.
 
 El servidor revisa cada minuto y agrupa pérdidas de telemetría superiores a cinco minutos y protecciones críticas. Esto crea avisos en Bitácora con la app cerrada. La entrega de notificaciones externas requiere un servicio configurado; no está incluida todavía.
+
+## Cableado COM + NO (firmware 2.6.6)
+
+El módulo probado usa entradas activas en LOW: ON = LOW; OFF = HIGH. Las cargas deben estar verificadas en COM + NO. Esta polaridad reemplaza la adaptación anterior al cableado NC. No mezclar firmware y cableado de las dos variantes. Verificar físicamente la carga al desconectar únicamente el controlador manteniendo alimentado el módulo; los niveles GPIO no prueban el estado de los contactos ni garantizan protección con el controlador sin alimentación.

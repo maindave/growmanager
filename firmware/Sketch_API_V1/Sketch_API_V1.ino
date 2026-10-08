@@ -21,7 +21,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.5-local-safety";
+const char* firmwareVersion = "2.6.6-no-active-low";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -111,8 +111,9 @@ bool soilEnabled = false;
 // RELAY LOGIC
 // ======================================================
 
-#define RELAY_ON HIGH
-#define RELAY_OFF LOW
+// Active-low module, loads connected to COM + NO. HIGH releases the coil.
+#define RELAY_ON LOW
+#define RELAY_OFF HIGH
 
 GrowRelay::Test relayTests[4];
 GrowRelay::Safety relaySafety[4];
