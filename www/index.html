@@ -11,9 +11,9 @@
 <link rel="apple-touch-icon" href="assets/grow-agent-orb.png">
 <title>GrowManager · Beta</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
-<link rel="stylesheet" href="style.css?v=2.6.21">
-<link rel="stylesheet" href="ui-foundations.css?v=2.6.21">
-<link rel="stylesheet" href="environment.css?v=2.6.21">
+<link rel="stylesheet" href="style.css?v=2.6.22">
+<link rel="stylesheet" href="ui-foundations.css?v=2.6.22">
+<link rel="stylesheet" href="environment.css?v=2.6.22">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -116,13 +116,13 @@
 <section id="todayAttention" class="today-attention" aria-label="Requiere atención" hidden></section>
 <section id="appUpdatePanel" class="panel app-update-panel" hidden><div class="app-update-icon">↥</div><div><strong id="appUpdateTitle">Actualización disponible</strong><p id="appUpdateText">Hay una nueva versión de Growmanager.</p></div><button id="downloadAppUpdate" class="primary-button compact" type="button">Actualizar app</button></section><div id="appUpdateMessage" class="message"></div>
 <div class="today-layout">
-<section class="today-section today-crops" data-dashboard-widget="cultivations"><div class="section-heading"><h3>Cultivos</h3><button class="text-button" data-view="cultivation">Ver todos →</button></div><div id="dashboardCultivations" class="today-crop-list"><p class="field-help">Cargando cultivos…</p></div></section>
-<section class="today-section today-next" data-dashboard-widget="agenda"><div class="section-heading"><h3>Próximo</h3><button class="text-button" data-view="agenda">Ver agenda →</button></div><div id="dashboardAgenda" class="today-list"><p class="field-help">Cargando próximos eventos…</p></div></section>
 <section class="today-section today-environment" data-dashboard-widget="environment"><div class="section-heading"><h3>Ambiente</h3><select id="dashboardEnvironmentRoom" aria-label="Sala de las mediciones"></select></div><p id="todayEnvironmentStatus" class="subtle">Buscando el dispositivo local…</p><div class="metrics-grid">
 <button class="metric-card metric-history-button temperature" type="button" data-environment-metric="temperature" aria-label="Ver histórico de temperatura de las últimas 48 horas"><div class="metric-icon">°</div><div><span>Temperatura</span><strong id="temperature">—</strong><small>°C</small></div></button>
 <button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 48 horas"><div class="metric-icon">%</div><div><span>Humedad</span><strong id="humidity">—</strong><small>%</small></div></button><button class="metric-card metric-history-button vpd" type="button" data-environment-metric="vpd" aria-label="Ver VPD y actuaciones de las últimas 48 horas"><div class="metric-icon">◇</div><div><span>VPD del aire</span><strong id="environmentVpd">—</strong><small>kPa</small></div></button></div><p id="environmentSummary" class="field-help" role="status" hidden>Esperando lectura ambiental.</p><div id="environmentAlerts" role="alert"></div></section>
-<section class="today-section today-recent" data-dashboard-widget="recent"><div class="section-heading"><h3>Actividad reciente</h3><button class="text-button" data-view="operations">Ver bitácora →</button></div><div id="todayRecent" class="today-list"><p class="field-help">Cargando actividad…</p></div></section>
 <section id="dashboardSystemsPanel" class="today-section today-systems" data-dashboard-widget="systems"><div class="section-heading"><h3>Dispositivos</h3><button class="text-button" data-view="control">Ver control →</button></div><div id="dashboardRelays" class="dashboard-systems"></div></section>
+<section class="today-section today-crops" data-dashboard-widget="cultivations"><div class="section-heading"><h3>Cultivos</h3><button class="text-button" data-view="cultivation">Ver todos →</button></div><div id="dashboardCultivations" class="today-crop-list"><p class="field-help">Cargando cultivos…</p></div></section>
+<section class="today-section today-next" data-dashboard-widget="agenda"><div class="section-heading"><h3>Próximo</h3><button class="text-button" data-view="agenda">Ver agenda →</button></div><div id="dashboardAgenda" class="today-list"><p class="field-help">Cargando próximos eventos…</p></div></section>
+<section class="today-section today-recent" data-dashboard-widget="recent"><div class="section-heading"><h3>Actividad reciente</h3><button class="text-button" data-view="operations">Ver bitácora →</button></div><div id="todayRecent" class="today-list"><p class="field-help">Cargando actividad…</p></div></section>
 </div>
 <details class="panel dashboard-collapse today-device-detail" data-dashboard-widget="telemetry"><summary><span><strong>Detalles del dispositivo y energía</strong><small>Conexión, diagnóstico y consumo estimado</small></span><span class="collapse-hint">Mostrar</span></summary><div class="collapse-body">
 <p id="deviceSummary" class="subtle">Esperando datos del dispositivo local.</p><div class="last-update"><span>Última actualización</span><strong id="lastUpdate">Nunca</strong><small id="offlineSince"></small></div><p class="field-help">Firmware <span id="firmwareVersion">—</span></p>

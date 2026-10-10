@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.21",
-  "versionCode": 41,
+  "versionName": "2.6.22",
+  "versionCode": 42,
   "publishedAt": "2026-10-10T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Proyecto sin repeticiones, estilos renovados y semana calculada desde el inicio de cada cultivo."
+  "releaseNotes": "Hoy: métricas, controles y luego cultivos en filas compactas con semana visible."
 }
