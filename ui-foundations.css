@@ -213,3 +213,9 @@ html:root .room-container{padding:0;border:1px solid var(--border);border-radius
  .bottom-nav .nav-register .ui-icon{width:40px;height:36px;padding:6px 8px;color:var(--bg);border-radius:12px}
  .bottom-nav .nav-item small{display:block;line-height:16px;margin:0;white-space:nowrap}
 }
+
+/* Cultivos y su semana actual a primera vista en Hoy. */
+.today-layout>.today-crops{grid-column:1;grid-row:1;order:-1}
+.today-layout>.today-next{grid-column:1;grid-row:2 / span 2}
+.today-lot-copy>.today-lot-age{font-size:1rem;font-weight:700;color:var(--text)}
+@media(max-width:760px){.today-layout>.today-crops,.today-layout>.today-next{grid-column:auto;grid-row:auto}}

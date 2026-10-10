@@ -63,3 +63,30 @@ html[data-theme="light"] .semantic-icon.flowering{background:#f0e2f6;color:#8747
 .plant-batch-row label{min-width:0}.plant-batch-row :is(input,select){min-width:0;width:100%}.crop-plant-groups summary{cursor:pointer}.plant-selection-group summary{cursor:pointer;font-size:.85rem}
 
 .app-dialog.plant-management-dialog{width:min(900px,calc(100vw - 24px));max-width:900px}.plant-batch-row{grid-template-columns:2fr 1.3fr .8fr 1fr auto}@media(max-width:700px){.plant-batch-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Semana de cultivo visible al comienzo de Hoy. */
+.today-layout>.today-crops,html:not([data-connect="true"]) .today-layout>.today-crops{grid-column:1/-1;grid-row:1;order:-1}
+.today-layout>.today-environment,.today-layout>.today-systems{grid-row:2}
+.today-layout>.today-next{grid-column:1;grid-row:3}
+.today-layout>.today-recent,html:not([data-connect="true"]) .today-layout>.today-recent{grid-column:2;grid-row:3}
+@media(max-width:760px){.today-layout>.today-section,html:not([data-connect="true"]) .today-layout>.today-crops,html:not([data-connect="true"]) .today-layout>.today-recent{grid-column:1;grid-row:auto}}
+
+/* Encabezado y selector de proyecto compactos en el teléfono. */
+@media(max-width:919px){
+ .mobile-header{min-height:54px;padding-top:max(env(safe-area-inset-top),8px);padding-bottom:6px;gap:4px 8px}
+ .mobile-header .brand{gap:8px}
+ .mobile-header .brand-mark{width:28px;height:28px;flex:0 0 28px;font-size:16px}
+ .mobile-header .brand strong{display:block;font-size:14px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .mobile-header .mobile-cloud{font-size:10px;line-height:1.2}
+ .mobile-header .theme-mobile,.mobile-header>.voice-fab{width:34px!important;height:34px!important;min-height:34px;min-width:34px!important;flex:0 0 34px!important;padding:4px}
+ .mobile-header .mini-status{font-size:10px;line-height:1;margin-top:0}
+ .mobile-project-bar{display:flex;align-items:center;gap:6px;padding:6px 0;margin:0;border-bottom:1px solid var(--border)}
+ .mobile-project-bar>label{flex:1;min-width:0;margin:0;gap:0;font-size:0}
+ .mobile-project-bar select{width:100%;height:36px;min-height:36px;padding:5px 8px;font-size:13px;border-radius:8px}
+ .mobile-project-bar>.icon-button{width:36px;height:36px;min-height:36px;flex:0 0 36px;padding:5px;font-size:16px}
+ .today-view #dashboardProjectName{display:none}
+ main{padding-top:10px}
+ .today-heading{margin:0 0 14px}
+ .today-heading h2{font-size:1.5rem}
+ .today-heading #todayDate{margin-top:4px;font-size:13px}
+}
