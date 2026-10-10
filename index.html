@@ -11,9 +11,9 @@
 <link rel="apple-touch-icon" href="assets/grow-agent-orb.png">
 <title>GrowManager · Beta</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
-<link rel="stylesheet" href="style.css?v=20261003-controller">
-<link rel="stylesheet" href="ui-foundations.css?v=20261008-no-startup-latch">
-<link rel="stylesheet" href="environment.css">
+<link rel="stylesheet" href="style.css?v=2.6.21">
+<link rel="stylesheet" href="ui-foundations.css?v=2.6.21">
+<link rel="stylesheet" href="environment.css?v=2.6.21">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -109,7 +109,7 @@
 <div class="mobile-project-bar"><label>Proyecto<select id="mobileWorkspaceSelect" aria-label="Proyecto activo"></select></label><button id="mobileCloudRefresh" class="icon-button" type="button" aria-label="Actualizar proyectos" title="Actualizar">↻</button><button id="mobileSignOutButton" class="icon-button" type="button" aria-label="Cerrar sesión" title="Salir">↪</button></div>
 <main>
 <section class="view active today-view" data-view-panel="dashboard">
-<div class="page-heading today-heading"><div><p id="dashboardProjectName" class="project-subtitle">Proyecto</p><h2>Hoy</h2><p id="todayDate" class="subtle"></p></div><button class="primary-button" type="button" data-open-register>+ Registrar</button></div>
+<div class="page-heading today-heading"><div><p id="dashboardProjectName" hidden></p><h2>Hoy</h2><p id="todayDate" class="subtle"></p></div><button class="primary-button" type="button" data-open-register>+ Registrar</button></div>
 <button id="exitLocalMode" class="text-button" type="button" hidden>Salir del modo local</button>
 
 <div id="todayLoadMessage" class="message" role="status"></div>

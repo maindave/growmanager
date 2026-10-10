@@ -90,3 +90,5 @@ html[data-theme="light"] .semantic-icon.flowering{background:#f0e2f6;color:#8747
  .today-heading h2{font-size:1.5rem}
  .today-heading #todayDate{margin-top:4px;font-size:13px}
 }
+
+#dashboardProjectName,#environmentSummary[hidden]{display:none!important}

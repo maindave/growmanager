@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.20",
-  "versionCode": 40,
+  "versionName": "2.6.21",
+  "versionCode": 41,
   "publishedAt": "2026-10-10T00:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Inicio compacto: proyecto más pequeño, cultivos y semanas visibles arriba y lecturas ambientales sin leyenda."
+  "releaseNotes": "Proyecto sin repeticiones, estilos renovados y semana calculada desde el inicio de cada cultivo."
 }
