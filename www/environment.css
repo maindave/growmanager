@@ -133,3 +133,7 @@ html:root .today-environment .metric-card[data-environment-metric]{background:va
 .today-environment .sensor-card-state>span{white-space:normal}
 @media(max-width:760px){html[data-local-mode=true] .today-layout>.today-environment,html[data-local-mode=true] .today-layout>.today-systems{grid-column:1/-1;grid-row:auto}}
 .today-environment .sensor-card-heading>span,.today-environment .sensor-card-state>span,.today-environment .sensor-card-target,.today-environment .sensor-card-target>span{margin:0}
+/* Planning is edited in Cultivos; Agenda keeps visibility controls only. */
+.agenda-track-list .agenda-stage-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.agenda-stage-row>label{display:flex;align-items:center;gap:8px;min-width:180px;font-weight:600}.agenda-stage-row input[type=checkbox]{width:auto;min-height:20px}.agenda-stage-row>span{flex:1;min-width:180px;font-size:.85rem;color:var(--text-muted)}
+#cultivationDialog [data-stage-end-label]{display:block}#cultivationDialog .field-help{display:block;margin-top:6px;font-size:.8rem}

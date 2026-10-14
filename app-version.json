@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.25",
-  "versionCode": 45,
-  "publishedAt": "2026-10-14T11:57:10-03:00",
+  "versionName": "2.6.26",
+  "versionCode": 46,
+  "publishedAt": "2026-10-14T13:55:13-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Corrección del guardado al editar el inicio de una etapa de cultivo: conserva el historial y muestra mensajes claros ante fechas incompatibles."
+  "releaseNotes": "Etapas y plazos propios por cultivo: fin de esquejes y enraizado, duración de vegetativo o flora y agenda sincronizada con la etapa actual."
 }

@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import '../cultivo-models.js';
+import '../nutrition-calendar.js';
+const M=globalThis.CultivoModels,N=globalThis.NutritionCalendar;
+assert.equal(M.stagePlan({currentStage:'clone',stageStartedOn:'2026-10-15',stagePlannedEndOn:'2026-10-24'}).end,'2026-10-24');
+assert.equal(M.stagePlan({currentStage:'vegetative',stageStartedOn:'2026-10-31',vegetativeWeeks:3}).end,'2026-11-21');
+assert.equal(M.stagePlan({currentStage:'flowering',stageStartedOn:'2026-11-22',floweringWeeks:8}).end,'2027-01-17');
+assert.equal(M.stagePlan({currentStage:'mother',cultivationMode:'continuous',stagePlannedEndOn:'2026-10-20'}).end,null);
+assert.equal(M.validateCultivation({name:'QA',startDate:'2026-10-14',stageStartedOn:'2026-10-15',stagePlannedEndOn:'2026-10-13',currentStage:'clone'}).valid,false);
+const clone={id:'l',stage:'clone',nutritionProfile:'full_cycle',vegetativeWeeks:2,floweringWeeks:8,timelineStartedOn:'2026-10-15',timelineEndOn:'2026-10-24'};
+assert.equal(N.profileKey(clone),'rooting');assert.ok(N.planFor(clone).every(p=>p.expectedStage==='rooting'));
+assert.equal(N.phaseAt(clone,'2026-12-01').stage,'rooting','An overdue clone must not become vegetative by calendar');
+const veg={...clone,stage:'vegetative',vegetativeWeeks:3,floweringWeeks:8};
+assert.equal(N.planFor(veg).length,3);assert.ok(N.planFor(veg).every(p=>!p.flowerWeek));
+const flower={...clone,stage:'flowering',vegetativeWeeks:4,floweringWeeks:8};
+assert.equal(N.planFor(flower).length,8);assert.ok(N.planFor(flower).every(p=>p.flowerWeek));
+assert.equal(N.phaseAt(clone,'2026-10-15',[{lotId:'l',weekNumber:1,expectedStage:'rooting',actualStage:'development'}]).stage,'rooting','A foreign subphase cannot override clone stage');
+console.log('Stage planning: dates, phase-only fields, no automatic future stages and nutrition isolation passed');
