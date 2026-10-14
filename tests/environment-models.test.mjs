@@ -16,4 +16,11 @@ console.log('Environmental presentation: passed');
 
 assert.match(M.alarms(16,{environment:{failedOutputs:2},relays:[{id:2,function:'extraction'}]})[0],/Extracción/);
 assert.doesNotMatch(M.alarms(16,{environment:{failedOutputs:2},relays:[{id:2,function:'extraction'}]})[0],/Calefacción detenida/);
-assert.match(M.alarms(16,{environment:{failedOutputs:4},relays:[{id:3,function:'heater'}]})[0],/Calefacción detenida/);
+assert.doesNotMatch(M.alarms(16,{environment:{failedOutputs:4},relays:[{id:3,function:'heater'}]})[0],/detenida/);
+
+const env={heaterSensorProtectionEnabled:true,heaterSensorTimeoutSeconds:300,safety:[0,0,0,2]};
+assert.equal(M.heaterProtection({id:4,function:'heater'},env).blocked,true);
+for(const fn of ['light','ventilation','extraction','intake','incubator','pump','none'])assert.equal(M.heaterProtection({id:4,function:fn},env).blocked,false);
+assert.equal(M.heaterProtection({id:3,function:'heater'},env).blocked,false);
+assert.equal(M.heaterProtection({id:4,function:'heater'},{}).blocked,false);
+assert.equal(M.heaterProtection({id:4,function:'heater'},env).minutes,5);

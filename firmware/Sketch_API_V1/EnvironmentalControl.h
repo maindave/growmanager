@@ -78,12 +78,12 @@ public:
       if(out.role==None) { if(out.on) outputs|=1<<i; continue; }
       bool wanted=out.on, force=false;
       if(out.automatic) {
-        if(out.role==Heater) wanted=valid&&(out.on?t<low+1:t<low)&&!exchange&&!exchangeRunning;
+        if(out.role==Heater) wanted=valid?((out.on?t<low+1:t<low)&&!exchange&&!exchangeRunning):out.on;
         else if(out.role==Extraction||out.role==Intake) wanted=exchange||(valid&&out.on&&t>high-1);
         // Circulation retains its existing interval strategy, independent of air exchange.
       }
-      if(out.role==Heater&&(exchange||exchangeRunning)) { wanted=false; force=true; }
-      if(out.role==Heater&&(!valid||(alarms&TooHot)||(failed&(1<<i)))) { wanted=false; force=true; }
+      // Sensor loss is handled by the configurable heater-only latch in the firmware.
+      // Temperature and response alarms are diagnostic; manual control stays manual.
       if((out.role==Extraction||out.role==Intake)&&((alarms&TooHot)||(!valid&&c.exchangeOnSensorFailure))) { wanted=true; force=true; }
       if(wanted!=out.on&&(force||!initialized[i]||uint32_t(now-changed[i])>=c.minimumSwitchMs)) {
         out.on=wanted; changed[i]=now; initialized[i]=true;
@@ -106,8 +106,7 @@ public:
       if(out.on) outputs|=1<<i;
     }
     if(failed) alarms|=NoResponse;
-    // A heater with an ineffective response is stopped in this same tick.
-    for(int i=0;i<4;i++) if(ch[i].role==Heater&&(failed&(1<<i))) { ch[i].on=false; outputs&=~(1<<i); }
+
     record(now,c,valid,t,h,ch,outputs,testing);
   }
 };

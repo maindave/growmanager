@@ -21,7 +21,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.9-no-startup-latch";
+const char* firmwareVersion = "2.6.10-heater-sensor-timeout";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -38,6 +38,7 @@ const char* password = "10203040";
 #define EEPROM_SIZE 1024
 #define EEPROM_CLOUD 384
 #define EEPROM_ENVIRONMENT 256
+#define EEPROM_SENSOR_PROTECTION 512
 
 // Hardware
 #define EEPROM_HW_MAGIC       40
@@ -113,8 +114,7 @@ DHT* dht = nullptr;
 
 GrowRelay::Test relayTests[4];
 GrowRelay::Safety relaySafety[4];
-const uint32_t heaterMaximumOnMs=15UL*60UL*1000UL;
-const uint32_t manualLightMaximumOnMs=60UL*60UL*1000UL;
+GrowRelay::SensorProtectionConfig sensorProtection;
 
 bool relayStates[4] = {
   false,
@@ -278,7 +278,8 @@ bool cloudWorking=false,cloudSchedulerReady=false;
 uint32_t environmentLastControlAt=0,environmentMaximumCloudGapMs=0;
 bool cloudAttempted=false,cloudHadSuccess=false,cloudBlocked=false,cloudWasActive=false;
 int cloudLastResult=0;
-static_assert(EEPROM_CLOUD+sizeof(CloudPairing)<=EEPROM_SIZE,"Cloud EEPROM overflow");
+static_assert(EEPROM_CLOUD+sizeof(CloudPairing)<=EEPROM_SENSOR_PROTECTION,"Cloud EEPROM overflow");
+static_assert(EEPROM_SENSOR_PROTECTION+sizeof(sensorProtection)<=EEPROM_SIZE,"Protection EEPROM overflow");
 uint32_t cloudUtcEpoch() { time_t now=time(nullptr); return now>0?uint32_t(now):0; }
 uint32_t roomEpoch() { uint32_t utc=cloudUtcEpoch();return utc>=1700000000?utc-10800UL:0; }
 int roomHours() { return (roomEpoch()%86400UL)/3600; }
@@ -352,12 +353,16 @@ static_assert(EEPROM_ENVIRONMENT + sizeof(GrowEnvironment::Config) + 37 <= EEPRO
 bool environmentSensorFresh() {
   return dhtReadingFresh && dhtHasValidReading && millis()-lastDHTSuccessAt <= 15000UL;
 }
+uint32_t heaterSensorAgeMs() { return dhtHasValidReading ? uint32_t(millis()-lastDHTSuccessAt) : millis(); }
 void saveEnvironmentConfig() {
+  EEPROM.put(EEPROM_SENSOR_PROTECTION,sensorProtection);
   EEPROM.put(EEPROM_ENVIRONMENT, environmentConfig);
   for (unsigned int i=0;i<sizeof(environmentRoomId);i++) EEPROM.write(EEPROM_ENVIRONMENT+sizeof(environmentConfig)+i, environmentRoomId[i]);
   EEPROM.commit();
 }
 void loadEnvironmentConfig() {
+  EEPROM.get(EEPROM_SENSOR_PROTECTION,sensorProtection);
+  if(!GrowRelay::validConfig(sensorProtection)) sensorProtection=GrowRelay::SensorProtectionConfig();
   EEPROM.get(EEPROM_ENVIRONMENT, environmentConfig);
   if (!GrowEnvironment::validConfig(environmentConfig)) { environmentConfig=GrowEnvironment::Config(); saveEnvironmentConfig(); }
   for (unsigned int i=0;i<sizeof(environmentRoomId);i++) environmentRoomId[i]=EEPROM.read(EEPROM_ENVIRONMENT+sizeof(environmentConfig)+i);
@@ -398,8 +403,9 @@ String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   json+=F(",\"humidityResponseDelta\":")+String(environmentConfig.humidityResponseDelta,1);
   json+=F(",\"exchangeOnSensorFailure\":")+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
   json+=F(",\"safety\":[");for(int i=0;i<4;i++){if(i)json+=",";json+=String((int)relaySafety[i].reason);}json+="]";
-  json+=F(",\"heaterMaximumOnSeconds\":")+String(heaterMaximumOnMs/1000);
-  json+=F(",\"manualLightMaximumOnSeconds\":")+String(manualLightMaximumOnMs/1000);
+  json+=F(",\"heaterSensorProtectionEnabled\":")+String(sensorProtection.enabled?"true":"false");
+  json+=F(",\"heaterSensorTimeoutSeconds\":")+String(sensorProtection.timeoutSeconds);
+  json+=F(",\"heaterSensorAgeSeconds\":")+String(heaterSensorAgeMs()/1000);
   json+=F(",\"cloud\":")+cloudStatusJson();
   json+=F(",\"alarms\":")+String(environmentController.alarms)+F(",\"failedOutputs\":")+String(environmentController.failedOutputs())+",\"sequence\":"+String(environmentController.sequence)+",\"events\":[";
   uint8_t count=environmentController.count<eventLimit?environmentController.count:eventLimit;
@@ -425,6 +431,17 @@ String environmentJson() { return environmentJsonWithEvents(16,false); }
 void handleEnvironment() { addCORS(); server.send(200,"application/json",environmentJson()); }
 void handleSetEnvironment() {
   GrowEnvironment::Config next=environmentConfig;
+  GrowRelay::SensorProtectionConfig nextProtection=sensorProtection;
+  if(server.hasArg("heaterSensorProtectionEnabled")) {
+    String enabled=server.arg("heaterSensorProtectionEnabled");
+    if(enabled!="0"&&enabled!="1"){addCORS();server.send(400,"application/json","{\"error\":\"invalid_sensor_protection\"}");return;}
+    nextProtection.enabled=enabled=="1";
+  }
+  if(server.hasArg("heaterSensorTimeoutSeconds")) {
+    String raw=server.arg("heaterSensorTimeoutSeconds");char* end=nullptr;float seconds=strtof(raw.c_str(),&end);
+    if(raw.length()==0||end==raw.c_str()||*end!=0||!isfinite(seconds)||floorf(seconds)!=seconds||seconds<60||seconds>3600){addCORS();server.send(400,"application/json","{\"error\":\"invalid_sensor_protection\"}");return;}
+    nextProtection.timeoutSeconds=(uint32_t)seconds;
+  }
   const char* numericFields[]={"stage","vpdMin","vpdMax","criticalHot","criticalCold","criticalHumidity","minimumSwitchSeconds","responseSeconds","responseDelta","humidityResponseDelta"};
   for(unsigned int i=0;i<sizeof(numericFields)/sizeof(numericFields[0]);i++) if(server.hasArg(numericFields[i])) {
     String raw=server.arg(numericFields[i]); char* end=nullptr; float number=strtof(raw.c_str(),&end);
@@ -460,6 +477,8 @@ void handleSetEnvironment() {
     addCORS(); server.send(409,"application/json","{\"error\":\"environment_sensor_unavailable\"}"); return;
   }
   if(room!=String(environmentRoomId)) clearCloudPairing();
+  sensorProtection=nextProtection;
+  for(int i=0;i<4;i++)setRelayState(i+1,relayStates[i]);
   environmentConfig=next; room.toCharArray(environmentRoomId,sizeof(environmentRoomId)); saveEnvironmentConfig();
   runEnvironmentControl(); handleEnvironment();
 }
@@ -470,13 +489,12 @@ void handleRelayTest() {
   if(seconds<1||seconds>30){addCORS();server.send(400,"application/json","{\"error\":\"invalid_test_duration\"}");return;}
   if(state=="cancel"){if(relayTests[i].active)setRelayState(id,relayTests[i].stop());runAutomations();addCORS();server.send(200,"application/json","{\"ok\":true}");return;}
   bool on=state=="on";
-  if(on&&relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot||(environmentController.alarms&GrowEnvironment::NoResponse))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
   if(!on&&environmentConfig.enabled&&(relayFunctions[i]==FN_EXTRACTION||relayFunctions[i]==FN_INTAKE)&&(temperature>=environmentConfig.criticalHot||(!environmentSensorFresh()&&environmentConfig.exchangeOnSensorFailure))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
   bool previous=relayStates[i];if(!setRelayState(id,on)){addCORS();server.send(409,"application/json","{\"error\":\"safety_lock_requires_review\"}");return;}relayTests[i].begin(millis(),on,previous,seconds);runEnvironmentControl();
   addCORS();server.send(200,"application/json","{\"ok\":true,\"seconds\":"+String(seconds)+"}");
 }
 void handleAcknowledgeEnvironment() {
-  if(!environmentSensorFresh()||!GrowEnvironment::validReading(temperature,humidity)||temperature>=environmentConfig.criticalHot){addCORS();server.send(409,"application/json","{\"error\":\"unsafe_to_rearm\"}");return;}
+  if(!environmentSensorFresh()||!GrowEnvironment::validReading(temperature,humidity)){addCORS();server.send(409,"application/json","{\"error\":\"unsafe_to_rearm\"}");return;}
   environmentController.acknowledge();
   for(int i=0;i<4;i++)relaySafety[i].acknowledge(true);
   runEnvironmentControl();handleEnvironment();
@@ -1084,11 +1102,8 @@ bool setRelayState(
   int index =
     relayNumber - 1;
 
-  bool heater=relayFunctions[index]==FN_HEATER;
-  bool safe=environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity)&&temperature<environmentConfig.criticalHot&&!(environmentController.failedOutputs()&(1<<index));
-  if(heater&&relaySafety[index].on&&temperature>=environmentConfig.criticalHot)relaySafety[index].reason=GrowRelay::Safety::Overtemperature;
-  uint32_t limit=heater?heaterMaximumOnMs:(relayFunctions[index]==FN_LIGHT&&relayModes[index]!=MODE_AUTO?manualLightMaximumOnMs:0);
-  bool accepted=relaySafety[index].request(millis(),state,heater,safe,limit);
+  bool accepted=relaySafety[index].request(state,relayFunctions[index]==FN_HEATER,
+    sensorProtection.enabled,heaterSensorAgeMs(),sensorProtection.timeoutSeconds*1000UL);
   bool requested=state;
   state=accepted;
   digitalWrite(
@@ -1224,10 +1239,7 @@ void automaticHeaterControl() {
     return;
 
   if(relayTests[relay].active)return;
-  if (!dhtReadingFresh) {
-    setRelayState(relay + 1, false);
-    return;
-  }
+  if (!environmentSensorFresh()) return; // Keep previous command during the configured grace period.
 
   if (
     temperature < tempMin
@@ -1308,11 +1320,10 @@ void automaticVentilationControl() {
 // ======================================================
 
 void runAutomations() {
-  // Enforce protection before every control cycle, including manual operation.
-  for(int i=0;i<4;i++)if(relayStates[i])setRelayState(i+1,true);
+  // Evaluate every channel, including OFF: the latch follows the heater assignment.
+  for(int i=0;i<4;i++)setRelayState(i+1,relayStates[i]);
   for(int i=0;i<4;i++){
-    if(relayTests[i].active&&relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot)){relayTests[i].state=false;setRelayState(i+1,false);}
-    if(relayTests[i].expired(millis())){bool previous=relayTests[i].stop();if(relayFunctions[i]==FN_HEATER&&(!environmentSensorFresh()||temperature>=environmentConfig.criticalHot))previous=false;setRelayState(i+1,previous);}
+    if(relayTests[i].expired(millis()))setRelayState(i+1,relayTests[i].stop());
   }
 
   automaticLightControl();
@@ -1768,10 +1779,6 @@ void handleApiSetRelay() {
     return;
   }
 
-  if(newState && relayFunctions[index]==FN_HEATER &&
-    (!environmentSensorFresh() || temperature>=environmentConfig.criticalHot || (environmentController.alarms&GrowEnvironment::NoResponse))) {
-    addCORS(); server.send(409,"application/json","{\"error\":\"environment_protection_active\"}"); return;
-  }
   relayTests[index].active=false;
   if(!setRelayState(relayId,newState)){addCORS();server.send(409,"application/json","{\"error\":\"safety_lock_requires_review\"}");return;}
   runEnvironmentControl();

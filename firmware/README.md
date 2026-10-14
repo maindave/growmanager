@@ -38,3 +38,15 @@ Función `incubator` con valor EEPROM 7; preserva los valores existentes 0–6. 
 
 ## Limpieza 2.6.9
 Eliminada la regla StartupReview, sin opción para habilitarla. El reinicio ya no exige rearme por sí mismo. Se conservan corte térmico, sensor válido, límites de tiempo y rearme ante fallas reales. Eliminadas las variables de suelo sin uso y las impresiones UART que no se utilizaban con GPIO1 asignado al relé. Los campos JSON de suelo en false se mantienen únicamente por compatibilidad con clientes existentes.
+
+## Protección de calefacción (2.6.10, reemplaza las reglas 2.6.5–2.6.9)
+
+El único bloqueo retenido se aplica a la función `heater`, en el enchufe actualmente asignado. Se activa después de 300 segundos sin una lectura válida del DHT, medidos desde la última lectura correcta o desde el arranque si nunca hubo datos. Afecta manual, automático y pruebas. Antes del plazo no corta por pérdida del sensor; el automático conserva su orden previa durante ese intervalo. Una lectura válida reinicia el plazo, pero un bloqueo ya disparado requiere rearme con el sensor recuperado. Reiniciar el controlador reinicia el estado en memoria y arranca con las salidas apagadas.
+
+Luz, ventilación, extracción, intracción, bomba e incubadora quedan fuera del bloqueo. Se eliminaron los límites de encendido continuo y los bloqueos por temperatura y respuesta insuficiente. Los avisos ambientales y la regulación automática por temperatura siguen disponibles. Cambiar la función del enchufe limpia el bloqueo anterior; asignar calefacción evalúa la antigüedad real del sensor.
+
+`POST /api/environment` admite `heaterSensorProtectionEnabled=0|1` y `heaterSensorTimeoutSeconds=60..3600` (entero). Se guardan en un registro independiente de EEPROM en 512, sin mover salas, pines ni configuración existente. Desactivar libera el bloqueo sin encender una salida manual apagada. La configuración se muestra en Control → Ambiente y protección → Protección de calefacción, en minutos (1–60). `GET /api/environment` y `/api/status` anuncian soporte, plazo, antigüedad del sensor y motivos por canal (`0` libre, `2` bloqueado por sensor).
+
+La interfaz muestra un punto rojo en el icono de calefacción y el texto «Bloqueada · Sin datos del sensor». Desde la tarjeta se accede a la configuración y al rearme. La incubadora no hereda el indicador al reutilizar un enchufe. Las versiones anteriores muestran un aviso de actualización y no ofrecen guardar ajustes que el controlador no admite.
+
+Validación local: pruebas C++ de plazo exacto, tiempo configurable, movimiento entre cuatro canales, funciones excluidas, rearme, desactivación y desborde de millis; regresión ambiental; prueba de navegador móvil con API simulada; compilación para `esp8266:esp8266:d1`. Estas pruebas no accionan ni certifican el relé físico. Para aplicar este cambio se necesitan la app actualizada y este firmware instalado en el Wemos.
