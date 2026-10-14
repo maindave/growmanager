@@ -103,3 +103,33 @@ html[data-theme="light"] .semantic-icon.flowering{background:#f0e2f6;color:#8747
 #dashboardProjectName,#environmentSummary[hidden]{display:none!important}
 
 .dashboard-system-icon,.heater-control-icon{position:relative}.heater-block-dot{position:absolute;right:0;top:0;width:10px;height:10px;border-radius:50%;background:#e53935;border:2px solid var(--surface,#211d29);box-shadow:0 0 0 1px #e53935}.heater-block-dot[hidden]{display:none}.heater-control-icon{display:inline-flex;vertical-align:middle;margin-right:8px}.heater-control-icon svg{width:24px;height:24px}.heater-block-message{color:var(--danger,#f37a78);font-size:.85rem}.heater-protection-settings{border:1px solid var(--border);padding:14px;border-radius:10px}.heater-protection-settings label{margin-top:12px}
+
+/* Sensor cards: colors describe readings; actuator control is unchanged. */
+.today-environment{--reading-neutral:#27212f;--reading-muted:#c0b3cd;--reading-ok-bg:#19352b;--reading-ok:#9cdbba;--reading-warn-bg:#382128;--reading-warn:#ff9a7b;--reading-accent:#ff622e;--reading-critical-bg:#3c2229;--reading-critical:#ffb2b8}
+html[data-theme="light"] .today-environment{--reading-neutral:#efedf3;--reading-muted:#63596f;--reading-ok-bg:#e9f5ee;--reading-ok:#276344;--reading-warn-bg:#fff0eb;--reading-warn:#aa3715;--reading-critical-bg:#fcebea;--reading-critical:#a33a3e}
+.today-environment .metric-card{--reading-tone:var(--reading-muted);--reading-fill:var(--reading-neutral);display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:12px;min-width:0;min-height:170px;padding:15px 13px;text-align:left;background:var(--reading-fill);border:1px solid color-mix(in srgb,var(--reading-tone) 25%,var(--reading-fill));border-radius:11px;box-shadow:none;color:var(--text)}
+.today-environment .metric-card[data-sensor-state="ok"]{--reading-tone:var(--reading-ok);--reading-fill:var(--reading-ok-bg)}
+.today-environment .metric-card[data-sensor-state="warning"]{--reading-tone:var(--reading-warn);--reading-fill:var(--reading-warn-bg);border-color:color-mix(in srgb,var(--reading-accent) 55%,var(--reading-fill))}
+.today-environment .metric-card[data-sensor-state="critical"]{--reading-tone:var(--reading-critical);--reading-fill:var(--reading-critical-bg)}
+.today-environment .metric-card::after{display:none}
+.today-environment .sensor-card-heading{display:flex;align-items:center;justify-content:space-between;gap:6px;color:var(--reading-tone)}
+.today-environment .sensor-card-heading>span{font-size:12px;color:inherit}
+.today-environment .metric-card .metric-icon{display:grid;place-items:center;width:22px;height:22px;flex:0 0 22px;background:none;border-radius:0;color:var(--reading-tone);box-shadow:none}
+.today-environment .metric-icon .ui-icon{width:22px;height:22px}
+.today-environment .sensor-card-value{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.today-environment .sensor-card-value strong{font-size:30px;line-height:1.15;letter-spacing:-.04em;font-weight:600;font-variant-numeric:tabular-nums;margin:0;color:var(--text)}
+.today-environment .sensor-card-value small{font-size:12px;color:var(--reading-muted);margin:0}
+.today-environment .sensor-card-bottom{display:grid;gap:6px;margin-top:auto}
+.today-environment .metric-card .sensor-card-state{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--reading-tone);white-space:nowrap}
+.today-environment .sensor-card-state>span{font:inherit;color:inherit}
+.today-environment .sensor-card-state .ui-icon{width:14px;height:14px;flex-shrink:0}
+.today-environment .metric-card[data-sensor-state="warning"] .ui-icon{color:var(--reading-accent)}
+.today-environment .metric-card .sensor-card-target,.today-environment .sensor-card-target>span{font-size:11px;color:var(--reading-muted);line-height:1.4}
+.sensor-target-settings{margin:14px 0}
+@media(max-width:480px){.today-environment .metrics-grid{gap:6px}.today-environment .metric-card{padding:11px 8px;gap:10px;min-height:190px}.today-environment .sensor-card-heading{flex-direction:column;align-items:flex-start;gap:6px}.today-environment .sensor-card-heading>span{font-size:11px}.today-environment .sensor-card-value{flex-direction:column;align-items:flex-start;gap:0}.today-environment .sensor-card-value strong{font-size:25px}.today-environment .metric-card .sensor-card-state{font-size:11px}.today-environment .sensor-card-target>span{display:block}}
+/* Override shared surface rules and keep all three readings together on phones. */
+html:root .today-environment .metric-card[data-environment-metric]{background:var(--reading-fill);box-shadow:none}
+.today-environment .metrics-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.today-environment .sensor-card-state>span{white-space:normal}
+@media(max-width:760px){html[data-local-mode=true] .today-layout>.today-environment,html[data-local-mode=true] .today-layout>.today-systems{grid-column:1/-1;grid-row:auto}}
+.today-environment .sensor-card-heading>span,.today-environment .sensor-card-state>span,.today-environment .sensor-card-target,.today-environment .sensor-card-target>span{margin:0}

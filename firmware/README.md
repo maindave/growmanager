@@ -50,3 +50,11 @@ Luz, ventilación, extracción, intracción, bomba e incubadora quedan fuera del
 La interfaz muestra un punto rojo en el icono de calefacción y el texto «Bloqueada · Sin datos del sensor». Desde la tarjeta se accede a la configuración y al rearme. La incubadora no hereda el indicador al reutilizar un enchufe. Las versiones anteriores muestran un aviso de actualización y no ofrecen guardar ajustes que el controlador no admite.
 
 Validación local: pruebas C++ de plazo exacto, tiempo configurable, movimiento entre cuatro canales, funciones excluidas, rearme, desactivación y desborde de millis; regresión ambiental; prueba de navegador móvil con API simulada; compilación para `esp8266:esp8266:d1`. Estas pruebas no accionan ni certifican el relé físico. Para aplicar este cambio se necesitan la app actualizada y este firmware instalado en el Wemos.
+
+## Tarjetas de sensado (firmware 2.6.11 / app 2.6.24)
+
+La telemetría ambiental incluye `tempMin`, `tempMax`, `humidityMin` y `humidityMax` para que las tarjetas usen los mismos objetivos en local y remoto. Temperatura utiliza el rango existente de Automatización; VPD utiliza el rango ambiental existente. Humedad tiene un objetivo visual inicialmente de 55–70 %, editable desde Ambiente y protección. Estos valores son objetivos de visualización: no agregan bloqueos ni modifican las decisiones de los actuadores.
+
+`POST /api/environment` permite actualizar `humidityMin` y `humidityMax` (valores finitos, mínimo >=1, máximo <=100 y máximo > mínimo); rechaza rangos inválidos antes de mutar la configuración. Se guardan en un registro EEPROM independiente desde 528, sin desplazar los pines, la Sala, el vínculo remoto ni la protección de calefacción. El firmware anterior muestra los objetivos de humedad como no configurables hasta actualizar.
+
+Las tarjetas muestran verde dentro del rango, coral con acento #FF622E fuera de rango, rojo en los umbrales críticos de temperatura/humedad ya configurados y gris sin lectura actual. VPD no inventa un umbral crítico. Cada tarjeta conserva su acceso al histórico y combina icono, etiqueta y objetivo. Las lecturas antiguas no se presentan como saludables; una configuración ausente tampoco se presenta como «En rango».

@@ -4,6 +4,15 @@
   const $ = id => document.getElementById(id);
   const esc = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const paths = {
+    thermometer:'M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0Z M12 9v9',
+    'thermometer-hot':'M6 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0Z M8 8v10 M17 5v4 M15 7h4 M17 2v1 M21 7h1 M17 11v1',
+    'thermometer-cold':'M6 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0Z M8 12v6 M18 4v9 M14 6l8 5 M14 11l8-5',
+    droplets:'M8 3C6 7 3 10 3 13a5 5 0 0 0 10 0c0-3-3-6-5-10Z M17 9c-2 3-3 5-3 7a4 4 0 0 0 8 0c0-2-3-5-5-7Z',
+    'droplet-low':'M12 3C10 7 5 11 5 15a7 7 0 0 0 14 0c0-4-5-8-7-12Z M9 16h6',
+    gauge:'M4 18a9 9 0 1 1 16 0Z M12 14l4-5 M7 8l1 1 M12 5v2 M17 8l-1 1',
+    'cloud-rain':'M5 15a4 4 0 0 1 0-8 6 6 0 0 1 11-1 5 5 0 0 1 3 9 M7 18l-1 3 M12 18l-1 3 M17 18l-1 3',
+    'sensor-unknown':'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z M9.5 9a2.5 2.5 0 1 1 4 2c-1 .5-1.5 1-1.5 2 M12 16v.2',
+    'arrow-up':'M6 17 18 5 M7 5h11v11', 'arrow-down':'M6 7l12 12 M7 19h11V8', check:'m5 12 4 4 10-10',
     home:'m3 10 9-7 9 7v10H3Z M9 20v-7h6v7',
     flower:'M12 8c-5-8-9-2-5 2-8 0-5 8 0 5-1 8 8 8 6 0 8 3 10-5 3-5 4-7-2-10-4-2Z M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z',
     leaf:'M20 4C9 2 3 7 5 15c7 5 16-1 15-11Z M4 21 15 10',

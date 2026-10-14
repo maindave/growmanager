@@ -11,9 +11,9 @@
 <link rel="apple-touch-icon" href="assets/grow-agent-orb.png">
 <title>GrowManager · Beta</title>
 <script>document.documentElement.dataset.theme=localStorage.getItem("growmanager.theme")||"light"</script>
-<link rel="stylesheet" href="style.css?v=2.6.23">
-<link rel="stylesheet" href="ui-foundations.css?v=2.6.23">
-<link rel="stylesheet" href="environment.css?v=2.6.23">
+<link rel="stylesheet" href="style.css?v=2.6.24">
+<link rel="stylesheet" href="ui-foundations.css?v=2.6.24">
+<link rel="stylesheet" href="environment.css?v=2.6.24">
 </head>
 <body>
 <section id="authGate" class="auth-gate">
@@ -117,8 +117,9 @@
 <section id="appUpdatePanel" class="panel app-update-panel" hidden><div class="app-update-icon">↥</div><div><strong id="appUpdateTitle">Actualización disponible</strong><p id="appUpdateText">Hay una nueva versión de Growmanager.</p></div><button id="downloadAppUpdate" class="primary-button compact" type="button">Actualizar app</button></section><div id="appUpdateMessage" class="message"></div>
 <div class="today-layout">
 <section class="today-section today-environment" data-dashboard-widget="environment"><div class="section-heading"><h3>Ambiente</h3><select id="dashboardEnvironmentRoom" aria-label="Sala de las mediciones"></select></div><p id="todayEnvironmentStatus" class="subtle">Buscando el dispositivo local…</p><div class="metrics-grid">
-<button class="metric-card metric-history-button temperature" type="button" data-environment-metric="temperature" aria-label="Ver histórico de temperatura de las últimas 48 horas"><div class="metric-icon">°</div><div><span>Temperatura</span><strong id="temperature">—</strong><small>°C</small></div></button>
-<button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" aria-label="Ver histórico de humedad de las últimas 48 horas"><div class="metric-icon">%</div><div><span>Humedad</span><strong id="humidity">—</strong><small>%</small></div></button><button class="metric-card metric-history-button vpd" type="button" data-environment-metric="vpd" aria-label="Ver VPD y actuaciones de las últimas 48 horas"><div class="metric-icon">◇</div><div><span>VPD del aire</span><strong id="environmentVpd">—</strong><small>kPa</small></div></button></div><p id="environmentSummary" class="field-help" role="status" hidden>Esperando lectura ambiental.</p><div id="environmentAlerts" role="alert"></div></section>
+<button class="metric-card metric-history-button temperature" type="button" data-environment-metric="temperature" data-sensor-state="unknown" aria-label="Ver histórico de Temperatura"><div class="sensor-card-heading"><span>Temperatura</span><div class="metric-icon" aria-hidden="true">?</div></div><div class="sensor-card-value"><strong id="temperature">—</strong><small>°C</small></div><div class="sensor-card-bottom"><span class="sensor-card-state" data-sensor-state>Sin datos</span><span class="sensor-card-target"><span>Objetivo</span> <span data-sensor-target>Sin configurar</span></span></div></button>
+<button class="metric-card metric-history-button humidity" type="button" data-environment-metric="humidity" data-sensor-state="unknown" aria-label="Ver histórico de Humedad"><div class="sensor-card-heading"><span>Humedad</span><div class="metric-icon" aria-hidden="true">?</div></div><div class="sensor-card-value"><strong id="humidity">—</strong><small>%</small></div><div class="sensor-card-bottom"><span class="sensor-card-state" data-sensor-state>Sin datos</span><span class="sensor-card-target"><span>Objetivo</span> <span data-sensor-target>Sin configurar</span></span></div></button>
+<button class="metric-card metric-history-button vpd" type="button" data-environment-metric="vpd" data-sensor-state="unknown" aria-label="Ver histórico de VPD"><div class="sensor-card-heading"><span>VPD</span><div class="metric-icon" aria-hidden="true">?</div></div><div class="sensor-card-value"><strong id="environmentVpd">—</strong><small>kPa</small></div><div class="sensor-card-bottom"><span class="sensor-card-state" data-sensor-state>Sin datos</span><span class="sensor-card-target"><span>Objetivo</span> <span data-sensor-target>Sin configurar</span></span></div></button></div><p id="environmentSummary" class="field-help" role="status" hidden>Esperando lectura ambiental.</p><div id="environmentAlerts" role="alert"></div></section>
 <section id="dashboardSystemsPanel" class="today-section today-systems" data-dashboard-widget="systems"><div class="section-heading"><h3>Dispositivos</h3><button class="text-button" data-view="control">Ver control →</button></div><div id="dashboardRelays" class="dashboard-systems"></div></section>
 <section class="today-section today-crops" data-dashboard-widget="cultivations"><div class="section-heading"><h3>Cultivos</h3><button class="text-button" data-view="cultivation">Ver todos →</button></div><div id="dashboardCultivations" class="today-crop-list"><p class="field-help">Cargando cultivos…</p></div></section>
 <section class="today-section today-next" data-dashboard-widget="agenda"><div class="section-heading"><h3>Próximo</h3><button class="text-button" data-view="agenda">Ver agenda →</button></div><div id="dashboardAgenda" class="today-list"><p class="field-help">Cargando próximos eventos…</p></div></section>
@@ -593,7 +594,7 @@
 <script src="today-models.js?v=20261008-no-startup-latch" defer></script>
 <script src="today.js?v=20261008-no-startup-latch" defer></script>
 <script src="controller-account.js?v=20261003-controller" defer></script>
-<script src="app.js?v=20261014-heater-sensor-timeout" defer>
+<script src="app.js?v=20261014-sensor-states" defer>
 </script>
 </body>
 </html>

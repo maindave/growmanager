@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.23",
-  "versionCode": 43,
-  "publishedAt": "2026-10-14T09:41:08-03:00",
+  "versionName": "2.6.24",
+  "versionCode": 44,
+  "publishedAt": "2026-10-14T11:33:51-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Protección de calefacción por pérdida del sensor: activación configurable, plazo inicial de 5 minutos, punto rojo y rearme. Requiere firmware 2.6.10."
+  "releaseNotes": "Temperatura, humedad y VPD con color, icono y estado. Advertencias #FF622E, límites críticos en rojo y datos ausentes en gris. Objetivo de humedad configurable."
 }

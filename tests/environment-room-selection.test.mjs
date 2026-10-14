@@ -11,10 +11,10 @@ vm.runInContext(readFileSync(new URL('../environment-models.js',import.meta.url)
 vm.runInContext(readFileSync(new URL('../environment.js',import.meta.url),'utf8'),ctx);
 ctx.GrowEnvironmentUI.init();await ctx.GrowEnvironmentUI.loadRooms();
 assert.equal(get('dashboardEnvironmentRoom').value,'flora','Default selects a room that has telemetry');
-assert.equal(get('temperature').textContent,'22.0');assert.equal(ctx.GrowEnvironmentUI.historyDevice(),'flora-device');assert.equal(calls.at(-1).r[0].state,true);
+assert.equal(get('temperature').textContent,'22,0');assert.equal(ctx.GrowEnvironmentUI.historyDevice(),'flora-device');assert.equal(calls.at(-1).r[0].state,true);
 ctx.GrowEnvironmentUI.update(status('vege',19));
-assert.equal(get('temperature').textContent,'22.0','Local device in another room must not replace selected remote data');
+assert.equal(get('temperature').textContent,'22,0','Local device in another room must not replace selected remote data');
 get('dashboardEnvironmentRoom').value='vege';get('dashboardEnvironmentRoom').onchange();
-assert.equal(get('temperature').textContent,'19.0');assert.equal(calls.at(-1).r[0].state,false);
+assert.equal(get('temperature').textContent,'19,0');assert.equal(calls.at(-1).r[0].state,false);
 ctx.GrowEnvironmentUI.offline();assert.equal(get('temperature').textContent,'—');assert.equal(calls.at(-1).r.length,0,'No devices from a different room remain displayed');
 console.log('Room selection, remote equipment and room-scoped history: passed');

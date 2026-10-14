@@ -18,5 +18,25 @@ function heaterProtection(relay,env={}) {
  return {supported,blocked,minutes,enabled:env.heaterSensorProtectionEnabled!==false,
   text:blocked?'Calefacción bloqueada por pérdida del sensor. Recuperá la lectura y rearmá desde Ambiente y protección.':''};
 }
-globalThis.EnvironmentModels=Object.freeze({stages,valid,vpd,interpret,alarms,stageForCultivation,heaterProtection});
+// Presentation only: these states never issue actuator commands.
+function sensorStates(status,fresh){
+ const e=status?.environment||{},t=status?.temperature,h=status?.humidity;
+ const definitions={
+  temperature:{name:'Temperatura',value:t,unit:'°C',digits:1,min:e.tempMin,max:e.tempMax,criticalLow:e.criticalCold,criticalHigh:e.criticalHot,low:'Baja',high:'Alta',normal:'thermometer',lowIcon:'thermometer-cold',highIcon:'thermometer-hot'},
+  humidity:{name:'Humedad',value:h,unit:'%',digits:0,min:e.humidityMin,max:e.humidityMax,criticalHigh:e.criticalHumidity,low:'Baja',high:'Alta',normal:'drop',lowIcon:'droplet-low',highIcon:'droplets'},
+  vpd:{name:'VPD',value:vpd(t,h),unit:'kPa',digits:2,min:e.vpdMin,max:e.vpdMax,low:'Bajo',high:'Alto',normal:'gauge',lowIcon:'cloud-rain',highIcon:'wind'}
+ };
+ return Object.fromEntries(Object.entries(definitions).map(([key,d])=>{
+  const known=finite(d.min)&&finite(d.max)&&d.max>d.min;
+  const current=fresh&&finite(d.value),below=known&&d.value<d.min,above=known&&d.value>d.max;
+  const cold=current&&finite(d.criticalLow)&&d.value<=d.criticalLow,hot=current&&finite(d.criticalHigh)&&d.value>=d.criticalHigh;
+  const critical=cold||hot,state=!current?'unknown':critical?'critical':!known?'unconfigured':below||above?'warning':'ok';
+  const label=!current?'Sin datos':critical?(key==='temperature'&&cold?'Frío crítico':key==='temperature'?'Calor crítico':'Crítica'):!known?'Sin objetivo':below?d.low:above?d.high:'En rango';
+  const icon=!current?'sensor-unknown':below||cold?d.lowIcon:above||hot?d.highIcon:d.normal;
+  const marker=!current||!known&&!critical?'sensor-unknown':critical?'alert':below?'arrow-down':above?'arrow-up':'check';
+  const format=n=>n.toLocaleString('es-AR',{maximumFractionDigits:2});
+  return [key,{...d,value:current?d.value:null,state,label,icon,marker,target:known?format(d.min)+'–'+format(d.max)+(key==='vpd'?'':' '+d.unit):'Sin objetivo configurado'}];
+ }));
+}
+globalThis.EnvironmentModels=Object.freeze({stages,valid,vpd,interpret,alarms,stageForCultivation,heaterProtection,sensorStates});
 })();

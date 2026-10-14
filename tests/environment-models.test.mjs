@@ -24,3 +24,20 @@ for(const fn of ['light','ventilation','extraction','intake','incubator','pump',
 assert.equal(M.heaterProtection({id:3,function:'heater'},env).blocked,false);
 assert.equal(M.heaterProtection({id:4,function:'heater'},{}).blocked,false);
 assert.equal(M.heaterProtection({id:4,function:'heater'},env).minutes,5);
+
+const targets={tempMin:23,tempMax:27,humidityMin:55,humidityMax:70,criticalCold:10,criticalHot:35,criticalHumidity:90,vpdMin:.8,vpdMax:1.2};
+const reading=(t=25,h=65,environment=targets)=>({temperature:t,humidity:h,environment});
+let states=M.sensorStates(reading(),true);
+for(const state of Object.values(states))assert.equal(state.state,'ok');
+states=M.sensorStates(reading(27,60),true);assert.equal(states.temperature.state,'ok');assert.equal(states.vpd.state,'warning');assert.equal(states.vpd.label,'Alto');assert.equal(states.vpd.icon,'wind');
+states=M.sensorStates(reading(25,85),true);assert.equal(states.humidity.label,'Alta');assert.equal(states.vpd.label,'Bajo');assert.equal(states.vpd.icon,'cloud-rain');
+assert.equal(M.sensorStates(reading(25,40),true).humidity.label,'Baja');
+assert.equal(M.sensorStates(reading(19,65),true).temperature.icon,'thermometer-cold');
+assert.equal(M.sensorStates(reading(35,65),true).temperature.state,'critical');
+assert.equal(M.sensorStates(reading(10,65),true).temperature.label,'Frío crítico');
+assert.equal(M.sensorStates(reading(25,90),true).humidity.state,'critical');
+for(const state of Object.values(M.sensorStates(reading(40,99),false))){assert.equal(state.state,'unknown');assert.equal(state.value,null);}
+assert.equal(M.sensorStates(reading(25,65,{}),true).temperature.state,'unconfigured');
+assert.equal(M.sensorStates(reading(25,65,{...targets,humidityMin:70,humidityMax:55}),true).humidity.state,'unconfigured');
+assert.equal(M.sensorStates(reading(25,65,{...targets,humidityMin:60,humidityMax:64}),true).humidity.state,'warning');
+console.log('Sensor colors: configured targets, critical thresholds, missing data and invalid ranges passed');

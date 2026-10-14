@@ -14,6 +14,7 @@
 #include <EEPROM.h>
 #include <Schedule.h>
 #include "EnvironmentalControl.h"
+#include "SensorDisplayPolicy.h"
 #include "CooperativeCloudTls.h"
 
 // ======================================================
@@ -21,7 +22,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.10-heater-sensor-timeout";
+const char* firmwareVersion = "2.6.11-sensor-display-targets";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -39,6 +40,7 @@ const char* password = "10203040";
 #define EEPROM_CLOUD 384
 #define EEPROM_ENVIRONMENT 256
 #define EEPROM_SENSOR_PROTECTION 512
+#define EEPROM_SENSOR_DISPLAY 528
 
 // Hardware
 #define EEPROM_HW_MAGIC       40
@@ -345,6 +347,9 @@ void runCloudTelemetry() {
 }
 
 GrowEnvironment::Config environmentConfig;
+GrowEnvironment::DisplayConfig sensorDisplay;
+static_assert(EEPROM_SENSOR_PROTECTION+sizeof(sensorProtection)<=EEPROM_SENSOR_DISPLAY,"Protection EEPROM overlap");
+static_assert(EEPROM_SENSOR_DISPLAY+sizeof(sensorDisplay)<=EEPROM_SIZE,"Display EEPROM overflow");
 GrowEnvironment::Controller environmentController;
 char environmentRoomId[37] = "";
 uint32_t environmentBootId = 0;
@@ -355,12 +360,15 @@ bool environmentSensorFresh() {
 }
 uint32_t heaterSensorAgeMs() { return dhtHasValidReading ? uint32_t(millis()-lastDHTSuccessAt) : millis(); }
 void saveEnvironmentConfig() {
+  EEPROM.put(EEPROM_SENSOR_DISPLAY,sensorDisplay);
   EEPROM.put(EEPROM_SENSOR_PROTECTION,sensorProtection);
   EEPROM.put(EEPROM_ENVIRONMENT, environmentConfig);
   for (unsigned int i=0;i<sizeof(environmentRoomId);i++) EEPROM.write(EEPROM_ENVIRONMENT+sizeof(environmentConfig)+i, environmentRoomId[i]);
   EEPROM.commit();
 }
 void loadEnvironmentConfig() {
+  EEPROM.get(EEPROM_SENSOR_DISPLAY,sensorDisplay);
+  if(!GrowEnvironment::validDisplayConfig(sensorDisplay))sensorDisplay=GrowEnvironment::DisplayConfig();
   EEPROM.get(EEPROM_SENSOR_PROTECTION,sensorProtection);
   if(!GrowRelay::validConfig(sensorProtection)) sensorProtection=GrowRelay::SensorProtectionConfig();
   EEPROM.get(EEPROM_ENVIRONMENT, environmentConfig);
@@ -400,6 +408,8 @@ String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   json+=F(",\"state\":\"")+String(!fresh?"unknown":value<environmentConfig.vpdMin?"low":value>environmentConfig.vpdMax?"high":"optimal")+"\"";
   json+=F(",\"criticalHot\":")+String(environmentConfig.criticalHot,1)+",\"criticalCold\":"+String(environmentConfig.criticalCold,1)+",\"criticalHumidity\":"+String(environmentConfig.criticalHumidity,1);
   json+=F(",\"minimumSwitchSeconds\":")+String(environmentConfig.minimumSwitchMs/1000)+",\"responseSeconds\":"+String(environmentConfig.responseWindowMs/1000)+",\"responseDelta\":"+String(environmentConfig.responseDelta,1);
+  json+=F(",\"tempMin\":")+String(tempMin,1)+",\"tempMax\":"+String(tempMax,1);
+  json+=F(",\"humidityMin\":")+String(sensorDisplay.humidityMin,1)+",\"humidityMax\":"+String(sensorDisplay.humidityMax,1);
   json+=F(",\"humidityResponseDelta\":")+String(environmentConfig.humidityResponseDelta,1);
   json+=F(",\"exchangeOnSensorFailure\":")+String(environmentConfig.exchangeOnSensorFailure?"true":"false");
   json+=F(",\"safety\":[");for(int i=0;i<4;i++){if(i)json+=",";json+=String((int)relaySafety[i].reason);}json+="]";
@@ -431,6 +441,15 @@ String environmentJson() { return environmentJsonWithEvents(16,false); }
 void handleEnvironment() { addCORS(); server.send(200,"application/json",environmentJson()); }
 void handleSetEnvironment() {
   GrowEnvironment::Config next=environmentConfig;
+  GrowEnvironment::DisplayConfig nextDisplay=sensorDisplay;
+  const char* displayFields[]={"humidityMin","humidityMax"};
+  for(int i=0;i<2;i++)if(server.hasArg(displayFields[i])){
+    String raw=server.arg(displayFields[i]);char* end=nullptr;float number=strtof(raw.c_str(),&end);
+    if(!raw.length()||end==raw.c_str()||*end||!isfinite(number)){addCORS();server.send(400,"application/json","{\"error\":\"invalid_humidity_target\"}");return;}
+    if(i==0)nextDisplay.humidityMin=number;else nextDisplay.humidityMax=number;
+  }
+  if(!GrowEnvironment::validDisplayConfig(nextDisplay)){addCORS();server.send(400,"application/json","{\"error\":\"invalid_humidity_target\"}");return;}
+
   GrowRelay::SensorProtectionConfig nextProtection=sensorProtection;
   if(server.hasArg("heaterSensorProtectionEnabled")) {
     String enabled=server.arg("heaterSensorProtectionEnabled");
@@ -477,6 +496,7 @@ void handleSetEnvironment() {
     addCORS(); server.send(409,"application/json","{\"error\":\"environment_sensor_unavailable\"}"); return;
   }
   if(room!=String(environmentRoomId)) clearCloudPairing();
+  sensorDisplay=nextDisplay;
   sensorProtection=nextProtection;
   for(int i=0;i<4;i++)setRelayState(i+1,relayStates[i]);
   environmentConfig=next; room.toCharArray(environmentRoomId,sizeof(environmentRoomId)); saveEnvironmentConfig();
