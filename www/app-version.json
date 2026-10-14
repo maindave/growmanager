@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.24",
-  "versionCode": 44,
-  "publishedAt": "2026-10-14T11:33:51-03:00",
+  "versionName": "2.6.25",
+  "versionCode": 45,
+  "publishedAt": "2026-10-14T11:57:10-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Temperatura, humedad y VPD con color, icono y estado. Advertencias #FF622E, límites críticos en rojo y datos ausentes en gris. Objetivo de humedad configurable."
+  "releaseNotes": "Corrección del guardado al editar el inicio de una etapa de cultivo: conserva el historial y muestra mensajes claros ante fechas incompatibles."
 }

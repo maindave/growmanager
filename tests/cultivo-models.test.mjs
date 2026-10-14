@@ -45,3 +45,9 @@ assert.equal(model.validateCultivation({name:'Plan',startDate:'2026-10-05'}).val
 const grouped=model.plantGroups([{id:'a',groupId:'g',variety:'OB',origin:'clone',floweringWeeks:9},{id:'b',groupId:'g',variety:'OB',origin:'clone',floweringWeeks:9},{id:'c',groupId:'g',variety:'OB',origin:'clone',floweringWeeks:8}]);
 assert.equal(grouped.length,2);assert.equal(grouped[0].plants.length,2);
 console.log('Planned default, strain flowering dates, unknown durations and group separation: passed');
+
+const cloneEdit={name:'24 Esquejes para SOG',startDate:'2026-10-14',stageStartedOn:'2026-10-15',currentStage:'clone',status:'active',plannedEndDate:'2026-10-24'};
+assert.equal(M.validateCultivation(cloneEdit).valid,true);
+assert.equal(M.validateCultivation({...cloneEdit,stageStartedOn:'2026-10-13'}).valid,false);
+assert.match(M.validateCultivation({...cloneEdit,stageStartedOn:'2026-10-13'}).errors.join(' '),/inicio de etapa/i);
+console.log('Cultivation stage date: screenshot dates accepted and stage before crop start rejected');
