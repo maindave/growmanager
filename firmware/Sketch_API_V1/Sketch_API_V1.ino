@@ -3,6 +3,7 @@
 #endif
 #include "RelayTestPolicy.h"
 #include "RelaySafetyPolicy.h"
+#include "IncubatorStatePolicy.h"
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <WiFiClientSecure.h>
@@ -22,7 +23,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.11-sensor-display-targets";
+const char* firmwareVersion = "2.6.12-incubator-state-restore";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -41,6 +42,7 @@ const char* password = "10203040";
 #define EEPROM_ENVIRONMENT 256
 #define EEPROM_SENSOR_PROTECTION 512
 #define EEPROM_SENSOR_DISPLAY 528
+#define EEPROM_INCUBATOR_STATE 560
 
 // Hardware
 #define EEPROM_HW_MAGIC       40
@@ -124,6 +126,8 @@ bool relayStates[4] = {
   false,
   false
 };
+
+GrowRelay::IncubatorState incubatorState;
 
 bool restartRequested = false;
 unsigned long restartRequestedAt = 0;
@@ -349,7 +353,8 @@ void runCloudTelemetry() {
 GrowEnvironment::Config environmentConfig;
 GrowEnvironment::DisplayConfig sensorDisplay;
 static_assert(EEPROM_SENSOR_PROTECTION+sizeof(sensorProtection)<=EEPROM_SENSOR_DISPLAY,"Protection EEPROM overlap");
-static_assert(EEPROM_SENSOR_DISPLAY+sizeof(sensorDisplay)<=EEPROM_SIZE,"Display EEPROM overflow");
+static_assert(EEPROM_SENSOR_DISPLAY+sizeof(sensorDisplay)<=EEPROM_INCUBATOR_STATE,"Display EEPROM overlap");
+static_assert(EEPROM_INCUBATOR_STATE+sizeof(incubatorState)<=EEPROM_SIZE,"Incubator EEPROM overflow");
 GrowEnvironment::Controller environmentController;
 char environmentRoomId[37] = "";
 uint32_t environmentBootId = 0;
@@ -796,6 +801,19 @@ void loadHardwareConfig() {
 
     saveHardwareConfig();
   }
+}
+
+// Persist only explicit incubator commands, never automatic outputs or tests.
+void saveIncubatorState() {
+  EEPROM.put(EEPROM_INCUBATOR_STATE,incubatorState);
+  EEPROM.commit();
+}
+void loadIncubatorState() {
+  EEPROM.get(EEPROM_INCUBATOR_STATE,incubatorState);
+  if(!incubatorState.valid())incubatorState=GrowRelay::IncubatorState();
+}
+void rememberIncubatorState(int index,bool on) {
+  if(incubatorState.set(index,on))saveIncubatorState();
 }
 
 // ======================================================
@@ -1801,6 +1819,7 @@ void handleApiSetRelay() {
 
   relayTests[index].active=false;
   if(!setRelayState(relayId,newState)){addCORS();server.send(409,"application/json","{\"error\":\"safety_lock_requires_review\"}");return;}
+  if(relayFunctions[index]==FN_INCUBATOR)rememberIncubatorState(index,newState);
   runEnvironmentControl();
 
   String json =
@@ -2080,6 +2099,8 @@ void handleApiSetFunctions() {
   if(newFunction==FN_INCUBATOR)newMode=MODE_MANUAL;
   relayTests[index].active=false;
   bool roleChanged=relayFunctions[index]!=newFunction;
+  bool modeChanged=relayModes[index]!=newMode;
+  if(roleChanged)rememberIncubatorState(index,false);
   relayFunctions[index] =
     newFunction;
 
@@ -2089,10 +2110,7 @@ void handleApiSetFunctions() {
   // Al cambiar configuración dejamos el relay
   // apagado antes de que la automatización decida.
 
-  setRelayState(
-    relayId,
-    false
-  );
+  if(roleChanged||modeChanged)setRelayState(relayId,false);
 
   if(roleChanged)relaySafety[index].reset();
   saveFunctionConfig();
@@ -2607,7 +2625,10 @@ void setup() {
 
   // GPIO1 is relay D1: disable UART before assigning relay outputs.
   Serial.end();
+  loadIncubatorState();
   initializeHardware();
+  for(int i=0;i<4;i++)if(relayFunctions[i]==FN_INCUBATOR&&relayModes[i]==MODE_MANUAL)
+    setRelayState(i+1,incubatorState.on(i));
 
   connectWiFi();
 
