@@ -23,7 +23,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.12-incubator-state-restore";
+const char* firmwareVersion = "2.6.13-ac-temperature";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -43,6 +43,10 @@ const char* password = "10203040";
 #define EEPROM_SENSOR_PROTECTION 512
 #define EEPROM_SENSOR_DISPLAY 528
 #define EEPROM_INCUBATOR_STATE 560
+#define EEPROM_AC_OFF 576
+#define EEPROM_AC_ON 580
+#define EEPROM_AC_MAGIC 584
+#define AC_MAGIC_VALUE 2613
 
 // Hardware
 #define EEPROM_HW_MAGIC       40
@@ -145,7 +149,8 @@ enum RelayFunction : byte {
   FN_PUMP = 4,
   FN_EXTRACTION = 5,
   FN_INTAKE = 6,
-  FN_INCUBATOR = 7
+  FN_INCUBATOR = 7,
+  FN_AC = 8
 };
 
 enum RelayMode : byte {
@@ -192,6 +197,8 @@ unsigned long lightTransitionUntil = 0;
 
 float tempMin = 23.0;
 float tempMax = 27.0;
+float acOffTemperature = 24.0;
+float acOnTemperature = 26.0;
 
 // Ventilación configurable: intervalos, temperatura o ambas.
 
@@ -354,7 +361,8 @@ GrowEnvironment::Config environmentConfig;
 GrowEnvironment::DisplayConfig sensorDisplay;
 static_assert(EEPROM_SENSOR_PROTECTION+sizeof(sensorProtection)<=EEPROM_SENSOR_DISPLAY,"Protection EEPROM overlap");
 static_assert(EEPROM_SENSOR_DISPLAY+sizeof(sensorDisplay)<=EEPROM_INCUBATOR_STATE,"Display EEPROM overlap");
-static_assert(EEPROM_INCUBATOR_STATE+sizeof(incubatorState)<=EEPROM_SIZE,"Incubator EEPROM overflow");
+static_assert(EEPROM_INCUBATOR_STATE+sizeof(incubatorState)<=EEPROM_AC_OFF,"AC EEPROM overlaps incubator state");
+static_assert(EEPROM_AC_MAGIC+sizeof(int)<=EEPROM_SIZE,"AC EEPROM overflow");
 GrowEnvironment::Controller environmentController;
 char environmentRoomId[37] = "";
 uint32_t environmentBootId = 0;
@@ -597,6 +605,7 @@ String functionToString(RelayFunction fn) {
       return "pump";
     case FN_EXTRACTION: return "extraction";
     case FN_INTAKE: return "intake";
+    case FN_AC: return "ac";
     case FN_INCUBATOR: return "incubator";
 
     default:
@@ -621,6 +630,7 @@ RelayFunction stringToFunction(String value) {
 
   if (value == "extraction") return FN_EXTRACTION;
   if (value == "intake") return FN_INTAKE;
+  if (value == "ac") return FN_AC;
   if (value == "incubator") return FN_INCUBATOR;
 
   if (value == "pump")
@@ -885,7 +895,7 @@ void loadFunctionConfig() {
         EEPROM_RELAY1_MODE + i
       );
 
-    if (fn > FN_INCUBATOR)
+    if (fn > FN_AC)
       fn = FN_NONE;
 
     if (mode > MODE_AUTO || fn == FN_INCUBATOR)
@@ -904,6 +914,11 @@ void loadFunctionConfig() {
 // ======================================================
 
 void saveControlConfig() {
+  EEPROM.put(EEPROM_AC_OFF, acOffTemperature);
+  EEPROM.put(EEPROM_AC_ON, acOnTemperature);
+  int acMagic = AC_MAGIC_VALUE;
+  EEPROM.put(EEPROM_AC_MAGIC, acMagic);
+
 
   EEPROM.put(
     EEPROM_LIGHT_HOUR,
@@ -963,6 +978,18 @@ void saveControlConfig() {
 // ======================================================
 
 void loadControlConfig() {
+  int acMagic = 0;
+  EEPROM.get(EEPROM_AC_MAGIC, acMagic);
+  if (acMagic == AC_MAGIC_VALUE) {
+    EEPROM.get(EEPROM_AC_OFF, acOffTemperature);
+    EEPROM.get(EEPROM_AC_ON, acOnTemperature);
+    if (!isfinite(acOffTemperature) || !isfinite(acOnTemperature) ||
+        acOffTemperature < 0 || acOnTemperature > 50 || acOffTemperature >= acOnTemperature) {
+      acOffTemperature = 24.0;
+      acOnTemperature = 26.0;
+    }
+  }
+
 
   int magic = 0;
 
@@ -1304,6 +1331,18 @@ void automaticHeaterControl() {
 // AUTOMATIC VENTILATION
 // ======================================================
 
+// AC: independent temperature hysteresis; never uses ventilation intervals.
+void automaticACControl() {
+  int relay = findRelayByFunction(FN_AC);
+  if (relay < 0 || relayModes[relay] != MODE_AUTO || relayTests[relay].active) return;
+  if (!dhtReadingFresh) {
+    setRelayState(relay + 1, false);
+    return;
+  }
+  if (temperature >= acOnTemperature) setRelayState(relay + 1, true);
+  else if (temperature <= acOffTemperature) setRelayState(relay + 1, false);
+}
+
 void automaticVentilationControl() {
   int relay = findRelayByFunction(FN_VENTILATION);
   if (relay < 0 || relayModes[relay] != MODE_AUTO || relayTests[relay].active) return;
@@ -1368,6 +1407,7 @@ void runAutomations() {
 
   if (!environmentConfig.enabled) automaticHeaterControl();
 
+  automaticACControl();
   automaticVentilationControl();
   runEnvironmentControl();
 }
@@ -1665,7 +1705,7 @@ void handleApiStatus() { addCORS(); server.send(200,"application/json",buildStat
 void handleApiRelays() {
 
   String json =
-    F("{\"supportedFunctions\":[\"none\",\"light\",\"ventilation\",\"heater\",\"pump\",\"extraction\",\"intake\",\"incubator\"],\"relays\":[");
+    F("{\"supportedFunctions\":[\"none\",\"light\",\"ventilation\",\"heater\",\"pump\",\"extraction\",\"intake\",\"incubator\",\"ac\"],\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
@@ -1897,7 +1937,7 @@ void handleApiDiagnostics() {
 void handleApiFunctions() {
 
   String json =
-    F("{\"supportedFunctions\":[\"none\",\"light\",\"ventilation\",\"heater\",\"pump\",\"extraction\",\"intake\",\"incubator\"],\"relays\":[");
+    F("{\"supportedFunctions\":[\"none\",\"light\",\"ventilation\",\"heater\",\"pump\",\"extraction\",\"intake\",\"incubator\",\"ac\"],\"relays\":[");
 
   for (int i = 0; i < 4; i++) {
 
@@ -1930,7 +1970,7 @@ void handleApiFunctions() {
   json += F("\"light\",");
   json += F("\"ventilation\",");
   json += F("\"heater\",");
-  json += F("\"pump\"");
+  json += F("\"pump\",\"extraction\",\"intake\",\"incubator\",\"ac\"");
 
   json += F("],");
 
@@ -2016,7 +2056,7 @@ void handleApiSetFunctions() {
       functionArg == "light" ||
       functionArg == "ventilation" ||
       functionArg == "heater" ||
-      functionArg == "pump" || functionArg == "extraction" || functionArg == "intake" || functionArg == "incubator";
+      functionArg == "pump" || functionArg == "extraction" || functionArg == "intake" || functionArg == "incubator" || functionArg == "ac";
 
     if (!validFunction) {
 
@@ -2186,6 +2226,10 @@ void handleApiConfig() {
   json += F(",\"lightTransitionUntil\":");
   json += String(lightTransitionUntil);
 
+  json += F(",\"acOffTemperature\":");
+  json += String(acOffTemperature, 1);
+  json += F(",\"acOnTemperature\":");
+  json += String(acOnTemperature, 1);
   json += F(",\"tempMin\":");
   json += String(
     tempMin,
@@ -2241,6 +2285,26 @@ void handleApiConfig() {
 // ======================================================
 
 void handleApiSetConfig() {
+  // Reject invalid AC thresholds before changing any active configuration.
+  float acOff = acOffTemperature, acOn = acOnTemperature;
+  if (server.hasArg("acOff")) {
+    String value = server.arg("acOff");
+    char *end;
+    acOff = strtof(value.c_str(), &end);
+    if (end == value.c_str() || *end != '\0') acOff = NAN;
+  }
+  if (server.hasArg("acOn")) {
+    String value = server.arg("acOn");
+    char *end;
+    acOn = strtof(value.c_str(), &end);
+    if (end == value.c_str() || *end != '\0') acOn = NAN;
+  }
+  if (!isfinite(acOff) || !isfinite(acOn) || acOff < 0 || acOn > 50 || acOff >= acOn) {
+    addCORS();
+    server.send(400, "application/json", "{\"ok\":false,\"error\":\"invalid_ac_temperature_range\"}");
+    return;
+  }
+
   float proposedMin=server.hasArg("tmin")?server.arg("tmin").toFloat():tempMin;
   float proposedMax=server.hasArg("tmax")?server.arg("tmax").toFloat():tempMax;
   if(!isfinite(proposedMin)||!isfinite(proposedMax)||proposedMin<0||proposedMax>50||proposedMax<=proposedMin||
@@ -2373,6 +2437,8 @@ void handleApiSetConfig() {
     return;
   }
 
+  acOffTemperature = acOff;
+  acOnTemperature = acOn;
   saveControlConfig();
 
   runAutomations();

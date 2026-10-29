@@ -24,6 +24,7 @@
     users:'M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z M2 21v-3c0-5 12-5 12 0v3 M16 4a4 4 0 0 1 0 7 M17 15c4 0 5 2 5 6',
     drop:'M12 3C10 7 5 11 5 15a7 7 0 0 0 14 0c0-4-5-8-7-12Z',
     alert:'m12 3 10 18H2Z M12 9v5 M12 17v1', light:'M9 17h6 M10 21h4 M8 13a6 6 0 1 1 8 0l-1 4H9Z',
+    snow:'M12 2v20 M3.34 7l17.32 10 M3.34 17L20.66 7 M9 4l3 3 3-3 M9 20l3-3 3 3 M4 10l4-1-1-4 M20 14l-4 1 1 4 M4 14l4 1-1 4 M20 10l-4-1 1-4',
     wind:'M3 8h12c5 0 5-6 1-6 M3 12h16c4 0 4 6 0 6 M3 16h7', heat:'M7 20c-6-6 6-10 0-16 M12 20c-6-6 6-10 0-16 M17 20c-6-6 6-10 0-16'
   };
   function icon(name) { return `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${paths[name]||paths.leaf}"/></svg>`; }
