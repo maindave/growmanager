@@ -77,3 +77,6 @@ Validación: histéresis, límites inclusivos, asignación en cuatro canales, mo
 
 ## AC sin corte por sensor (2.6.14)
 Sin lectura fresca del DHT, el AC conserva la orden previa de salida. Al recuperar el sensor vuelve a evaluar sus umbrales. No inventa un encendido al arrancar: las salidas se inicializan apagadas. El modo manual sigue disponible. Reemplaza el apagado por sensor de 2.6.13.
+
+## Pruebas manuales (2.6.15 / app 2.6.29)
+Las pruebas ON/OFF no vencen por tiempo (`seconds=0`, también predeterminado). Cada pulsación conserva la prueba y cambia su salida. Volver a automático finaliza la prueba y reevalúa el horario o umbrales. Reiniciar el Wemos termina las pruebas. Clientes anteriores pueden seguir solicitando pruebas temporizadas de 1–30 segundos.

@@ -23,7 +23,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.14-ac-sensor-hold";
+const char* firmwareVersion = "2.6.15-manual-relay-tests";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -518,8 +518,8 @@ void handleSetEnvironment() {
 void handleRelayTest() {
   int id=server.arg("id").toInt();String state=server.arg("state");
   if(id<1||id>4||(state!="on"&&state!="off"&&state!="cancel")){addCORS();server.send(400,"application/json","{\"error\":\"invalid_test\"}");return;}
-  int i=id-1;int seconds=server.hasArg("seconds")?server.arg("seconds").toInt():10;
-  if(seconds<1||seconds>30){addCORS();server.send(400,"application/json","{\"error\":\"invalid_test_duration\"}");return;}
+  int i=id-1;int seconds=server.hasArg("seconds")?server.arg("seconds").toInt():0;
+  if(seconds<0||seconds>30){addCORS();server.send(400,"application/json","{\"error\":\"invalid_test_duration\"}");return;}
   if(state=="cancel"){if(relayTests[i].active)setRelayState(id,relayTests[i].stop());runAutomations();addCORS();server.send(200,"application/json","{\"ok\":true}");return;}
   bool on=state=="on";
   if(!on&&environmentConfig.enabled&&(relayFunctions[i]==FN_EXTRACTION||relayFunctions[i]==FN_INTAKE)&&(temperature>=environmentConfig.criticalHot||(!environmentSensorFresh()&&environmentConfig.exchangeOnSensorFailure))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}

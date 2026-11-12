@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.28",
-  "versionCode": 48,
+  "versionName": "2.6.29",
+  "versionCode": 49,
   "publishedAt": "2026-10-29T16:34:56-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "El AC conserva su último estado si falla el sensor ambiental. Requiere firmware 2.6.14."
+  "releaseNotes": "Pruebas manuales ON/OFF por enchufe, sin temporizador. Volver a automático permite retomar la regulación. Requiere firmware 2.6.15."
 }
