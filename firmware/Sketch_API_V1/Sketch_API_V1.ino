@@ -23,7 +23,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.13-ac-temperature";
+const char* firmwareVersion = "2.6.14-ac-sensor-hold";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -1335,10 +1335,8 @@ void automaticHeaterControl() {
 void automaticACControl() {
   int relay = findRelayByFunction(FN_AC);
   if (relay < 0 || relayModes[relay] != MODE_AUTO || relayTests[relay].active) return;
-  if (!dhtReadingFresh) {
-    setRelayState(relay + 1, false);
-    return;
-  }
+  // Without a fresh reading, preserve the existing output command.
+  if (!dhtReadingFresh) return;
   if (temperature >= acOnTemperature) setRelayState(relay + 1, true);
   else if (temperature <= acOffTemperature) setRelayState(relay + 1, false);
 }

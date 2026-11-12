@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.27",
-  "versionCode": 47,
+  "versionName": "2.6.28",
+  "versionCode": 48,
   "publishedAt": "2026-10-29T16:34:56-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Aire acondicionado asignable a cualquier enchufe, con temperaturas de encendido y apagado configurables e icono de estado en el dashboard. Requiere firmware AC actualizado."
+  "releaseNotes": "El AC conserva su último estado si falla el sensor ambiental. Requiere firmware 2.6.14."
 }

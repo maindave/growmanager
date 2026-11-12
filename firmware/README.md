@@ -74,3 +74,6 @@ Automatización permite ingresar ambas temperaturas (0–50 °C, apagado estrict
 El copo de nieve del dashboard indica la alimentación lógica del enchufe, incluida la última información conocida al perder conexión; no confirma el funcionamiento del compresor. Dejar el equipo en frío a 23 °C es una configuración física del aire. Esta publicación no instala automáticamente el firmware en el Wemos: requiere carga USB u OTA del binario D1 R1 actualizado.
 
 Validación: histéresis, límites inclusivos, asignación en cuatro canales, modo manual, sensor inválido y pruebas temporales con controlador real extraído del sketch; navegador móvil para asignación, estado ON/OFF, validación y guardado de umbrales y compatibilidad anterior; regresión ambiental y compilación D1 R1 a 160 MHz.
+
+## AC sin corte por sensor (2.6.14)
+Sin lectura fresca del DHT, el AC conserva la orden previa de salida. Al recuperar el sensor vuelve a evaluar sus umbrales. No inventa un encendido al arrancar: las salidas se inicializan apagadas. El modo manual sigue disponible. Reemplaza el apagado por sensor de 2.6.13.

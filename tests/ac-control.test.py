@@ -25,7 +25,8 @@ int main(){
     acOnTemperature=29; acOffTemperature=27;
     temperature=28; automaticACControl(); assert(!relayStates[i]);
     temperature=29; automaticACControl(); assert(relayStates[i]);
-    dhtReadingFresh=false; automaticACControl(); assert(!relayStates[i]);
+    dhtReadingFresh=false; automaticACControl(); assert(relayStates[i]);
+    relayStates[i]=false;
     dhtReadingFresh=true; relayModes[i]=0;
     automaticACControl(); assert(!relayStates[i]);
     relayStates[i]=true; temperature=20;
