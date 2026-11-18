@@ -23,7 +23,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.16-dual-am2301";
+const char* firmwareVersion = "2.6.17-dual-hardware";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -46,6 +46,9 @@ const char* password = "10203040";
 #define EEPROM_AC_OFF 576
 #define EEPROM_AC_ON 580
 #define EEPROM_AC_MAGIC 584
+#define EEPROM_SECOND_DHT_MAGIC 600
+#define EEPROM_SECOND_DHT_PIN 604
+#define SECOND_DHT_MAGIC 2717
 #define AC_MAGIC_VALUE 2613
 
 // Hardware
@@ -103,7 +106,7 @@ const char* password = "10203040";
 int pinDHT = D5;
 
 int relayPins[4] = {
-  D1,
+  D4,
   D2,
   D6,
   D7
@@ -111,8 +114,8 @@ int relayPins[4] = {
 
 #define DHTTYPE DHT21
 DHT* dht = nullptr;
-const int pinDHTSala2 = D3;
-DHT dhtSala2(pinDHTSala2, DHTTYPE);
+int pinDHTSala2 = D3;
+DHT* dhtSala2 = nullptr;
 
 // ======================================================
 // RELAY LOGIC
@@ -552,6 +555,8 @@ bool digitalPinAllowed(int pin) {
   return (
     pin == D1 ||
     pin == D2 ||
+    pin == D3 ||
+    pin == D4 ||
     pin == D5 ||
     pin == D6 ||
     pin == D7
@@ -680,27 +685,29 @@ bool pinConfigurationValid(
   int r1,
   int r2,
   int r3,
-  int r4
+  int r4,
+  int secondDHT = -1
 ) {
 
-  int pins[5] = {
+  int pins[6] = {
 
     dhtPin,
     r1,
     r2,
     r3,
-    r4
+    r4,
+    secondDHT < 0 ? pinDHTSala2 : secondDHT
   };
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 6; i++) {
 
-    if (!digitalPinAllowed(pins[i]) || pins[i] == pinDHTSala2)
+    if (!digitalPinAllowed(pins[i]))
       return false;
   }
 
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 6; i++) {
 
-    for (int j = i + 1; j < 5; j++) {
+    for (int j = i + 1; j < 6; j++) {
 
       if (pins[i] == pins[j])
         return false;
@@ -715,6 +722,9 @@ bool pinConfigurationValid(
 // ======================================================
 
 void saveHardwareConfig() {
+  int secondMagic=SECOND_DHT_MAGIC;
+  EEPROM.put(EEPROM_SECOND_DHT_MAGIC,secondMagic);
+  EEPROM.put(EEPROM_SECOND_DHT_PIN,pinDHTSala2);
 
   EEPROM.put(
     EEPROM_PIN_DHT,
@@ -755,6 +765,9 @@ void saveHardwareConfig() {
 // ======================================================
 
 void loadHardwareConfig() {
+  int secondMagic=0; EEPROM.get(EEPROM_SECOND_DHT_MAGIC,secondMagic);
+  if(secondMagic==SECOND_DHT_MAGIC)EEPROM.get(EEPROM_SECOND_DHT_PIN,pinDHTSala2);
+  if(!digitalPinAllowed(pinDHTSala2))pinDHTSala2=D3;
 
   int magic = 0;
 
@@ -766,8 +779,9 @@ void loadHardwareConfig() {
   if (magic != HW_MAGIC_VALUE) {
 
     pinDHT = D5;
+    pinDHTSala2 = D3;
 
-    relayPins[0] = D1;
+    relayPins[0] = D4;
     relayPins[1] = D2;
     relayPins[2] = D6;
     relayPins[3] = D7;
@@ -813,8 +827,9 @@ void loadHardwareConfig() {
   ) {
 
     pinDHT = D5;
+    pinDHTSala2 = D3;
 
-    relayPins[0] = D1;
+    relayPins[0] = D4;
     relayPins[1] = D2;
     relayPins[2] = D6;
     relayPins[3] = D7;
@@ -1157,7 +1172,9 @@ void initializeHardware() {
     );
 
   dht->begin();
-  dhtSala2.begin();
+  if(dhtSala2 != nullptr)delete dhtSala2;
+  dhtSala2 = new DHT(pinDHTSala2,DHTTYPE);
+  dhtSala2->begin();
 }
 
 // ======================================================
@@ -1437,8 +1454,8 @@ void readDHT() {
     millis();
 
   dhtSala2ReadCount++;
-  float secondTemp = dhtSala2.readTemperature();
-  float secondHumidity = dhtSala2.readHumidity();
+  float secondTemp = dhtSala2 ? dhtSala2->readTemperature() : NAN;
+  float secondHumidity = dhtSala2 ? dhtSala2->readHumidity() : NAN;
   dhtSala2Fresh = GrowEnvironment::validReading(secondTemp, secondHumidity);
   if (dhtSala2Fresh) {
     temperatureSala2 = secondTemp;
@@ -1450,7 +1467,7 @@ void readDHT() {
   } else {
     dhtSala2FailureCount++;
     dhtSala2ConsecutiveFailures++;
-    if (dhtSala2ConsecutiveFailures % DHT_REINITIALIZE_EVERY == 0) dhtSala2.begin();
+    if (dhtSala2 && dhtSala2ConsecutiveFailures % DHT_REINITIALIZE_EVERY == 0) dhtSala2->begin();
   }
 
   dhtReadCount++;
@@ -1545,7 +1562,7 @@ String roomSensorsJson() {
   bool fresh2 = dhtSala2Fresh && dhtSala2HasReading && millis()-dhtSala2LastSuccessAt <= 15000UL;
   String json = F("[{\"room\":1,\"type\":\"AM2301\",\"pin\":\"");
   json += pinToString(pinDHT);
-  json += F("\",\"temperature\":");
+  json += F("\",\"configurable\":true,\"temperature\":");
   json += fresh1 ? String(temperature, 1) : String("null");
   json += F(",\"humidity\":");
   json += fresh1 ? String(humidity, 1) : String("null");
@@ -1553,7 +1570,9 @@ String roomSensorsJson() {
   json += F(",\"readCount\":"); json += dhtReadCount;
   json += F(",\"successCount\":"); json += dhtSuccessCount;
   json += F(",\"failureCount\":"); json += dhtFailureCount;
-  json += F("},{\"room\":2,\"type\":\"AM2301\",\"pin\":\"D3\",\"temperature\":");
+  json += F("},{\"room\":2,\"type\":\"AM2301\",\"pin\":\"");
+  json += pinToString(pinDHTSala2);
+  json += F("\",\"configurable\":true,\"temperature\":");
   json += fresh2 ? String(temperatureSala2, 1) : String("null");
   json += F(",\"humidity\":");
   json += fresh2 ? String(humiditySala2, 1) : String("null");
@@ -1979,7 +1998,7 @@ void handleApiDiagnostics() {
   json += String(dhtConsecutiveFailures);
   json += F(",\"reinitializations\":");
   json += String(dhtReinitializations);
-  json += F("}}");
+  json += F("},\"sensors\":") + roomSensorsJson() + '}';
   addCORS();
   server.send(200, "application/json", json);
 }
@@ -2567,6 +2586,8 @@ void handleApiHardware() {
 
   json += F("\"D1\",");
   json += F("\"D2\",");
+  json += F("\"D3\",");
+  json += F("\"D4\",");
   json += F("\"D5\",");
   json += F("\"D6\",");
   json += F("\"D7\"");
@@ -2589,6 +2610,7 @@ void handleApiHardware() {
 // ======================================================
 
 void handleApiSetHardware() {
+  int newSecondDHT=server.hasArg("dht2")?stringToPin(server.arg("dht2")):pinDHTSala2;
 
   int newDHT =
     pinDHT;
@@ -2629,12 +2651,14 @@ void handleApiSetHardware() {
   }
 
   if (
+    newSecondDHT < 0 ||
     !pinConfigurationValid(
       newDHT,
       newRelays[0],
       newRelays[1],
       newRelays[2],
-      newRelays[3]
+      newRelays[3],
+      newSecondDHT
     )
   ) {
 
@@ -2651,6 +2675,8 @@ void handleApiSetHardware() {
 
   // Persist the next map without moving live outputs. It applies at restart.
   EEPROM.put(EEPROM_PIN_DHT,newDHT);
+  EEPROM.put(EEPROM_SECOND_DHT_PIN,newSecondDHT);
+  int secondMagic=SECOND_DHT_MAGIC;EEPROM.put(EEPROM_SECOND_DHT_MAGIC,secondMagic);
   for(int i=0;i<4;i++)EEPROM.put(EEPROM_PIN_RELAY1+i*4,newRelays[i]);
   int magic=HW_MAGIC_VALUE;EEPROM.put(EEPROM_HW_MAGIC,magic);EEPROM.commit();
 

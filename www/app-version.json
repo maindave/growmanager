@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.30",
-  "versionCode": 50,
-  "publishedAt": "2026-11-18T20:20:00-03:00",
+  "versionName": "2.6.31",
+  "versionCode": 51,
+  "publishedAt": "2026-11-18T20:36:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Salas con nombre editable: asignación de sensores y relés y monitoreo simultáneo de ambos AM2301 en el dashboard."
+  "releaseNotes": "Hardware actualizado: dos sensores AM2301 configurables, seis pines sin duplicados y diagnóstico por sensor. Firmware 2.6.17."
 }

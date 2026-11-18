@@ -7,6 +7,7 @@ const localMode=()=>globalThis.GrowAuth?.isLocal?.()||document.documentElement.d
 const scopeKey=()=>`${localMode()?'local':globalThis.GrowAuth?.getUser?.()?.id||'signed-out'}:${workspace()?.id||'local'}:${address()}`;
 const cacheKey=()=>`growmanager.equipment-rooms.${localMode()?'local':globalThis.GrowAuth?.getUser?.()?.id||'account'}.${scopeKey()}`;
 const clone=v=>JSON.parse(JSON.stringify(v));
+const sensorPin=id=>source().status?.sensors?.find(s=>Number(s.room)===id)?.pin||(id===1?'D5':'D3');
 function validate(rows){
  const usedSensors=new Set(),usedRelays=new Set(),ids=new Set();
  if(!Array.isArray(rows))throw Error('Configuración de salas inválida.');
@@ -32,7 +33,7 @@ async function load(){
  if(request!==revision)return;loaded=true;draft=clone(groups);editor();render();
 }
 function editor(){
- $('equipmentRoomEditor').innerHTML=draft.map((g,index)=>`<fieldset class="equipment-room-fields" data-group-index="${index}"><div class="section-heading"><label>Nombre de la sala<input data-group-name value="${esc(g.name)}" maxlength="60" required placeholder="Nombre que quieras"></label><button type="button" data-remove-group="${index}" class="text-button">Quitar sala</button></div><div class="form-grid two"><div><strong>Sensores</strong>${[1,2].map(id=>`<label class="check-field"><input type="checkbox" data-group-sensor="${id}" ${g.sensors.includes(id)?'checked':''}> Sensor ${id} · ${id===1?'D5':'D3'}</label>`).join('')}</div><div><strong>Relés</strong>${[1,2,3,4].map(id=>`<label class="check-field"><input type="checkbox" data-group-relay="${id}" ${g.relays.includes(id)?'checked':''}> Relé ${id}</label>`).join('')}</div></div></fieldset>`).join('')||'<p class="field-help">Todavía no creaste salas para agrupar tus equipos.</p>';
+ $('equipmentRoomEditor').innerHTML=draft.map((g,index)=>`<fieldset class="equipment-room-fields" data-group-index="${index}"><div class="section-heading"><label>Nombre de la sala<input data-group-name value="${esc(g.name)}" maxlength="60" required placeholder="Nombre que quieras"></label><button type="button" data-remove-group="${index}" class="text-button">Quitar sala</button></div><div class="form-grid two"><div><strong>Sensores</strong>${[1,2].map(id=>`<label class="check-field"><input type="checkbox" data-group-sensor="${id}" ${g.sensors.includes(id)?'checked':''}> Sensor ${id} · ${esc(sensorPin(id))}</label>`).join('')}</div><div><strong>Relés</strong>${[1,2,3,4].map(id=>`<label class="check-field"><input type="checkbox" data-group-relay="${id}" ${g.relays.includes(id)?'checked':''}> Relé ${id}</label>`).join('')}</div></div></fieldset>`).join('')||'<p class="field-help">Todavía no creaste salas para agrupar tus equipos.</p>';
 }
 function readDraft(){return [...$('equipmentRoomEditor').querySelectorAll('[data-group-index]')].map(node=>({id:draft[Number(node.dataset.groupIndex)].id,name:node.querySelector('[data-group-name]').value,sensors:[...node.querySelectorAll('[data-group-sensor]:checked')].map(n=>Number(n.dataset.groupSensor)),relays:[...node.querySelectorAll('[data-group-relay]:checked')].map(n=>Number(n.dataset.groupRelay))}));}
 function source(){
@@ -54,7 +55,7 @@ function render(){
  if(!groups.length){host.innerHTML='<p class="field-help">Asigná los sensores y relés a tus salas desde Configuración.</p><button class="secondary-button" data-view="integrations">Configurar salas</button>';return;}
  host.innerHTML=groups.map(group=>`<section class="equipment-room" data-equipment-room="${esc(group.id)}"><div class="section-heading"><h4>${esc(group.name)}</h4><span class="field-help">${fresh?esc(label):'Sin conexión actual'}</span></div>${group.sensors.map(id=>{
   const sensor=status?.sensors?.find(s=>Number(s.room)===id),r=reading(sensor,fresh);
-  return `<div class="equipment-room-sensor" data-room-sensor="${id}"><p class="field-help">Sensor ${id} · ${id===1?'D5':'D3'} · ${r.valid?'Lectura actual':'Sin lectura actual'}</p><div class="equipment-room-metrics">${[['Temperatura',r.temperature,'°C',1],['Humedad',r.humidity,'%',1],['VPD',r.vpd,'kPa',2]].map(([name,value,unit,digits])=>`<div><span>${name}</span><strong>${format(value,digits)} <small>${unit}</small></strong></div>`).join('')}</div></div>`;
+  return `<div class="equipment-room-sensor" data-room-sensor="${id}"><p class="field-help">Sensor ${id} · ${esc(sensorPin(id))} · ${r.valid?'Lectura actual':'Sin lectura actual'}</p><div class="equipment-room-metrics">${[['Temperatura',r.temperature,'°C',1],['Humedad',r.humidity,'%',1],['VPD',r.vpd,'kPa',2]].map(([name,value,unit,digits])=>`<div><span>${name}</span><strong>${format(value,digits)} <small>${unit}</small></strong></div>`).join('')}</div></div>`;
  }).join('')||'<p class="field-help">Sin sensor asignado.</p>'}<div class="equipment-room-relays">${group.relays.map(id=>{const relay=status?.relays?.find(r=>r.id===id);return `<span class="equipment-relay ${fresh&&relay?.state?'is-on':''}">Relé ${id} · ${!fresh||!relay?'Sin datos':relay.state?'Encendido':'Apagado'}</span>`}).join('')||'<span class="field-help">Sin relés asignados.</span>'}</div></section>`).join('');
 
 }
