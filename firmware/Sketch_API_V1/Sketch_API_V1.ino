@@ -23,7 +23,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.15-manual-relay-tests";
+const char* firmwareVersion = "2.6.16-dual-am2301";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -111,6 +111,8 @@ int relayPins[4] = {
 
 #define DHTTYPE DHT21
 DHT* dht = nullptr;
+const int pinDHTSala2 = D3;
+DHT dhtSala2(pinDHTSala2, DHTTYPE);
 
 // ======================================================
 // RELAY LOGIC
@@ -248,6 +250,14 @@ unsigned long dhtSuccessCount = 0;
 unsigned long dhtFailureCount = 0;
 unsigned int dhtConsecutiveFailures = 0;
 unsigned int dhtReinitializations = 0;
+
+// Independent readings for Sala 2. Existing controls continue using Sala 1.
+float temperatureSala2 = NAN, humiditySala2 = NAN;
+bool dhtSala2Fresh = false, dhtSala2HasReading = false;
+unsigned long dhtSala2LastSuccessAt = 0;
+unsigned long dhtSala2ReadCount = 0, dhtSala2SuccessCount = 0;
+unsigned long dhtSala2FailureCount = 0;
+unsigned int dhtSala2ConsecutiveFailures = 0;
 
 const unsigned long DHT_INTERVAL =
   5000;
@@ -684,7 +694,7 @@ bool pinConfigurationValid(
 
   for (int i = 0; i < 5; i++) {
 
-    if (!digitalPinAllowed(pins[i]))
+    if (!digitalPinAllowed(pins[i]) || pins[i] == pinDHTSala2)
       return false;
   }
 
@@ -1147,6 +1157,7 @@ void initializeHardware() {
     );
 
   dht->begin();
+  dhtSala2.begin();
 }
 
 // ======================================================
@@ -1425,6 +1436,23 @@ void readDHT() {
   lastDHTRead =
     millis();
 
+  dhtSala2ReadCount++;
+  float secondTemp = dhtSala2.readTemperature();
+  float secondHumidity = dhtSala2.readHumidity();
+  dhtSala2Fresh = GrowEnvironment::validReading(secondTemp, secondHumidity);
+  if (dhtSala2Fresh) {
+    temperatureSala2 = secondTemp;
+    humiditySala2 = secondHumidity;
+    dhtSala2HasReading = true;
+    dhtSala2LastSuccessAt = millis();
+    dhtSala2SuccessCount++;
+    dhtSala2ConsecutiveFailures = 0;
+  } else {
+    dhtSala2FailureCount++;
+    dhtSala2ConsecutiveFailures++;
+    if (dhtSala2ConsecutiveFailures % DHT_REINITIALIZE_EVERY == 0) dhtSala2.begin();
+  }
+
   dhtReadCount++;
   dhtReadingFresh = false;
 
@@ -1510,6 +1538,33 @@ const char* dhtStateName() {
 unsigned long dhtLastSuccessAgeSeconds() {
   if (!dhtHasValidReading) return 0;
   return (millis() - lastDHTSuccessAt) / 1000UL;
+}
+
+String roomSensorsJson() {
+  bool fresh1 = environmentSensorFresh();
+  bool fresh2 = dhtSala2Fresh && dhtSala2HasReading && millis()-dhtSala2LastSuccessAt <= 15000UL;
+  String json = F("[{\"room\":1,\"type\":\"AM2301\",\"pin\":\"");
+  json += pinToString(pinDHT);
+  json += F("\",\"temperature\":");
+  json += fresh1 ? String(temperature, 1) : String("null");
+  json += F(",\"humidity\":");
+  json += fresh1 ? String(humidity, 1) : String("null");
+  json += F(",\"fresh\":"); json += fresh1 ? "true" : "false";
+  json += F(",\"readCount\":"); json += dhtReadCount;
+  json += F(",\"successCount\":"); json += dhtSuccessCount;
+  json += F(",\"failureCount\":"); json += dhtFailureCount;
+  json += F("},{\"room\":2,\"type\":\"AM2301\",\"pin\":\"D3\",\"temperature\":");
+  json += fresh2 ? String(temperatureSala2, 1) : String("null");
+  json += F(",\"humidity\":");
+  json += fresh2 ? String(humiditySala2, 1) : String("null");
+  json += F(",\"fresh\":"); json += fresh2 ? "true" : "false";
+  json += F(",\"readCount\":"); json += dhtSala2ReadCount;
+  json += F(",\"successCount\":"); json += dhtSala2SuccessCount;
+  json += F(",\"failureCount\":"); json += dhtSala2FailureCount;
+  json += F(",\"lastSuccessAgeSeconds\":");
+  json += dhtSala2HasReading ? String((millis()-dhtSala2LastSuccessAt)/1000UL) : String("null");
+  json += F("}]");
+  return json;
 }
 
 void handleRoot() {
@@ -1603,6 +1658,7 @@ String buildStatusJson(uint8_t eventLimit,bool recovering) {
 
   // Soil
 
+  json += F(",\"sensors\":") + roomSensorsJson();
   json += F(",\"environment\":") + environmentJsonWithEvents(eventLimit,recovering);
   json += F(",\"soil\":null");
   json += F(",\"soilEnabled\":false");
@@ -2462,6 +2518,8 @@ void handleApiHardware() {
 
   json +=
     F("\"board\":\"Wemos D1 R1 ESP8266\",");
+
+  json += F("\"sensors\":") + roomSensorsJson() + ',';
 
   json += F("\"dht\":{");
 

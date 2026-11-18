@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.29",
-  "versionCode": 49,
-  "publishedAt": "2026-10-29T16:34:56-03:00",
+  "versionName": "2.6.30",
+  "versionCode": 50,
+  "publishedAt": "2026-11-18T20:20:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Pruebas manuales ON/OFF por enchufe, sin temporizador. Volver a automático permite retomar la regulación. Requiere firmware 2.6.15."
+  "releaseNotes": "Salas con nombre editable: asignación de sensores y relés y monitoreo simultáneo de ambos AM2301 en el dashboard."
 }

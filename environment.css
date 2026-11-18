@@ -137,3 +137,20 @@ html:root .today-environment .metric-card[data-environment-metric]{background:va
 .agenda-track-list .agenda-stage-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:12px 0;border-bottom:1px solid var(--border)}
 .agenda-stage-row>label{display:flex;align-items:center;gap:8px;min-width:180px;font-weight:600}.agenda-stage-row input[type=checkbox]{width:auto;min-height:20px}.agenda-stage-row>span{flex:1;min-width:180px;font-size:.85rem;color:var(--text-muted)}
 #cultivationDialog [data-stage-end-label]{display:block}#cultivationDialog .field-help{display:block;margin-top:6px;font-size:.8rem}
+
+/* Named hardware groups */
+.equipment-room{padding:16px 0;border-top:1px solid var(--line,#dce5e2)}
+.equipment-room h4{font-size:1.1rem;margin:0}
+.equipment-room-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.equipment-room-metrics>div{padding:12px 8px;background:var(--surface-soft,rgba(128,128,128,.08));border-radius:10px;min-width:0}
+.equipment-room-metrics span,.equipment-room-metrics strong{display:block}
+.equipment-room-metrics span{font-size:.75rem}
+.equipment-room-metrics strong{font-size:clamp(1rem,3vw,1.5rem);margin-top:6px}
+.equipment-room-metrics small{font-size:.7rem;font-weight:400}
+.equipment-room-relays{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.equipment-relay{padding:6px 10px;border:1px solid var(--line,#dce5e2);border-radius:8px;font-size:.8rem}
+.equipment-relay.is-on{background:rgba(25,125,101,.14);color:var(--text-primary,inherit)}
+.equipment-room-fields{border:1px solid var(--line,#dce5e2);border-radius:12px;padding:16px;margin:16px 0;min-width:0}
+.equipment-room-fields .section-heading{align-items:end;flex-wrap:wrap}
+.equipment-room-fields .section-heading label{flex:1;min-width:180px}
+#legacyEnvironmentReadings[hidden]{display:none!important}
