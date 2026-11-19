@@ -1,6 +1,7 @@
 #if !defined(ARDUINO_ESP8266_WEMOS_D1R1)
 #error "This controller requires esp8266:esp8266:d1 (Wemos D1 R1)."
 #endif
+#include "HardwarePinPolicy.h"
 #include "RelayTestPolicy.h"
 #include "RelaySafetyPolicy.h"
 #include "IncubatorStatePolicy.h"
@@ -23,7 +24,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.17-dual-hardware";
+const char* firmwareVersion = "2.6.18-full-pin-map";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -550,54 +551,9 @@ void handleAcknowledgeEnvironment() {
 // PIN UTILITIES
 // ======================================================
 
-bool digitalPinAllowed(int pin) {
-
-  return (
-    pin == D1 ||
-    pin == D2 ||
-    pin == D3 ||
-    pin == D4 ||
-    pin == D5 ||
-    pin == D6 ||
-    pin == D7
-  );
-}
-
-// ======================================================
-
-String pinToString(int pin) {
-
-  if (pin == D0) return "D0";
-  if (pin == D1) return "D1";
-  if (pin == D2) return "D2";
-  if (pin == D3) return "D3";
-  if (pin == D4) return "D4";
-  if (pin == D5) return "D5";
-  if (pin == D6) return "D6";
-  if (pin == D7) return "D7";
-  if (pin == D8) return "D8";
-
-  return "UNKNOWN";
-}
-
-// ======================================================
-
-int stringToPin(String value) {
-
-  value.toUpperCase();
-
-  if (value == "D0") return D0;
-  if (value == "D1") return D1;
-  if (value == "D2") return D2;
-  if (value == "D3") return D3;
-  if (value == "D4") return D4;
-  if (value == "D5") return D5;
-  if (value == "D6") return D6;
-  if (value == "D7") return D7;
-  if (value == "D8") return D8;
-
-  return -1;
-}
+bool digitalPinAllowed(int pin) { return GrowPins::allowed(pin); }
+String pinToString(int pin) { return String(GrowPins::name(pin)); }
+int stringToPin(String value) { value.toUpperCase(); return GrowPins::parse(value.c_str()); }
 
 // ======================================================
 // FUNCTION UTILITIES
@@ -2583,15 +2539,19 @@ void handleApiHardware() {
   json += F("],");
 
   json += F("\"allowedDigitalPins\":[");
-
-  json += F("\"D1\",");
-  json += F("\"D2\",");
-  json += F("\"D3\",");
-  json += F("\"D4\",");
-  json += F("\"D5\",");
-  json += F("\"D6\",");
-  json += F("\"D7\"");
-
+  bool firstPin=true;
+  for(unsigned i=0;i<GrowPins::count;i++)if(GrowPins::pins[i].assignable){
+    if(!firstPin)json+=',';firstPin=false;
+    json+='\"';json+=GrowPins::pins[i].name;json+='\"';
+  }
+  json += F("],\"digitalPins\":[");
+  for(unsigned i=0;i<GrowPins::count;i++){
+    const auto& pin=GrowPins::pins[i];if(i)json+=',';
+    json+=F("{\"name\":\"");json+=pin.name;
+    json+=F("\",\"gpio\":");json+=pin.gpio;
+    json+=F(",\"assignable\":");json+=pin.assignable?"true":"false";
+    json+=F(",\"note\":\"");json+=pin.note;json+=F("\"}");
+  }
   json += F("]");
 
   json += F("}");

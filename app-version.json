@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.31",
-  "versionCode": 51,
-  "publishedAt": "2026-11-18T20:36:00-03:00",
+  "versionName": "2.6.32",
+  "versionCode": 52,
+  "publishedAt": "2026-11-18T21:00:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Hardware actualizado: dos sensores AM2301 configurables, seis pines sin duplicados y diagnóstico por sensor. Firmware 2.6.17."
+  "releaseNotes": "Mapa completo D0–D15 de Wemos D1 R1, soporte D9 y prevención de GPIO duplicados por pines equivalentes. Firmware 2.6.18."
 }
