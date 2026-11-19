@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.32",
-  "versionCode": 52,
-  "publishedAt": "2026-11-18T21:00:00-03:00",
+  "versionName": "2.6.33",
+  "versionCode": 53,
+  "publishedAt": "2026-11-18T22:15:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Mapa completo D0–D15 de Wemos D1 R1, soporte D9 y prevención de GPIO duplicados por pines equivalentes. Firmware 2.6.18."
+  "releaseNotes": "Lecturas de sensores sin ocultar valores recibidos: diagnóstico de última muestra y conservación de última lectura válida con antigüedad. Firmware 2.6.19."
 }

@@ -31,9 +31,16 @@ const fs=require('fs'),assert=require('node:assert/strict'),path=require('path')
  if(process.env.ROOM_SCREENSHOT)await page.locator('.today-environment').screenshot({path:process.env.ROOM_SCREENSHOT});
  await page.locator('[data-group-index="1"] [data-group-sensor="2"]').check();await page.locator('#equipmentRoomsForm button[type="submit"]').click();assert.match(await page.locator('#equipmentRoomsMessage').innerText(),/una sola sala/);
  await page.evaluate(()=>{fixture.sensors[1].fresh=false;EquipmentRooms.update({local:fixture,localAt:Date.now(),remote:[]});});
- assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/Sin lectura actual/);assert.doesNotMatch(await page.locator('[data-equipment-room]').nth(0).innerText(),/29,0/);
+ assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/sin confirmar actualidad/);assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/29,0/);
  await page.evaluate(()=>{EquipmentRooms.update({local:fixture,localAt:Date.now()-20000,remote:[]});});
- assert.match(await page.locator('[data-equipment-room]').nth(1).innerText(),/Sin lectura actual/);
+ assert.match(await page.locator('[data-equipment-room]').nth(1).innerText(),/conexión sin actualizar/);
+ assert.match(await page.locator('[data-equipment-room]').nth(1).innerText(),/20,0/);
+ await page.evaluate(()=>{fixture.sensors[1]={room:2,pin:'D5',temperature:null,humidity:null,fresh:false,readStatus:'read_failed',lastValid:{temperature:28,humidity:61,ageSeconds:35}};EquipmentRooms.update({local:fixture,localAt:Date.now(),remote:[]});});
+ assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/Última lectura válida[\s\S]*35 s[\s\S]*28,0/);
+ await page.evaluate(()=>{fixture.sensors[1]={room:2,temperature:-30,humidity:0,fresh:false,readStatus:'out_of_range'};EquipmentRooms.update({local:fixture,localAt:Date.now(),remote:[]});});
+ assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/fuera de rango[\s\S]*-30,0/);
+ await page.evaluate(()=>{fixture.sensors[1]={room:2,temperature:null,humidity:null,fresh:false,lastValid:null};EquipmentRooms.update({local:fixture,localAt:Date.now(),remote:[]});});
+ assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/Sin lectura recibida/);
  // Reload the configuration and verify persisted assignments, rather than the invalid draft.
  await page.evaluate(()=>window.dispatchEvent(new Event('grow-workspace-changed')));
  assert.equal(await page.locator('[data-group-name]').nth(0).inputValue(),'Mi sala A');

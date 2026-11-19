@@ -24,7 +24,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.18-full-pin-map";
+const char* firmwareVersion = "2.6.19-sensor-reading-detail";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -242,6 +242,8 @@ unsigned long lastEmergencyVentilationEnd = 0;
 
 float temperature = 0;
 float humidity = 0;
+float latestTemperature = NAN, latestHumidity = NAN;
+float latestTemperatureSala2 = NAN, latestHumiditySala2 = NAN;
 
 bool dhtAvailable = false;
 bool dhtReadingFresh = false;
@@ -1412,6 +1414,7 @@ void readDHT() {
   dhtSala2ReadCount++;
   float secondTemp = dhtSala2 ? dhtSala2->readTemperature() : NAN;
   float secondHumidity = dhtSala2 ? dhtSala2->readHumidity() : NAN;
+  latestTemperatureSala2=secondTemp; latestHumiditySala2=secondHumidity;
   dhtSala2Fresh = GrowEnvironment::validReading(secondTemp, secondHumidity);
   if (dhtSala2Fresh) {
     temperatureSala2 = secondTemp;
@@ -1430,7 +1433,7 @@ void readDHT() {
   dhtReadingFresh = false;
 
   if (dht == nullptr) {
-
+    latestTemperature=NAN; latestHumidity=NAN;
     dhtFailureCount++;
     dhtConsecutiveFailures++;
     dhtAvailable = false;
@@ -1443,6 +1446,7 @@ void readDHT() {
 
   float newHumidity =
     dht->readHumidity();
+  latestTemperature=newTemp; latestHumidity=newHumidity;
 
   if (
     !isnan(newTemp) &&
@@ -1514,32 +1518,34 @@ unsigned long dhtLastSuccessAgeSeconds() {
 }
 
 String roomSensorsJson() {
-  bool fresh1 = environmentSensorFresh();
-  bool fresh2 = dhtSala2Fresh && dhtSala2HasReading && millis()-dhtSala2LastSuccessAt <= 15000UL;
-  String json = F("[{\"room\":1,\"type\":\"AM2301\",\"pin\":\"");
-  json += pinToString(pinDHT);
-  json += F("\",\"configurable\":true,\"temperature\":");
-  json += fresh1 ? String(temperature, 1) : String("null");
-  json += F(",\"humidity\":");
-  json += fresh1 ? String(humidity, 1) : String("null");
-  json += F(",\"fresh\":"); json += fresh1 ? "true" : "false";
-  json += F(",\"readCount\":"); json += dhtReadCount;
-  json += F(",\"successCount\":"); json += dhtSuccessCount;
-  json += F(",\"failureCount\":"); json += dhtFailureCount;
-  json += F("},{\"room\":2,\"type\":\"AM2301\",\"pin\":\"");
-  json += pinToString(pinDHTSala2);
-  json += F("\",\"configurable\":true,\"temperature\":");
-  json += fresh2 ? String(temperatureSala2, 1) : String("null");
-  json += F(",\"humidity\":");
-  json += fresh2 ? String(humiditySala2, 1) : String("null");
-  json += F(",\"fresh\":"); json += fresh2 ? "true" : "false";
-  json += F(",\"readCount\":"); json += dhtSala2ReadCount;
-  json += F(",\"successCount\":"); json += dhtSala2SuccessCount;
-  json += F(",\"failureCount\":"); json += dhtSala2FailureCount;
-  json += F(",\"lastSuccessAgeSeconds\":");
-  json += dhtSala2HasReading ? String((millis()-dhtSala2LastSuccessAt)/1000UL) : String("null");
-  json += F("}]");
-  return json;
+  const float currentT[]={latestTemperature,latestTemperatureSala2},currentH[]={latestHumidity,latestHumiditySala2};
+  const float validT[]={temperature,temperatureSala2},validH[]={humidity,humiditySala2};
+  const bool hasValid[]={dhtHasValidReading,dhtSala2HasReading};
+  const bool fresh[]={environmentSensorFresh(),dhtSala2Fresh&&dhtSala2HasReading&&millis()-dhtSala2LastSuccessAt<=15000UL};
+  const unsigned long at[]={lastDHTSuccessAt,dhtSala2LastSuccessAt};
+  const unsigned long reads[]={dhtReadCount,dhtSala2ReadCount},successes[]={dhtSuccessCount,dhtSala2SuccessCount},failures[]={dhtFailureCount,dhtSala2FailureCount};
+  const int pins[]={pinDHT,pinDHTSala2};
+  String json=F("[");
+  for(int i=0;i<2;i++){
+    if(i)json+=',';
+    json+=F("{\"room\":");json+=i+1;
+    json+=F(",\"type\":\"AM2301\",\"pin\":\"");json+=pinToString(pins[i]);
+    json+=F("\",\"configurable\":true,\"temperature\":");json+=isfinite(currentT[i])?String(currentT[i],1):String("null");
+    json+=F(",\"humidity\":");json+=isfinite(currentH[i])?String(currentH[i],1):String("null");
+    json+=F(",\"fresh\":");json+=fresh[i]?"true":"false";
+    json+=F(",\"readStatus\":\"");
+    json+=!reads[i]?"waiting":!isfinite(currentT[i])||!isfinite(currentH[i])?"read_failed":GrowEnvironment::validReading(currentT[i],currentH[i])?"valid":"out_of_range";
+    json+=F("\",\"readCount\":");json+=reads[i];
+    json+=F(",\"successCount\":");json+=successes[i];json+=F(",\"failureCount\":");json+=failures[i];
+    json+=F(",\"lastSuccessAgeSeconds\":");json+=hasValid[i]?String((millis()-at[i])/1000UL):String("null");
+    json+=F(",\"lastValid\":");
+    if(hasValid[i]){
+      json+=F("{\"temperature\":");json+=String(validT[i],1);json+=F(",\"humidity\":");json+=String(validH[i],1);
+      json+=F(",\"ageSeconds\":");json+=(millis()-at[i])/1000UL;json+='}';
+    }else json+=F("null");
+    json+='}';
+  }
+  json+=']';return json;
 }
 
 void handleRoot() {

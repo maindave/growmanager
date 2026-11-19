@@ -39,23 +39,36 @@ function readDraft(){return [...$('equipmentRoomEditor').querySelectorAll('[data
 function source(){
  if(context.local&&Date.now()-context.localAt<15000)return{status:context.local,fresh:true,label:'Local'};
  const rows=(context.remote||[]).filter(row=>row.device_key===address()).sort((a,b)=>Date.parse(b.sampled_at)-Date.parse(a.sampled_at));
- const row=rows[0];return{status:row?.payload,fresh:!!row&&Date.now()-Date.parse(row.sampled_at)<120000,label:'Remoto'};
+ const row=rows[0],remoteAt=row?Date.parse(row.sampled_at):0,remoteFresh=!!row&&Date.now()-remoteAt<120000;
+ if(context.local&&!remoteFresh&&context.localAt>=remoteAt)return{status:context.local,fresh:false,label:'Local',ageSeconds:Math.max(0,(Date.now()-context.localAt)/1000)};
+ return{status:row?.payload,fresh:remoteFresh,label:'Remoto',ageSeconds:row?Math.max(0,(Date.now()-remoteAt)/1000):0};
 }
-function reading(sensor,fresh){
- const valid=fresh&&sensor?.fresh===true&&EnvironmentModels.valid(sensor.temperature,sensor.humidity);
- return{valid,temperature:valid?sensor.temperature:null,humidity:valid?sensor.humidity:null,vpd:valid?EnvironmentModels.vpd(sensor.temperature,sensor.humidity):null};
+function reading(sensor,fresh,receivedAgeSeconds=0){
+ const finite=value=>typeof value==='number'&&Number.isFinite(value);
+ const available=finite(sensor?.temperature)||finite(sensor?.humidity);
+ const last=sensor?.lastValid,hasLast=EnvironmentModels.valid(last?.temperature,last?.humidity);
+ const t=available?sensor.temperature:hasLast?last.temperature:null,h=available?sensor.humidity:hasLast?last.humidity:null;
+ const valid=!!fresh&&sensor?.fresh===true&&EnvironmentModels.valid(t,h)&&available;
+ const historical=!available&&hasLast;
+ const age=Math.round((historical?Number(last.ageSeconds)||0:Number(sensor?.lastSuccessAgeSeconds)||0)+receivedAgeSeconds);
+ const label=historical?`Última lectura válida · hace ${age} s · lectura actual fallida`:
+  !available?'Sin lectura recibida':!fresh?'Última lectura recibida · conexión sin actualizar':
+  sensor?.readStatus==='out_of_range'||!EnvironmentModels.valid(t,h)?'Lectura recibida · fuera de rango':
+  valid?'Lectura actual':'Última lectura recibida · sin confirmar actualidad';
+ return{valid,historical,label,temperature:finite(t)?t:null,humidity:finite(h)?h:null,vpd:EnvironmentModels.vpd(t,h)};
 }
+
 const format=(value,digits=1)=>value===null?'—':Number(value).toLocaleString('es-AR',{minimumFractionDigits:digits,maximumFractionDigits:digits});
 function render(){
  const host=$('equipmentRoomDashboard');if(!host)return;
- const {status,fresh,label}=source(),dual=Array.isArray(status?.sensors),active=groups.length>0||dual;
+ const {status,fresh,label,ageSeconds=0}=source(),dual=Array.isArray(status?.sensors),active=groups.length>0||dual;
  $('legacyEnvironmentReadings').hidden=active;
  const picker=$('dashboardEnvironmentRoom');if(active)picker.hidden=true;
  if(!active){host.innerHTML='';return;}
  if(!groups.length){host.innerHTML='<p class="field-help">Asigná los sensores y relés a tus salas desde Configuración.</p><button class="secondary-button" data-view="integrations">Configurar salas</button>';return;}
  host.innerHTML=groups.map(group=>`<section class="equipment-room" data-equipment-room="${esc(group.id)}"><div class="section-heading"><h4>${esc(group.name)}</h4><span class="field-help">${fresh?esc(label):'Sin conexión actual'}</span></div>${group.sensors.map(id=>{
-  const sensor=status?.sensors?.find(s=>Number(s.room)===id),r=reading(sensor,fresh);
-  return `<div class="equipment-room-sensor" data-room-sensor="${id}"><p class="field-help">Sensor ${id} · ${esc(sensorPin(id))} · ${r.valid?'Lectura actual':'Sin lectura actual'}</p><div class="equipment-room-metrics">${[['Temperatura',r.temperature,'°C',1],['Humedad',r.humidity,'%',1],['VPD',r.vpd,'kPa',2]].map(([name,value,unit,digits])=>`<div><span>${name}</span><strong>${format(value,digits)} <small>${unit}</small></strong></div>`).join('')}</div></div>`;
+  const sensor=status?.sensors?.find(s=>Number(s.room)===id),r=reading(sensor,fresh,ageSeconds);
+  return `<div class="equipment-room-sensor" data-room-sensor="${id}"><p class="field-help">Sensor ${id} · ${esc(sensorPin(id))} · ${esc(r.label)}</p><div class="equipment-room-metrics">${[['Temperatura',r.temperature,'°C',1],['Humedad',r.humidity,'%',1],['VPD',r.vpd,'kPa',2]].map(([name,value,unit,digits])=>`<div><span>${name}</span><strong>${format(value,digits)} <small>${unit}</small></strong></div>`).join('')}</div></div>`;
  }).join('')||'<p class="field-help">Sin sensor asignado.</p>'}<div class="equipment-room-relays">${group.relays.map(id=>{const relay=status?.relays?.find(r=>r.id===id);return `<span class="equipment-relay ${fresh&&relay?.state?'is-on':''}">Relé ${id} · ${!fresh||!relay?'Sin datos':relay.state?'Encendido':'Apagado'}</span>`}).join('')||'<span class="field-help">Sin relés asignados.</span>'}</div></section>`).join('');
 
 }
