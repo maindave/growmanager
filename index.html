@@ -417,6 +417,8 @@
 <section class="panel form-panel" data-collapsible data-collapse-key="automation-ac">
 <div class="section-heading"><div><p class="eyebrow">AIRE ACONDICIONADO</p><h3>Control por temperatura</h3></div></div>
 <p id="acFirmwareStatus" class="field-help" hidden></p>
+<label>Sensor de temperatura para el aire<select name="acSensor"><option value="1">Sensor 1</option><option value="2">Sensor 2</option></select></label>
+<p id="acSensorHelp" class="field-help">El aire se regula por el sensor seleccionado, independientemente de la sala donde se muestre.</p>
 <div class="form-grid two">
 <label>Encender al alcanzar (°C)<input name="acOn" type="number" min="0" max="50" step="0.1" required></label>
 <label>Apagar al bajar a (°C)<input name="acOff" type="number" min="0" max="50" step="0.1" required></label>

@@ -6,12 +6,17 @@ import tempfile
 source = (Path(__file__).resolve().parents[1] / 'firmware/Sketch_API_V1/Sketch_API_V1.ino').read_text()
 controller = source.split('void automaticACControl() {', 1)[1].split('\nvoid automaticVentilationControl()', 1)[0]
 program = '''#include <cassert>
+#include <cmath>
+using std::isfinite;
+unsigned long now=0;unsigned long millis(){return now;}
+int acSensor=1;bool dhtSala2Fresh=true,dhtSala2HasReading=true;unsigned long dhtSala2LastSuccessAt=0;float temperatureSala2=25;
 const int FN_AC=8, MODE_AUTO=1;
 int assigned=0, relayModes[4]={1,1,1,1};
 struct RelayTest {bool active=false;};
 RelayTest relayTests[4];
 bool relayStates[4]={}, dhtReadingFresh=true;
 float temperature=25, acOnTemperature=26, acOffTemperature=24;
+bool environmentSensorFresh(){return dhtReadingFresh;}
 int findRelayByFunction(int fn){assert(fn==FN_AC); return assigned;}
 void setRelayState(int id,bool state){relayStates[id-1]=state;}
 void automaticACControl() {''' + controller + '''
@@ -37,6 +42,15 @@ int main(){
   assigned=0;temperature=30;relayTests[0].active=true;
   automaticACControl();assert(!relayStates[0]);
   assigned=-1; automaticACControl();
+  assigned=0;relayTests[0].active=false;acSensor=2;relayStates[0]=false;
+  temperature=40;temperatureSala2=23;automaticACControl();assert(!relayStates[0]);
+  temperatureSala2=26;automaticACControl();assert(relayStates[0]);
+  temperature=0;temperatureSala2=25;dhtReadingFresh=false;automaticACControl();assert(relayStates[0]);
+  temperatureSala2=24;automaticACControl();assert(!relayStates[0]);
+  temperatureSala2=30;dhtSala2Fresh=false;automaticACControl();assert(!relayStates[0]);
+  relayStates[0]=true;temperatureSala2=20;automaticACControl();assert(relayStates[0]);
+  dhtSala2Fresh=true;now=16000;automaticACControl();assert(relayStates[0]);
+  now=0;temperatureSala2=NAN;automaticACControl();assert(relayStates[0]);
 }
 '''
 with tempfile.TemporaryDirectory() as folder:

@@ -13,12 +13,12 @@ const root=path.resolve(__dirname,'..');
   document.getElementById('appLayout').hidden=false;document.getElementById('authGate').hidden=true;
   localStorage.setItem('growmanager.connect.enabled','true');
   window.CultivoRepository={getCurrentWorkspace:()=>null};window.GrowSupabase={client:{}};
-  window.fixture={lightStartHour:18,lightStartMinute:0,lightDurationHours:12,tempMin:23,tempMax:27,acOffTemperature:24,acOnTemperature:26,ventilationMode:'combined',ventilationIntervalMinutes:10,ventilationDurationMinutes:2,ventilationEmergencyDurationMinutes:3};
+  window.fixture={lightStartHour:18,lightStartMinute:0,lightDurationHours:12,tempMin:23,tempMax:27,acOffTemperature:24,acOnTemperature:26,acSensor:1,ventilationMode:'combined',ventilationIntervalMinutes:10,ventilationDurationMinutes:2,ventilationEmergencyDurationMinutes:3};
   window.posts=[];
   window.fetch=async(url,options={})=>{
    if(options.method==='POST'){
     const values=Object.fromEntries(new URL(url).searchParams);posts.push(values);
-    fixture.acOffTemperature=Number(values.acOff);fixture.acOnTemperature=Number(values.acOn);
+    if(values.acSensor)fixture.acSensor=Number(values.acSensor);fixture.acOffTemperature=Number(values.acOff);fixture.acOnTemperature=Number(values.acOn);
     return {ok:true,text:async()=>JSON.stringify({ok:true})};
    }
    return {ok:true,text:async()=>JSON.stringify(fixture)};
@@ -46,11 +46,14 @@ const root=path.resolve(__dirname,'..');
  await page.locator('#automationForm').evaluate(f=>f.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
  assert.equal(await page.evaluate(()=>posts.length),0);
  assert.match(await page.locator('#automationMessage').innerText(),/apagado debe ser menor/);
+ await page.locator('[name="acSensor"]').selectOption('2');
  await page.locator('[name="acOff"]').fill('24.5');await page.locator('[name="acOn"]').fill('27');
  await page.locator('#automationForm').evaluate(f=>f.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})));
  await page.waitForFunction(()=>posts.length===1&&document.querySelector('#automationMessage').textContent.includes('guardadas'));
- assert.deepEqual(await page.evaluate(()=>({acOff:posts[0].acOff,acOn:posts[0].acOn})),{acOff:'24.5',acOn:'27'});
- await page.evaluate(async()=>{delete fixture.acOffTemperature;delete fixture.acOnTemperature;await testAC.loadConfig();testAC.State.functions={supportedFunctions:['incubator']};testAC.renderControl([{id:1,function:'none',mode:'manual'}]);});
+ assert.deepEqual(await page.evaluate(()=>({acOff:posts[0].acOff,acOn:posts[0].acOn,acSensor:posts[0].acSensor})),{acOff:'24.5',acOn:'27',acSensor:'2'});
+ assert.equal(await page.locator('[name="acSensor"]').inputValue(),'2');
+ await page.evaluate(async()=>{delete fixture.acOffTemperature;delete fixture.acOnTemperature;delete fixture.acSensor;await testAC.loadConfig();testAC.State.functions={supportedFunctions:['incubator']};testAC.renderControl([{id:1,function:'none',mode:'manual'}]);});
+ assert.equal(await page.locator('[name="acSensor"]').isDisabled(),true);
  assert.equal(await page.locator('[name="acOn"]').isDisabled(),true);
  assert.equal(await page.locator('option[value="ac"]').evaluate(el=>el.disabled),true);
  assert.equal(await page.locator('#acFirmwareStatus').isVisible(),true);

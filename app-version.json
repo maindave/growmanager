@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.33",
-  "versionCode": 53,
-  "publishedAt": "2026-11-18T22:15:00-03:00",
+  "versionName": "2.6.34",
+  "versionCode": 54,
+  "publishedAt": "2026-11-19T00:35:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Lecturas de sensores sin ocultar valores recibidos: diagnóstico de última muestra y conservación de última lectura válida con antigüedad. Firmware 2.6.19."
+  "releaseNotes": "Selección del sensor para el aire en Control → Automatización. Ambos monitores con colores e íconos de estado. Selector requiere firmware 2.6.20."
 }

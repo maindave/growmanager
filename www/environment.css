@@ -154,3 +154,20 @@ html:root .today-environment .metric-card[data-environment-metric]{background:va
 .equipment-room-fields .section-heading{align-items:end;flex-wrap:wrap}
 .equipment-room-fields .section-heading label{flex:1;min-width:180px}
 #legacyEnvironmentReadings[hidden]{display:none!important}
+
+/* Both room monitors: blue below target, green in range, coral above target. */
+.equipment-room-metrics .equipment-metric{--metric-color:var(--text-muted);--metric-bg:var(--surface-secondary);background:var(--metric-bg);border:1px solid color-mix(in srgb,var(--metric-color) 40%,transparent);padding:12px 10px;border-radius:12px;display:flex;flex-direction:column;gap:9px}
+.equipment-metric[data-level="low"]{--metric-color:#85c8ff;--metric-bg:#152b40}
+.equipment-metric[data-level="normal"]{--metric-color:#9cdbba;--metric-bg:#19352b}
+.equipment-metric[data-level="high"]{--metric-color:#ff9a7b;--metric-bg:#382128}
+html[data-theme="light"] .equipment-metric[data-level="low"]{--metric-color:#145c96;--metric-bg:#e6f2ff}
+html[data-theme="light"] .equipment-metric[data-level="normal"]{--metric-color:#276344;--metric-bg:#e9f5ee}
+html[data-theme="light"] .equipment-metric[data-level="high"]{--metric-color:#aa3715;--metric-bg:#fff0eb}
+.equipment-room-metrics .equipment-metric-heading{display:flex;align-items:center;justify-content:space-between;gap:5px;color:var(--metric-color)}
+.equipment-metric-icon .ui-icon{width:23px;height:23px}
+.equipment-room-metrics .equipment-metric strong{color:var(--metric-color);margin:0;font-variant-numeric:tabular-nums}
+.equipment-room-metrics .equipment-metric-state{display:flex;align-items:center;gap:4px;color:var(--metric-color);font-weight:600;font-size:.75rem}
+.equipment-metric-state .ui-icon{width:15px;height:15px;flex-shrink:0}
+.equipment-room-metrics .equipment-metric-target{font-size:.65rem;color:var(--text-muted);margin-top:auto;overflow-wrap:anywhere}
+@media(max-width:400px){.equipment-room-metrics{gap:5px}.equipment-room-metrics .equipment-metric{padding:10px 6px}.equipment-metric-heading .equipment-metric-icon .ui-icon{width:18px;height:18px}}
+@media(max-width:480px){.equipment-room-metrics .equipment-metric-heading{flex-direction:column;align-items:flex-start}}

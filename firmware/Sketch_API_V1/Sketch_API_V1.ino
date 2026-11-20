@@ -24,7 +24,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.19-sensor-reading-detail";
+const char* firmwareVersion = "2.6.20-ac-sensor-selection";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -49,6 +49,9 @@ const char* password = "10203040";
 #define EEPROM_AC_MAGIC 584
 #define EEPROM_SECOND_DHT_MAGIC 600
 #define EEPROM_SECOND_DHT_PIN 604
+#define EEPROM_AC_SENSOR 608
+#define EEPROM_AC_SENSOR_MAGIC 612
+#define AC_SENSOR_MAGIC 2620
 #define SECOND_DHT_MAGIC 2717
 #define AC_MAGIC_VALUE 2613
 
@@ -205,6 +208,7 @@ float tempMin = 23.0;
 float tempMax = 27.0;
 float acOffTemperature = 24.0;
 float acOnTemperature = 26.0;
+int acSensor = 1;
 
 // Ventilación configurable: intervalos, temperatura o ambas.
 
@@ -897,6 +901,8 @@ void loadFunctionConfig() {
 // ======================================================
 
 void saveControlConfig() {
+  EEPROM.put(EEPROM_AC_SENSOR,acSensor);
+  int sensorMagic=AC_SENSOR_MAGIC;EEPROM.put(EEPROM_AC_SENSOR_MAGIC,sensorMagic);
   EEPROM.put(EEPROM_AC_OFF, acOffTemperature);
   EEPROM.put(EEPROM_AC_ON, acOnTemperature);
   int acMagic = AC_MAGIC_VALUE;
@@ -961,6 +967,9 @@ void saveControlConfig() {
 // ======================================================
 
 void loadControlConfig() {
+  int sensorMagic=0;EEPROM.get(EEPROM_AC_SENSOR_MAGIC,sensorMagic);
+  if(sensorMagic==AC_SENSOR_MAGIC)EEPROM.get(EEPROM_AC_SENSOR,acSensor);
+  if(acSensor!=1&&acSensor!=2)acSensor=1;
   int acMagic = 0;
   EEPROM.get(EEPROM_AC_MAGIC, acMagic);
   if (acMagic == AC_MAGIC_VALUE) {
@@ -1322,9 +1331,11 @@ void automaticACControl() {
   int relay = findRelayByFunction(FN_AC);
   if (relay < 0 || relayModes[relay] != MODE_AUTO || relayTests[relay].active) return;
   // Without a fresh reading, preserve the existing output command.
-  if (!dhtReadingFresh) return;
-  if (temperature >= acOnTemperature) setRelayState(relay + 1, true);
-  else if (temperature <= acOffTemperature) setRelayState(relay + 1, false);
+  bool fresh=acSensor==1?environmentSensorFresh():dhtSala2Fresh&&dhtSala2HasReading&&millis()-dhtSala2LastSuccessAt<=15000UL;
+  float measured=acSensor==1?temperature:temperatureSala2;
+  if (!fresh || !isfinite(measured)) return;
+  if (measured >= acOnTemperature) setRelayState(relay + 1, true);
+  else if (measured <= acOffTemperature) setRelayState(relay + 1, false);
 }
 
 void automaticVentilationControl() {
@@ -1639,6 +1650,7 @@ String buildStatusJson(uint8_t eventLimit,bool recovering) {
 
   // Soil
 
+  json += F(",\"acSensor\":") + String(acSensor);
   json += F(",\"sensors\":") + roomSensorsJson();
   json += F(",\"environment\":") + environmentJsonWithEvents(eventLimit,recovering);
   json += F(",\"soil\":null");
@@ -2261,6 +2273,7 @@ void handleApiConfig() {
   json += F(",\"lightTransitionUntil\":");
   json += String(lightTransitionUntil);
 
+  json += F(",\"acSensor\":") + String(acSensor);
   json += F(",\"acOffTemperature\":");
   json += String(acOffTemperature, 1);
   json += F(",\"acOnTemperature\":");
@@ -2320,6 +2333,14 @@ void handleApiConfig() {
 // ======================================================
 
 void handleApiSetConfig() {
+  int proposedACSensor=acSensor;
+  if(server.hasArg("acSensor")){
+    String sensor=server.arg("acSensor");
+    if(sensor!="1"&&sensor!="2"){
+      addCORS();server.send(400,"application/json","{\"error\":\"invalid_ac_sensor\"}");return;
+    }
+    proposedACSensor=sensor.toInt();
+  }
   // Reject invalid AC thresholds before changing any active configuration.
   float acOff = acOffTemperature, acOn = acOnTemperature;
   if (server.hasArg("acOff")) {
@@ -2474,6 +2495,7 @@ void handleApiSetConfig() {
 
   acOffTemperature = acOff;
   acOnTemperature = acOn;
+  acSensor=proposedACSensor;
   saveControlConfig();
 
   runAutomations();

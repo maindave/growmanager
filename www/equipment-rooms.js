@@ -7,6 +7,7 @@ const localMode=()=>globalThis.GrowAuth?.isLocal?.()||document.documentElement.d
 const scopeKey=()=>`${localMode()?'local':globalThis.GrowAuth?.getUser?.()?.id||'signed-out'}:${workspace()?.id||'local'}:${address()}`;
 const cacheKey=()=>`growmanager.equipment-rooms.${localMode()?'local':globalThis.GrowAuth?.getUser?.()?.id||'account'}.${scopeKey()}`;
 const clone=v=>JSON.parse(JSON.stringify(v));
+const sensorLabel=id=>{const room=groups.find(g=>g.sensors.includes(id));return 'Sensor '+id+' · '+sensorPin(id)+(room?' · '+room.name:'')};
 const sensorPin=id=>source().status?.sensors?.find(s=>Number(s.room)===id)?.pin||(id===1?'D5':'D3');
 function validate(rows){
  const usedSensors=new Set(),usedRelays=new Set(),ids=new Set();
@@ -59,6 +60,14 @@ function reading(sensor,fresh,receivedAgeSeconds=0){
 }
 
 const format=(value,digits=1)=>value===null?'—':Number(value).toLocaleString('es-AR',{minimumFractionDigits:digits,maximumFractionDigits:digits});
+function metricCard(key,state,value,unit,digits,current){
+ const known=Number.isFinite(state.min)&&Number.isFinite(state.max)&&state.max>state.min;
+ const level=!current?'unknown':!known?'unconfigured':value<state.min?'low':value>state.max?'high':'normal';
+ const label=!current?'Sin lectura actual':!known?'Sin objetivo':level==='low'?'Bajo':level==='high'?'Alto':'En rango';
+ const icon=globalThis.GrowToday?.icon?.(state.icon)||'';
+ const marker=globalThis.GrowToday?.icon?.(level==='low'?'arrow-down':level==='high'?'arrow-up':level==='normal'?'check':'sensor-unknown')||'';
+ return `<div class="equipment-metric" data-room-metric="${key}" data-level="${level}"><div class="equipment-metric-heading"><span>${state.name}</span><span class="equipment-metric-icon" aria-hidden="true">${icon}</span></div><strong>${format(value,digits)} <small>${unit}</small></strong><span class="equipment-metric-state">${marker}${label}</span><span class="equipment-metric-target">Objetivo: ${esc(state.target)}</span></div>`;
+}
 function render(){
  const host=$('equipmentRoomDashboard');if(!host)return;
  const {status,fresh,label,ageSeconds=0}=source(),dual=Array.isArray(status?.sensors),active=groups.length>0||dual;
@@ -68,7 +77,7 @@ function render(){
  if(!groups.length){host.innerHTML='<p class="field-help">Asigná los sensores y relés a tus salas desde Configuración.</p><button class="secondary-button" data-view="integrations">Configurar salas</button>';return;}
  host.innerHTML=groups.map(group=>`<section class="equipment-room" data-equipment-room="${esc(group.id)}"><div class="section-heading"><h4>${esc(group.name)}</h4><span class="field-help">${fresh?esc(label):'Sin conexión actual'}</span></div>${group.sensors.map(id=>{
   const sensor=status?.sensors?.find(s=>Number(s.room)===id),r=reading(sensor,fresh,ageSeconds);
-  return `<div class="equipment-room-sensor" data-room-sensor="${id}"><p class="field-help">Sensor ${id} · ${esc(sensorPin(id))} · ${esc(r.label)}</p><div class="equipment-room-metrics">${[['Temperatura',r.temperature,'°C',1],['Humedad',r.humidity,'%',1],['VPD',r.vpd,'kPa',2]].map(([name,value,unit,digits])=>`<div><span>${name}</span><strong>${format(value,digits)} <small>${unit}</small></strong></div>`).join('')}</div></div>`;
+  return `<div class="equipment-room-sensor" data-room-sensor="${id}"><p class="field-help">Sensor ${id} · ${esc(sensorPin(id))} · ${esc(r.label)}</p><div class="equipment-room-metrics">${Object.entries(EnvironmentModels.sensorStates({temperature:r.temperature,humidity:r.humidity,environment:status?.environment},r.valid)).map(([key,state])=>metricCard(key,state,key==='temperature'?r.temperature:key==='humidity'?r.humidity:r.vpd,state.unit,key==='vpd'?2:1,r.valid)).join('')}</div></div>`;
  }).join('')||'<p class="field-help">Sin sensor asignado.</p>'}<div class="equipment-room-relays">${group.relays.map(id=>{const relay=status?.relays?.find(r=>r.id===id);return `<span class="equipment-relay ${fresh&&relay?.state?'is-on':''}">Relé ${id} · ${!fresh||!relay?'Sin datos':relay.state?'Encendido':'Apagado'}</span>`}).join('')||'<span class="field-help">Sin relés asignados.</span>'}</div></section>`).join('');
 
 }
@@ -91,5 +100,5 @@ function init(){
  load();
 }
 function update(value){context=value;if(scope!==scopeKey())load();else render()}
-globalThis.EquipmentRooms=Object.freeze({init,update,validate,reading});
+globalThis.EquipmentRooms=Object.freeze({init,update,validate,reading,sensorLabel});
 })();
