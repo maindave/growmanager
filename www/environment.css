@@ -147,9 +147,6 @@ html:root .today-environment .metric-card[data-environment-metric]{background:va
 .equipment-room-metrics span{font-size:.75rem}
 .equipment-room-metrics strong{font-size:clamp(1rem,3vw,1.5rem);margin-top:6px}
 .equipment-room-metrics small{font-size:.7rem;font-weight:400}
-.equipment-room-relays{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.equipment-relay{padding:6px 10px;border:1px solid var(--line,#dce5e2);border-radius:8px;font-size:.8rem}
-.equipment-relay.is-on{background:rgba(25,125,101,.14);color:var(--text-primary,inherit)}
 .equipment-room-fields{border:1px solid var(--line,#dce5e2);border-radius:12px;padding:16px;margin:16px 0;min-width:0}
 .equipment-room-fields .section-heading{align-items:end;flex-wrap:wrap}
 .equipment-room-fields .section-heading label{flex:1;min-width:180px}
@@ -171,3 +168,7 @@ html[data-theme="light"] .equipment-metric[data-level="high"]{--metric-color:#aa
 .equipment-room-metrics .equipment-metric-target{font-size:.65rem;color:var(--text-muted);margin-top:auto;overflow-wrap:anywhere}
 @media(max-width:400px){.equipment-room-metrics{gap:5px}.equipment-room-metrics .equipment-metric{padding:10px 6px}.equipment-metric-heading .equipment-metric-icon .ui-icon{width:18px;height:18px}}
 @media(max-width:480px){.equipment-room-metrics .equipment-metric-heading{flex-direction:column;align-items:flex-start}}
+.equipment-room-metrics button.equipment-metric{font:inherit;text-align:left;cursor:pointer;color:var(--text);width:100%}
+.equipment-room-metrics button.equipment-metric:focus-visible{outline:2px solid var(--primary);outline-offset:3px}
+.equipment-room-metrics button.equipment-metric:hover{filter:brightness(1.06)}
+.equipment-metric-history{font-size:.7rem;color:var(--metric-color);margin-top:3px}

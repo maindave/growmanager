@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import '../environment-models.js';
+import '../environment-history-models.js';
+const M=globalThis.EnvironmentHistoryModels;
+assert.notEqual(M.sensorKey('192.168.1.25',1),M.sensorKey('192.168.1.25',2));
+const row={at:600000,temperature:20,humidity:60,payload:{sensors:[{room:1,temperature:20,humidity:60,fresh:true},{room:2,temperature:29,humidity:50,fresh:true}],environment:{vpdMin:.8,vpdMax:1.2}}};
+assert.equal(M.sensorRow(row,1).temperature,20);assert.equal(M.sensorRow(row,2).temperature,29);
+const failed={...row,payload:{...row.payload,sensors:[{room:1,temperature:null,humidity:null,fresh:false},{room:2,temperature:29,humidity:50,fresh:true}]}};
+assert.equal(M.sensorRow(failed,1),null);assert.equal(M.sensorRow(failed,2).temperature,29);
+const legacy={at:300000,temperature:21,humidity:55,payload:{dht:{fresh:true}}};
+assert.equal(M.sensorRow(legacy,2),null);assert.equal(M.sensorRow(legacy,1).temperature,21);
+const later={...row,at:600010};assert.equal(M.merge([row],[later]).length,1);assert.equal(M.merge([row],[later])[0].at,600010);
+assert.equal(M.merge([row],[{...row,at:900000}]).length,2);
+console.log('History models: isolated sensor keys, sensor 2 independent of sensor 1, legacy compatibility and deduplication passed');

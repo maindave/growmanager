@@ -25,9 +25,17 @@ const fs=require('fs'),assert=require('node:assert/strict'),path=require('path')
  window.fixture={environment:{tempMin:22,tempMax:26,humidityMin:55,humidityMax:65,vpdMin:.8,vpdMax:1.2},sensors:[{room:1,temperature:20,humidity:50,fresh:true},{room:2,temperature:29,humidity:70,fresh:true}],relays:[{id:4,state:true}]};
  EquipmentRooms.update({local:fixture,localAt:Date.now(),remote:[]});
  });
- assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/Mi sala A[\s\S]*29,0[\s\S]*Encendido/);
+ assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/Mi sala A[\s\S]*29,0/);
  assert.match(await page.locator('[data-equipment-room]').nth(1).innerText(),/Mi sala B[\s\S]*20,0/);
  assert.equal(await page.locator('#legacyEnvironmentReadings').isHidden(),true);
+ assert.equal(await page.locator('#equipmentRoomDashboard .equipment-room-relays').count(),0);
+ assert.doesNotMatch(await page.locator('#equipmentRoomDashboard').innerText(),/Encendido|Apagado|Local|Remoto/);
+ await page.evaluate(()=>{window.historyCalls=[];window.EnvironmentHistory={open:(...args)=>historyCalls.push(args)};});
+ for(const sensor of [1,2])for(const metric of ['temperature','humidity','vpd'])await page.locator(`[data-room-sensor="${sensor}"] [data-room-metric="${metric}"]`).click();
+ const historyCalls=await page.evaluate(()=>historyCalls);assert.equal(historyCalls.length,6);
+ assert.deepEqual(historyCalls.map(c=>c[2].sensorId),[1,1,1,2,2,2]);
+ assert.deepEqual(historyCalls.map(c=>c[0]),['temperature','humidity','vpd','temperature','humidity','vpd']);
+ assert.equal(historyCalls[0][2].roomName,'Mi sala B');assert.equal(historyCalls[3][2].roomName,'Mi sala A');
  for(const metric of ['temperature','humidity']){
  assert.equal(await page.locator(`[data-equipment-room]:nth-child(1) [data-room-metric="${metric}"]`).getAttribute('data-level'),'high');
  assert.equal(await page.locator(`[data-equipment-room]:nth-child(2) [data-room-metric="${metric}"]`).getAttribute('data-level'),'low');

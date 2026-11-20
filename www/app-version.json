@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.34",
-  "versionCode": 54,
+  "versionName": "2.6.35",
+  "versionCode": 55,
   "publishedAt": "2026-11-19T00:35:00-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Selección del sensor para el aire en Control → Automatización. Ambos monitores con colores e íconos de estado. Selector requiere firmware 2.6.20."
+  "releaseNotes": "Restaurado el histórico de temperatura, humedad y VPD en ambos monitores. Retirados del monitor el origen de conexión y los estados de relés."
 }

@@ -66,7 +66,7 @@ function metricCard(key,state,value,unit,digits,current){
  const label=!current?'Sin lectura actual':!known?'Sin objetivo':level==='low'?'Bajo':level==='high'?'Alto':'En rango';
  const icon=globalThis.GrowToday?.icon?.(state.icon)||'';
  const marker=globalThis.GrowToday?.icon?.(level==='low'?'arrow-down':level==='high'?'arrow-up':level==='normal'?'check':'sensor-unknown')||'';
- return `<div class="equipment-metric" data-room-metric="${key}" data-level="${level}"><div class="equipment-metric-heading"><span>${state.name}</span><span class="equipment-metric-icon" aria-hidden="true">${icon}</span></div><strong>${format(value,digits)} <small>${unit}</small></strong><span class="equipment-metric-state">${marker}${label}</span><span class="equipment-metric-target">Objetivo: ${esc(state.target)}</span></div>`;
+ return `<button type="button" class="equipment-metric" data-room-metric="${key}" data-level="${level}" aria-label="Ver histórico de ${esc(state.name)}"><div class="equipment-metric-heading"><span>${state.name}</span><span class="equipment-metric-icon" aria-hidden="true">${icon}</span></div><strong>${format(value,digits)} <small>${unit}</small></strong><span class="equipment-metric-state">${marker}${label}</span><span class="equipment-metric-target">Objetivo: ${esc(state.target)}</span><span class="equipment-metric-history">Ver histórico →</span></button>`;
 }
 function render(){
  const host=$('equipmentRoomDashboard');if(!host)return;
@@ -75,13 +75,19 @@ function render(){
  const picker=$('dashboardEnvironmentRoom');if(active)picker.hidden=true;
  if(!active){host.innerHTML='';return;}
  if(!groups.length){host.innerHTML='<p class="field-help">Asigná los sensores y relés a tus salas desde Configuración.</p><button class="secondary-button" data-view="integrations">Configurar salas</button>';return;}
- host.innerHTML=groups.map(group=>`<section class="equipment-room" data-equipment-room="${esc(group.id)}"><div class="section-heading"><h4>${esc(group.name)}</h4><span class="field-help">${fresh?esc(label):'Sin conexión actual'}</span></div>${group.sensors.map(id=>{
+ host.innerHTML=groups.map(group=>`<section class="equipment-room" data-equipment-room="${esc(group.id)}" aria-label="${esc(group.name)}"><div class="section-heading"><h4>${esc(group.name)}</h4></div>${group.sensors.map(id=>{
   const sensor=status?.sensors?.find(s=>Number(s.room)===id),r=reading(sensor,fresh,ageSeconds);
   return `<div class="equipment-room-sensor" data-room-sensor="${id}"><p class="field-help">Sensor ${id} · ${esc(sensorPin(id))} · ${esc(r.label)}</p><div class="equipment-room-metrics">${Object.entries(EnvironmentModels.sensorStates({temperature:r.temperature,humidity:r.humidity,environment:status?.environment},r.valid)).map(([key,state])=>metricCard(key,state,key==='temperature'?r.temperature:key==='humidity'?r.humidity:r.vpd,state.unit,key==='vpd'?2:1,r.valid)).join('')}</div></div>`;
- }).join('')||'<p class="field-help">Sin sensor asignado.</p>'}<div class="equipment-room-relays">${group.relays.map(id=>{const relay=status?.relays?.find(r=>r.id===id);return `<span class="equipment-relay ${fresh&&relay?.state?'is-on':''}">Relé ${id} · ${!fresh||!relay?'Sin datos':relay.state?'Encendido':'Apagado'}</span>`}).join('')||'<span class="field-help">Sin relés asignados.</span>'}</div></section>`).join('');
+ }).join('')||'<p class="field-help">Sin sensor asignado.</p>'}</section>`).join('');
 
 }
 function init(){
+ $('equipmentRoomDashboard').addEventListener('click',event=>{
+  const button=event.target.closest('[data-room-metric]');if(!button)return;
+  const node=button.closest('[data-room-sensor]'),group=groups.find(g=>g.id===button.closest('[data-equipment-room]')?.dataset.equipmentRoom);
+  if(!node||!group)return;const selected=source().status;
+  globalThis.EnvironmentHistory?.open(button.dataset.roomMetric,address(),{sensorId:Number(node.dataset.roomSensor),roomName:group.name,roomId:selected?.environment?.roomId||null,relayIds:group.relays});
+ });
  $('addEquipmentRoom').onclick=()=>{if(!loaded)return;draft=readDraft();draft.push({id:globalThis.crypto?.randomUUID?.()||Array.from(crypto.getRandomValues(new Uint32Array(4)),n=>n.toString(16)).join('-'),name:'',sensors:[],relays:[]});editor();$('equipmentRoomEditor').querySelector('[data-group-index]:last-child input').focus()};
  $('equipmentRoomEditor').onclick=event=>{const button=event.target.closest('[data-remove-group]');if(!button)return;draft=readDraft();draft.splice(Number(button.dataset.removeGroup),1);editor()};
  $('equipmentRoomsForm').onsubmit=async event=>{
