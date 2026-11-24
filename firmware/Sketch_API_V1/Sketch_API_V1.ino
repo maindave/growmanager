@@ -2,6 +2,7 @@
 #error "This controller requires esp8266:esp8266:d1 (Wemos D1 R1)."
 #endif
 #include "HardwarePinPolicy.h"
+#include "PinSelection.h"
 #include "RelayTestPolicy.h"
 #include "RelaySafetyPolicy.h"
 #include "IncubatorStatePolicy.h"
@@ -11,7 +12,9 @@
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
-#include <DHT.h>
+#include "GrowDHT.h"
+#include "SensorReadScheduler.h"
+#include "JsonValidity.h"
 #include <time.h>
 #include <EEPROM.h>
 #include <Schedule.h>
@@ -24,7 +27,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.20-ac-sensor-selection";
+const char* firmwareVersion = "2.6.22-pin-selection";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -51,6 +54,9 @@ const char* password = "10203040";
 #define EEPROM_SECOND_DHT_PIN 604
 #define EEPROM_AC_SENSOR 608
 #define EEPROM_AC_SENSOR_MAGIC 612
+#define EEPROM_PIN_SELECTION 620
+GrowPins::Selection pinSelection;
+static_assert(EEPROM_PIN_SELECTION+sizeof(GrowPins::Selection)<=1024,"Pin labels exceed EEPROM");
 #define AC_SENSOR_MAGIC 2620
 #define SECOND_DHT_MAGIC 2717
 #define AC_MAGIC_VALUE 2613
@@ -117,9 +123,9 @@ int relayPins[4] = {
 };
 
 #define DHTTYPE DHT21
-DHT* dht = nullptr;
+GrowDHT* dht = nullptr;
 int pinDHTSala2 = D3;
-DHT* dhtSala2 = nullptr;
+GrowDHT* dhtSala2 = nullptr;
 
 // ======================================================
 // RELAY LOGIC
@@ -260,6 +266,8 @@ unsigned long dhtSuccessCount = 0;
 unsigned long dhtFailureCount = 0;
 unsigned int dhtConsecutiveFailures = 0;
 unsigned int dhtReinitializations = 0;
+unsigned int dhtSala2Reinitializations = 0;
+GrowSensors::Schedule sensorReadSchedule;
 
 // Independent readings for Sala 2. Existing controls continue using Sala 1.
 float temperatureSala2 = NAN, humiditySala2 = NAN;
@@ -369,8 +377,10 @@ void runCloudTelemetry() {
   if(cloudAttempted&&!GrowCloud::expired(now,cloudLastAttempt,GrowCloud::retryDelay(cloudFailures)))return;
   cloudAttempted=true;cloudLastAttempt=now;
   String payload=buildStatusJson(8,true);
+  if (!GrowJson::validObject(payload.c_str(),payload.length())) {cloudFailures++;cloudLastResult=-12;return;}
   payload.remove(payload.length()-1);payload+=",\"pendingReadings\":"+cloudReadingsJson()+"}";
   String body="{\"p_room_id\":\""+String(cloudPairing.room)+"\",\"p_token\":\""+String(cloudPairing.token)+"\",\"p_sampled_at\":"+String(cloudUtcEpoch())+",\"p_payload\":"+payload+"}";
+  if (!GrowJson::validObject(body.c_str(),body.length())) {cloudFailures++;cloudLastResult=-12;return;}
   // Epoch seconds are accepted by a dedicated wrapper; no clock-formatting buffer needed.
   String request="POST /rest/v1/rpc/ingest_environment_device HTTP/1.1\r\nHost: "+String(cloudHost)+"\r\napikey: "+String(cloudPublishableKey)+"\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: "+String(body.length())+"\r\n\r\n"+body;
   cloudCapturedThrough=cloudBacklog.count?cloudBacklog.readings[(cloudBacklog.count<8?cloudBacklog.count:8)-1].sequence:0;
@@ -433,7 +443,9 @@ void runEnvironmentControl() {
 String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
   float value=GrowEnvironment::vpd(temperature,humidity);
   bool fresh=environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity);
-  String json=F("{\"enabled\":");
+  String json;
+  if (!json.reserve(1500 + eventLimit * 320)) return String();
+  json=F("{\"enabled\":");
   json+=environmentConfig.enabled?"true":"false";
   json+=F(",\"roomId\":\"")+String(environmentRoomId)+"\",\"bootId\":"+String(environmentBootId)+",\"uptimeMs\":"+String(millis());
   json+=F(",\"stage\":")+String(environmentConfig.stage)+",\"vpdMin\":"+String(environmentConfig.vpdMin,2)+",\"vpdMax\":"+String(environmentConfig.vpdMax,2);
@@ -558,7 +570,11 @@ void handleAcknowledgeEnvironment() {
 // ======================================================
 
 bool digitalPinAllowed(int pin) { return GrowPins::allowed(pin); }
-String pinToString(int pin) { return String(GrowPins::name(pin)); }
+String pinToString(int pin) {
+  const int assigned[]={pinDHT,pinDHTSala2,relayPins[0],relayPins[1],relayPins[2],relayPins[3]};
+  for(unsigned i=0;i<6;i++) if(assigned[i]==pin) return String(pinSelection.label(i,pin));
+  return String(GrowPins::name(pin));
+}
 int stringToPin(String value) { value.toUpperCase(); return GrowPins::parse(value.c_str()); }
 
 // ======================================================
@@ -684,6 +700,8 @@ bool pinConfigurationValid(
 // ======================================================
 
 void saveHardwareConfig() {
+  pinSelection=GrowPins::Selection();
+  EEPROM.put(EEPROM_PIN_SELECTION,pinSelection);
   int secondMagic=SECOND_DHT_MAGIC;
   EEPROM.put(EEPROM_SECOND_DHT_MAGIC,secondMagic);
   EEPROM.put(EEPROM_SECOND_DHT_PIN,pinDHTSala2);
@@ -727,6 +745,7 @@ void saveHardwareConfig() {
 // ======================================================
 
 void loadHardwareConfig() {
+  EEPROM.get(EEPROM_PIN_SELECTION,pinSelection);
   int secondMagic=0; EEPROM.get(EEPROM_SECOND_DHT_MAGIC,secondMagic);
   if(secondMagic==SECOND_DHT_MAGIC)EEPROM.get(EEPROM_SECOND_DHT_PIN,pinDHTSala2);
   if(!digitalPinAllowed(pinDHTSala2))pinDHTSala2=D3;
@@ -1133,15 +1152,16 @@ void initializeHardware() {
   }
 
   dht =
-    new DHT(
+    new GrowDHT(
       pinDHT,
       DHTTYPE
     );
 
   dht->begin();
   if(dhtSala2 != nullptr)delete dhtSala2;
-  dhtSala2 = new DHT(pinDHTSala2,DHTTYPE);
+  dhtSala2 = new GrowDHT(pinDHTSala2,DHTTYPE);
   dhtSala2->begin();
+  sensorReadSchedule.begin(millis());
 }
 
 // ======================================================
@@ -1412,80 +1432,38 @@ void runAutomations() {
 // ======================================================
 
 void readDHT() {
-
-  if (
-    millis() - lastDHTRead <
-    DHT_INTERVAL
-  )
-    return;
-
-  lastDHTRead =
-    millis();
-
-  dhtSala2ReadCount++;
-  float secondTemp = dhtSala2 ? dhtSala2->readTemperature() : NAN;
-  float secondHumidity = dhtSala2 ? dhtSala2->readHumidity() : NAN;
-  latestTemperatureSala2=secondTemp; latestHumiditySala2=secondHumidity;
-  dhtSala2Fresh = GrowEnvironment::validReading(secondTemp, secondHumidity);
-  if (dhtSala2Fresh) {
-    temperatureSala2 = secondTemp;
-    humiditySala2 = secondHumidity;
-    dhtSala2HasReading = true;
-    dhtSala2LastSuccessAt = millis();
-    dhtSala2SuccessCount++;
-    dhtSala2ConsecutiveFailures = 0;
+  const int channel = sensorReadSchedule.take(millis());
+  if (channel < 0) return;
+  GrowDHT* reader = channel == 0 ? dht : dhtSala2;
+  float t = reader ? reader->readTemperature() : NAN;
+  float h = reader ? reader->readHumidity() : NAN;
+  const bool valid = GrowEnvironment::validReading(t, h);
+  if (channel == 0) {
+    lastDHTRead = millis();
+    dhtReadCount++;
+    latestTemperature = t; latestHumidity = h;
+    dhtReadingFresh = valid;
+    if (valid) {
+      temperature=t; humidity=h; dhtHasValidReading=true; dhtAvailable=true;
+      lastDHTSuccessAt=millis(); dhtSuccessCount++; dhtConsecutiveFailures=0;
+    } else {
+      dhtFailureCount++; dhtConsecutiveFailures++;
+      dhtAvailable=dhtHasValidReading && dhtConsecutiveFailures<DHT_FAILURE_THRESHOLD;
+      if (reader && dhtConsecutiveFailures%DHT_REINITIALIZE_EVERY==0) {
+        reader->begin(); dhtReinitializations++;
+      }
+    }
   } else {
-    dhtSala2FailureCount++;
-    dhtSala2ConsecutiveFailures++;
-    if (dhtSala2 && dhtSala2ConsecutiveFailures % DHT_REINITIALIZE_EVERY == 0) dhtSala2->begin();
-  }
-
-  dhtReadCount++;
-  dhtReadingFresh = false;
-
-  if (dht == nullptr) {
-    latestTemperature=NAN; latestHumidity=NAN;
-    dhtFailureCount++;
-    dhtConsecutiveFailures++;
-    dhtAvailable = false;
-
-    return;
-  }
-
-  float newTemp =
-    dht->readTemperature();
-
-  float newHumidity =
-    dht->readHumidity();
-  latestTemperature=newTemp; latestHumidity=newHumidity;
-
-  if (
-    !isnan(newTemp) &&
-    !isnan(newHumidity) && GrowEnvironment::validReading(newTemp, newHumidity)
-  ) {
-
-    temperature =
-      newTemp;
-
-    humidity =
-      newHumidity;
-
-    dhtReadingFresh = true;
-    dhtHasValidReading = true;
-    dhtAvailable = true;
-    lastDHTSuccessAt = millis();
-    dhtSuccessCount++;
-    dhtConsecutiveFailures = 0;
-  }
-
-  else {
-    dhtFailureCount++;
-    dhtConsecutiveFailures++;
-    dhtAvailable = dhtHasValidReading && dhtConsecutiveFailures < DHT_FAILURE_THRESHOLD;
-
-    if (dht != nullptr && dhtConsecutiveFailures % DHT_REINITIALIZE_EVERY == 0) {
-      dht->begin();
-      dhtReinitializations++;
+    dhtSala2ReadCount++;
+    latestTemperatureSala2=t; latestHumiditySala2=h; dhtSala2Fresh=valid;
+    if (valid) {
+      temperatureSala2=t; humiditySala2=h; dhtSala2HasReading=true;
+      dhtSala2LastSuccessAt=millis(); dhtSala2SuccessCount++; dhtSala2ConsecutiveFailures=0;
+    } else {
+      dhtSala2FailureCount++; dhtSala2ConsecutiveFailures++;
+      if (reader && dhtSala2ConsecutiveFailures%DHT_REINITIALIZE_EVERY==0) {
+        reader->begin(); dhtSala2Reinitializations++;
+      }
     }
   }
 }
@@ -1536,8 +1514,11 @@ String roomSensorsJson() {
   const unsigned long at[]={lastDHTSuccessAt,dhtSala2LastSuccessAt};
   const unsigned long reads[]={dhtReadCount,dhtSala2ReadCount},successes[]={dhtSuccessCount,dhtSala2SuccessCount},failures[]={dhtFailureCount,dhtSala2FailureCount};
   const int pins[]={pinDHT,pinDHTSala2};
-  String json=F("[");
+  String json;
+  if (!json.reserve(1400)) return String();
+  json=F("[");
   for(int i=0;i<2;i++){
+    GrowDHT* reader=i==0?dht:dhtSala2;
     if(i)json+=',';
     json+=F("{\"room\":");json+=i+1;
     json+=F(",\"type\":\"AM2301\",\"pin\":\"");json+=pinToString(pins[i]);
@@ -1549,6 +1530,9 @@ String roomSensorsJson() {
     json+=F("\",\"readCount\":");json+=reads[i];
     json+=F(",\"successCount\":");json+=successes[i];json+=F(",\"failureCount\":");json+=failures[i];
     json+=F(",\"lastSuccessAgeSeconds\":");json+=hasValid[i]?String((millis()-at[i])/1000UL):String("null");
+    json+=F(",\"readError\":\"");json+=reader?reader->lastErrorName():"not_initialized";json+='"';
+    json+=F(",\"readDurationUs\":");json+=reader?reader->lastReadMicros():0;
+    json+=F(",\"reinitializations\":");json+=i==0?dhtReinitializations:dhtSala2Reinitializations;
     json+=F(",\"lastValid\":");
     if(hasValid[i]){
       json+=F("{\"temperature\":");json+=String(validT[i],1);json+=F(",\"humidity\":");json+=String(validH[i],1);
@@ -1597,7 +1581,9 @@ void handleRoot() {
 
 String buildStatusJson(uint8_t eventLimit,bool recovering) {
 
-  String json = F("{");
+  String json;
+  if (!json.reserve(3200 + eventLimit * 320)) return String();
+  json = F("{");
 
   json += F("\"device\":\"");
   json += deviceName;
@@ -1743,7 +1729,17 @@ String buildStatusJson(uint8_t eventLimit,bool recovering) {
 
   return json;
 }
-void handleApiStatus() { addCORS(); server.send(200,"application/json",buildStatusJson(16,false)); }
+void handleApiStatus() {
+  addCORS();
+  const uint8_t limits[]={16,4,0};
+  for (uint8_t limit : limits) {
+    String json=buildStatusJson(limit,false);
+    if (GrowJson::validObject(json.c_str(),json.length())) {
+      server.send(200,"application/json",json); return;
+    }
+  }
+  server.send(503,"application/json","{\"error\":\"status_memory_unavailable\"}");
+}
 
 // ======================================================
 // API RELAYS
@@ -2522,6 +2518,16 @@ void handleApiHardware() {
   json +=
     F("\"board\":\"Wemos D1 R1 ESP8266\",");
 
+  GrowPins::Selection configuredSelection; EEPROM.get(EEPROM_PIN_SELECTION,configuredSelection);
+  const char* configuredKeys[]={"dht","dht2","relay1","relay2","relay3","relay4"};
+  const int configuredAddresses[]={EEPROM_PIN_DHT,EEPROM_SECOND_DHT_PIN,EEPROM_PIN_RELAY1,EEPROM_PIN_RELAY2,EEPROM_PIN_RELAY3,EEPROM_PIN_RELAY4};
+  json += F("\"configuredPins\":{");
+  for(unsigned i=0;i<6;i++) {
+    int gpio;EEPROM.get(configuredAddresses[i],gpio);
+    if(i)json+=',';
+    json+='"';json+=configuredKeys[i];json+=F("\":\"");json+=configuredSelection.label(i,gpio);json+='"';
+  }
+  json+=F("},");
   json += F("\"sensors\":") + roomSensorsJson() + ',';
 
   json += F("\"dht\":{");
@@ -2661,19 +2667,33 @@ void handleApiSetHardware() {
     return;
   }
 
+  // Store exact board labels as well as GPIOs; aliases do not move live outputs.
+  GrowPins::Selection nextSelection;
+  const int nextPins[]={newDHT,newSecondDHT,newRelays[0],newRelays[1],newRelays[2],newRelays[3]};
+  const int activePins[]={pinDHT,pinDHTSala2,relayPins[0],relayPins[1],relayPins[2],relayPins[3]};
+  const char* keys[]={"dht","dht2","relay1","relay2","relay3","relay4"};
+  bool restartRequired=false;
+  for(unsigned i=0;i<6;i++) {
+    String label=server.hasArg(keys[i])?server.arg(keys[i]):String(pinSelection.label(i,activePins[i]));
+    label.toUpperCase(); nextSelection.set(i,label.c_str());
+    if(nextPins[i]!=activePins[i]) restartRequired=true;
+  }
+  EEPROM.put(EEPROM_PIN_SELECTION,nextSelection);
   // Persist the next map without moving live outputs. It applies at restart.
   EEPROM.put(EEPROM_PIN_DHT,newDHT);
   EEPROM.put(EEPROM_SECOND_DHT_PIN,newSecondDHT);
   int secondMagic=SECOND_DHT_MAGIC;EEPROM.put(EEPROM_SECOND_DHT_MAGIC,secondMagic);
   for(int i=0;i<4;i++)EEPROM.put(EEPROM_PIN_RELAY1+i*4,newRelays[i]);
-  int magic=HW_MAGIC_VALUE;EEPROM.put(EEPROM_HW_MAGIC,magic);EEPROM.commit();
+  int magic=HW_MAGIC_VALUE;EEPROM.put(EEPROM_HW_MAGIC,magic);
+  if(!EEPROM.commit()) {addCORS();server.send(500,"application/json","{\"ok\":false,\"error\":\"hardware_save_failed\"}");return;}
+  if(!restartRequired) pinSelection=nextSelection;
 
   addCORS();
 
   server.send(
     200,
     "application/json",
-    "{\"ok\":true,\"restartRequired\":true}"
+    String("{\"ok\":true,\"restartRequired\":")+(restartRequired?"true":"false")+"}"
   );
 }
 

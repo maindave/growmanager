@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.35",
-  "versionCode": 55,
-  "publishedAt": "2026-11-19T00:35:00-03:00",
+  "versionName": "2.6.36",
+  "versionCode": 56,
+  "publishedAt": "2026-11-24T11:22:11-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "Restaurado el histórico de temperatura, humedad y VPD en ambos monitores. Retirados del monitor el origen de conexión y los estados de relés."
+  "releaseNotes": "La configuración conserva los nombres exactos de pines seleccionados, incluidos D15 y D13, y verifica el guardado en el Wemos."
 }
