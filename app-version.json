@@ -1,8 +1,8 @@
 {
-  "versionName": "2.6.36",
-  "versionCode": 56,
-  "publishedAt": "2026-11-24T11:22:11-03:00",
+  "versionName": "2.6.37",
+  "versionCode": 57,
+  "publishedAt": "2026-11-25T20:36:35-03:00",
   "apkUrl": "https://maindave.github.io/growmanager/downloads/growmanager-latest.apk",
   "apkAvailable": false,
-  "releaseNotes": "La configuración conserva los nombres exactos de pines seleccionados, incluidos D15 y D13, y verifica el guardado en el Wemos."
+  "releaseNotes": "Corregido el guardado ambiental cuando el vínculo con una sala quedó incompleto. Los errores de traslado ya no desactivan el control del Wemos."
 }

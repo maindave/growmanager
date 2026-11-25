@@ -104,10 +104,10 @@ function open(requestedRoom=null,technical=false){
  if(switching&&!pendingTransfer&&!confirmRoomChange())return;
  b.disabled=true;provisioning=true;saving=true;
  if(switching&&!pendingTransfer){
- await GrowDevice.post('/api/environment',{roomId:from,enabled:'0'});
  const {data,error}=await client().rpc('transfer_environment_device',{p_from_room:from,p_to_room:values.roomId,p_device_key:GrowDevice.address()});
  if(error)throw error;pendingTransfer={token:data,roomId:values.roomId};
  }
+ // Apply room and control together only after the cloud link succeeds.
  await GrowDevice.post('/api/environment',values);
  if(pendingTransfer){
  await GrowDevice.postForm('/api/environment/cloud',{roomId:values.roomId,token:pendingTransfer.token});
