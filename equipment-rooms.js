@@ -9,6 +9,11 @@ const cacheKey=()=>`growmanager.equipment-rooms.${localMode()?'local':globalThis
 const clone=v=>JSON.parse(JSON.stringify(v));
 const sensorLabel=id=>{const room=groups.find(g=>g.sensors.includes(id));return 'Sensor '+id+' · '+sensorPin(id)+(room?' · '+room.name:'')};
 const sensorPin=id=>source().status?.sensors?.find(s=>Number(s.room)===id)?.pin||(id===1?'D5':'D3');
+function sensorForRoom(room){
+ const normalized=value=>String(value||'').trim().normalize('NFKC').toLocaleLowerCase('es');
+ const matches=groups.filter(group=>group.id===room?.id||normalized(group.name)===normalized(room?.name));
+ return matches.length===1&&matches[0].sensors.length===1?matches[0].sensors[0]:null;
+}
 function validate(rows){
  const usedSensors=new Set(),usedRelays=new Set(),ids=new Set();
  if(!Array.isArray(rows))throw Error('Configuración de salas inválida.');
@@ -106,5 +111,5 @@ function init(){
  load();
 }
 function update(value){context=value;if(scope!==scopeKey())load();else render()}
-globalThis.EquipmentRooms=Object.freeze({init,update,validate,reading,sensorLabel});
+globalThis.EquipmentRooms=Object.freeze({init,update,validate,reading,sensorLabel,sensorForRoom});
 })();

@@ -27,7 +27,7 @@
 // Functions + Auto / Manual
 // ======================================================
 
-const char* firmwareVersion = "2.6.22-pin-selection";
+const char* firmwareVersion = "2.6.23-environment-sensor";
 const char* deviceName = "armario-cultivo";
 
 // ======================================================
@@ -55,8 +55,12 @@ const char* password = "10203040";
 #define EEPROM_AC_SENSOR 608
 #define EEPROM_AC_SENSOR_MAGIC 612
 #define EEPROM_PIN_SELECTION 620
+#define EEPROM_ENV_SENSOR 632
+#define EEPROM_ENV_SENSOR_MAGIC 636
+#define ENV_SENSOR_MAGIC 2630
+int environmentSensor=1;
 GrowPins::Selection pinSelection;
-static_assert(EEPROM_PIN_SELECTION+sizeof(GrowPins::Selection)<=1024,"Pin labels exceed EEPROM");
+static_assert(EEPROM_PIN_SELECTION+sizeof(GrowPins::Selection)<=EEPROM_ENV_SENSOR,"Pin labels exceed EEPROM");
 #define AC_SENSOR_MAGIC 2620
 #define SECOND_DHT_MAGIC 2717
 #define AC_MAGIC_VALUE 2613
@@ -401,8 +405,18 @@ static_assert(EEPROM_ENVIRONMENT + sizeof(GrowEnvironment::Config) + 37 <= EEPRO
 bool environmentSensorFresh() {
   return dhtReadingFresh && dhtHasValidReading && millis()-lastDHTSuccessAt <= 15000UL;
 }
+// Supervised environmental control has its own explicitly selected sensor.
+// Legacy heater/ventilation and AC keep their existing independent policies.
+bool supervisedSensorFresh(int sensor) {
+  if(sensor==2) return dhtSala2Fresh && dhtSala2HasReading && millis()-dhtSala2LastSuccessAt<=15000UL;
+  return sensor==1 && environmentSensorFresh();
+}
+float supervisedTemperature(int sensor) { return sensor==2?temperatureSala2:temperature; }
+float supervisedHumidity(int sensor) { return sensor==2?humiditySala2:humidity; }
 uint32_t heaterSensorAgeMs() { return dhtHasValidReading ? uint32_t(millis()-lastDHTSuccessAt) : millis(); }
 void saveEnvironmentConfig() {
+  EEPROM.put(EEPROM_ENV_SENSOR,environmentSensor);
+  int sensorMagic=ENV_SENSOR_MAGIC;EEPROM.put(EEPROM_ENV_SENSOR_MAGIC,sensorMagic);
   EEPROM.put(EEPROM_SENSOR_DISPLAY,sensorDisplay);
   EEPROM.put(EEPROM_SENSOR_PROTECTION,sensorProtection);
   EEPROM.put(EEPROM_ENVIRONMENT, environmentConfig);
@@ -410,6 +424,9 @@ void saveEnvironmentConfig() {
   EEPROM.commit();
 }
 void loadEnvironmentConfig() {
+  int sensorMagic=0;EEPROM.get(EEPROM_ENV_SENSOR_MAGIC,sensorMagic);
+  if(sensorMagic==ENV_SENSOR_MAGIC)EEPROM.get(EEPROM_ENV_SENSOR,environmentSensor);
+  if(environmentSensor!=1&&environmentSensor!=2)environmentSensor=1;
   EEPROM.get(EEPROM_SENSOR_DISPLAY,sensorDisplay);
   if(!GrowEnvironment::validDisplayConfig(sensorDisplay))sensorDisplay=GrowEnvironment::DisplayConfig();
   EEPROM.get(EEPROM_SENSOR_PROTECTION,sensorProtection);
@@ -436,17 +453,18 @@ void runEnvironmentControl() {
   uint8_t testing=0;for(int i=0;i<4;i++)if(relayTests[i].active)testing|=1<<i;
   uint8_t safetyMask=0;for(int i=0;i<4;i++)if(relaySafety[i].reason!=GrowRelay::Safety::Ready)safetyMask|=1<<i;
   for(int i=0;i<4;i++)if(safetyMask&(1<<i)){channels[i].automatic=false;channels[i].on=false;}
-  environmentController.tick(millis(),environmentConfig,environmentSensorFresh(),temperature,humidity,tempMin,tempMax,channels,testing,safetyMask);
+  environmentController.tick(millis(),environmentConfig,supervisedSensorFresh(environmentSensor),supervisedTemperature(environmentSensor),supervisedHumidity(environmentSensor),tempMin,tempMax,channels,testing,safetyMask);
   for(int i=0;i<4;i++)if(safetyMask&(1<<i))channels[i].on=false;
   for(int i=0;i<4;i++) if(channels[i].on!=relayStates[i]) setRelayState(i+1,channels[i].on);
 }
 String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
-  float value=GrowEnvironment::vpd(temperature,humidity);
-  bool fresh=environmentSensorFresh()&&GrowEnvironment::validReading(temperature,humidity);
+  float value=GrowEnvironment::vpd(supervisedTemperature(environmentSensor),supervisedHumidity(environmentSensor));
+  bool fresh=supervisedSensorFresh(environmentSensor)&&GrowEnvironment::validReading(supervisedTemperature(environmentSensor),supervisedHumidity(environmentSensor));
   String json;
   if (!json.reserve(1500 + eventLimit * 320)) return String();
   json=F("{\"enabled\":");
   json+=environmentConfig.enabled?"true":"false";
+  json+=F(",\"sensorId\":");json+=environmentSensor;
   json+=F(",\"roomId\":\"")+String(environmentRoomId)+"\",\"bootId\":"+String(environmentBootId)+",\"uptimeMs\":"+String(millis());
   json+=F(",\"stage\":")+String(environmentConfig.stage)+",\"vpdMin\":"+String(environmentConfig.vpdMin,2)+",\"vpdMax\":"+String(environmentConfig.vpdMax,2);
   json+=F(",\"vpd\":")+(fresh?String(value,3):String("null"));
@@ -485,6 +503,12 @@ String environmentJsonWithEvents(uint8_t eventLimit,bool recovering) {
 String environmentJson() { return environmentJsonWithEvents(16,false); }
 void handleEnvironment() { addCORS(); server.send(200,"application/json",environmentJson()); }
 void handleSetEnvironment() {
+  int nextSensor=environmentSensor;
+  if(server.hasArg("sensorId")) {
+    String value=server.arg("sensorId");
+    if(value!="1"&&value!="2") {addCORS();server.send(400,"application/json","{\"error\":\"invalid_environment_sensor\"}");return;}
+    nextSensor=value.toInt();
+  }
   GrowEnvironment::Config next=environmentConfig;
   GrowEnvironment::DisplayConfig nextDisplay=sensorDisplay;
   const char* displayFields[]={"humidityMin","humidityMax"};
@@ -537,13 +561,14 @@ void handleSetEnvironment() {
   if(!GrowEnvironment::validConfig(next)||(next.enabled&&!roomValid)||next.criticalCold>=tempMin||next.criticalHot<=tempMax) {
     addCORS(); server.send(400,"application/json","{\"error\":\"invalid_environment_config\"}"); return;
   }
-  if(next.enabled&&!environmentConfig.enabled&&(!environmentSensorFresh()||!GrowEnvironment::validReading(temperature,humidity))) {
+  if(next.enabled&&(!environmentConfig.enabled||nextSensor!=environmentSensor)&&(!supervisedSensorFresh(nextSensor)||!GrowEnvironment::validReading(supervisedTemperature(nextSensor),supervisedHumidity(nextSensor)))) {
     addCORS(); server.send(409,"application/json","{\"error\":\"environment_sensor_unavailable\"}"); return;
   }
   if(room!=String(environmentRoomId)) clearCloudPairing();
   sensorDisplay=nextDisplay;
   sensorProtection=nextProtection;
   for(int i=0;i<4;i++)setRelayState(i+1,relayStates[i]);
+  environmentSensor=nextSensor;
   environmentConfig=next; room.toCharArray(environmentRoomId,sizeof(environmentRoomId)); saveEnvironmentConfig();
   runEnvironmentControl(); handleEnvironment();
 }
@@ -554,7 +579,7 @@ void handleRelayTest() {
   if(seconds<0||seconds>30){addCORS();server.send(400,"application/json","{\"error\":\"invalid_test_duration\"}");return;}
   if(state=="cancel"){if(relayTests[i].active)setRelayState(id,relayTests[i].stop());runAutomations();addCORS();server.send(200,"application/json","{\"ok\":true}");return;}
   bool on=state=="on";
-  if(!on&&environmentConfig.enabled&&(relayFunctions[i]==FN_EXTRACTION||relayFunctions[i]==FN_INTAKE)&&(temperature>=environmentConfig.criticalHot||(!environmentSensorFresh()&&environmentConfig.exchangeOnSensorFailure))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
+  if(!on&&environmentConfig.enabled&&(relayFunctions[i]==FN_EXTRACTION||relayFunctions[i]==FN_INTAKE)&&(supervisedTemperature(environmentSensor)>=environmentConfig.criticalHot||(!supervisedSensorFresh(environmentSensor)&&environmentConfig.exchangeOnSensorFailure))){addCORS();server.send(409,"application/json","{\"error\":\"environment_protection_active\"}");return;}
   bool previous=relayStates[i];if(!setRelayState(id,on)){addCORS();server.send(409,"application/json","{\"error\":\"safety_lock_requires_review\"}");return;}relayTests[i].begin(millis(),on,previous,seconds);runEnvironmentControl();
   addCORS();server.send(200,"application/json","{\"ok\":true,\"seconds\":"+String(seconds)+"}");
 }

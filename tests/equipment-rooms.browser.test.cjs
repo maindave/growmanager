@@ -25,6 +25,8 @@ const fs=require('fs'),assert=require('node:assert/strict'),path=require('path')
  window.fixture={environment:{tempMin:22,tempMax:26,humidityMin:55,humidityMax:65,vpdMin:.8,vpdMax:1.2},sensors:[{room:1,temperature:20,humidity:50,fresh:true},{room:2,temperature:29,humidity:70,fresh:true}],relays:[{id:4,state:true}]};
  EquipmentRooms.update({local:fixture,localAt:Date.now(),remote:[]});
  });
+ assert.equal(await page.evaluate(()=>EquipmentRooms.sensorForRoom({id:'room',name:' MI SALA A '})),2);
+ assert.equal(await page.evaluate(()=>EquipmentRooms.sensorForRoom({id:'room',name:'Sin asignación'})),null);
  assert.match(await page.locator('[data-equipment-room]').nth(0).innerText(),/Mi sala A[\s\S]*29,0/);
  assert.match(await page.locator('[data-equipment-room]').nth(1).innerText(),/Mi sala B[\s\S]*20,0/);
  assert.equal(await page.locator('#legacyEnvironmentReadings').isHidden(),true);
