@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -18,6 +19,7 @@ concurrency:
 jobs:
   deploy:
     env:
+      PAGES_ARTIFACT: pages-${{ github.run_id }}-${{ github.run_attempt }}
       HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     environment:
       name: github-pages
@@ -86,7 +88,25 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: www
+          name: ${{ env.PAGES_ARTIFACT }}
+
+      - name: Wait for site artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in $(seq 1 30); do
+            artifact_count=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?per_page=100" --jq ".artifacts | map(select(.name == \"$PAGES_ARTIFACT\")) | length")
+            if [ "$artifact_count" = "1" ]; then
+              sleep 5
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Site artifact did not become available in time."
+          exit 1
 
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT }}
